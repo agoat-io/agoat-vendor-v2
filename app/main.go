@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,12 +19,12 @@ import (
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //go:embed templates/*
 var templateFS embed.FS
 
-// Configuration
 type Config struct {
 	Server   ServerConfig   `json:"server"`
 	Database DatabaseConfig `json:"database"`
@@ -45,8 +44,8 @@ type DatabaseConfig struct {
 }
 
 type SessionConfig struct {
-	Store  string `json:"store"` // "redis" or "cookie"
-	Secret string `json:"secret"`
+	Store  string      `json:"store"`
+	Secret string      `json:"secret"`
 	Redis  RedisConfig `json:"redis"`
 }
 
@@ -57,18 +56,17 @@ type RedisConfig struct {
 }
 
 type AuthConfig struct {
-	Provider string `json:"provider"` // "hardcoded", "database", etc.
+	Provider string `json:"provider"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
 type APIConfig struct {
-	Enabled bool   `json:"enabled"`
-	Key     string `json:"key"`     // API key for authentication
-	RateLimit int  `json:"rateLimit"` // requests per minute
+	Enabled   bool   `json:"enabled"`
+	Key       string `json:"key"`
+	RateLimit int    `json:"rateLimit"`
 }
 
-// Domain Models
 type User struct {
 	ID        int       `json:"id"`
 	Username  string    `json:"username"`
@@ -114,7 +112,6 @@ type APIMeta struct {
 	TotalPages int `json:"total_pages,omitempty"`
 }
 
-// Interfaces
 type Authenticator interface {
 	Authenticate(username, password string) (*User, error)
 	GetUser(id int) (*User, error)
@@ -136,38 +133,67 @@ type SessionStore interface {
 	Save(r *http.Request, w http.ResponseWriter, s *sessions.Session) error
 }
 
-// Implementations
+// ---------- structured logging ----------
+
+func logJSON(level, category, message string, fields map[string]interface{}) {
+	entry := map[string]interface{}{
+		"ts":       time.Now().Format(time.RFC3339Nano),
+		"level":    level,     // "info" | "warn" | "error" | "fatal"
+		"category": category,  // "technical" | "business"
+		"message":  message,
+	}
+	for k, v := range fields {
+		entry[k] = v
+	}
+	b, _ := json.Marshal(entry)
+	fmt.Println(string(b))
+}
+
+func logInfo(category, message string, fields map[string]interface{})  { logJSON("info", category, message, fields) }
+func logWarn(category, message string, fields map[string]interface{})  { logJSON("warn", category, message, fields) }
+func logError(category, message string, fields map[string]interface{}) { logJSON("error", category, message, fields) }
+func logFatal(category, message string, fields map[string]interface{}) {
+	logJSON("fatal", category, message, fields)
+	os.Exit(1)
+}
+
+// ---------- auth ----------
+
 type HardcodedAuth struct {
 	username string
 	password string
 	apiKey   string
+	db       *sql.DB
 }
 
 func (h *HardcodedAuth) Authenticate(username, password string) (*User, error) {
-	if username == h.username && password == h.password {
-		return &User{
-			ID:       1,
-			Username: username,
-			Email:    username + "@example.com",
-		}, nil
+	if username != h.username || password != h.password {
+		return nil, fmt.Errorf("invalid credentials")
 	}
-	return nil, fmt.Errorf("invalid credentials")
+	u := &User{}
+	err := h.db.QueryRow(`SELECT id, username, email FROM users WHERE username = $1`, h.username).
+		Scan(&u.ID, &u.Username, &u.Email)
+	if err != nil {
+		return nil, fmt.Errorf("user not found in db")
+	}
+	return u, nil
 }
 
 func (h *HardcodedAuth) GetUser(id int) (*User, error) {
-	if id == 1 {
-		return &User{
-			ID:       1,
-			Username: h.username,
-			Email:    h.username + "@example.com",
-		}, nil
+	u := &User{}
+	err := h.db.QueryRow(`SELECT id, username, email FROM users WHERE id = $1`, id).
+		Scan(&u.ID, &u.Username, &u.Email)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
 	}
-	return nil, fmt.Errorf("user not found")
+	return u, nil
 }
 
 func (h *HardcodedAuth) ValidateAPIKey(key string) bool {
 	return h.apiKey != "" && h.apiKey == key
 }
+
+// ---------- posts repo ----------
 
 type SQLPostRepository struct {
 	db *sql.DB
@@ -178,7 +204,7 @@ func (r *SQLPostRepository) Create(post *Post) error {
 		INSERT INTO posts (user_id, title, content, slug, published, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`
-	err := r.db.QueryRow(query, post.UserID, post.Title, post.Content, 
+	err := r.db.QueryRow(query, post.UserID, post.Title, post.Content,
 		post.Slug, post.Published, time.Now(), time.Now()).Scan(&post.ID)
 	return err
 }
@@ -187,7 +213,7 @@ func (r *SQLPostRepository) Update(post *Post) error {
 	query := `
 		UPDATE posts SET title = $1, content = $2, slug = $3, 
 		published = $4, updated_at = $5 WHERE id = $6`
-	_, err := r.db.Exec(query, post.Title, post.Content, post.Slug, 
+	_, err := r.db.Exec(query, post.Title, post.Content, post.Slug,
 		post.Published, time.Now(), post.ID)
 	return err
 }
@@ -206,7 +232,7 @@ func (r *SQLPostRepository) GetByID(id int) (*Post, error) {
 		LEFT JOIN users u ON p.user_id = u.id
 		WHERE p.id = $1`
 	err := r.db.QueryRow(query, id).Scan(&post.ID, &post.UserID, &post.Title,
-		&post.Content, &post.Slug, &post.Published, &post.CreatedAt, 
+		&post.Content, &post.Slug, &post.Published, &post.CreatedAt,
 		&post.UpdatedAt, &post.Author)
 	return post, err
 }
@@ -247,7 +273,7 @@ func (r *SQLPostRepository) GetBySlug(slug string) (*Post, error) {
 		LEFT JOIN users u ON p.user_id = u.id
 		WHERE p.slug = $1`
 	err := r.db.QueryRow(query, slug).Scan(&post.ID, &post.UserID, &post.Title,
-		&post.Content, &post.Slug, &post.Published, &post.CreatedAt, 
+		&post.Content, &post.Slug, &post.Published, &post.CreatedAt,
 		&post.UpdatedAt, &post.Author)
 	return post, err
 }
@@ -258,7 +284,8 @@ func (r *SQLPostRepository) Count() (int, error) {
 	return count, err
 }
 
-// Application
+// ---------- app ----------
+
 type App struct {
 	config    *Config
 	db        *sql.DB
@@ -269,13 +296,11 @@ type App struct {
 }
 
 func NewApp(config *Config) (*App, error) {
-	// Initialize database
 	db, err := initDatabase(config.Database)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize auth
 	var auth Authenticator
 	switch config.Auth.Provider {
 	case "hardcoded":
@@ -283,16 +308,17 @@ func NewApp(config *Config) (*App, error) {
 			username: config.Auth.Username,
 			password: config.Auth.Password,
 			apiKey:   config.API.Key,
+			db:       db,
 		}
 	default:
 		auth = &HardcodedAuth{
 			username: "admin",
 			password: "admin123",
 			apiKey:   config.API.Key,
+			db:       db,
 		}
 	}
 
-	// Initialize session store
 	var sessionStore SessionStore
 	switch config.Session.Store {
 	case "redis":
@@ -309,7 +335,6 @@ func NewApp(config *Config) (*App, error) {
 		sessionStore = sessions.NewCookieStore([]byte(config.Session.Secret))
 	}
 
-	// Load templates
 	templates, err := template.ParseFS(templateFS, "templates/*.html")
 	if err != nil {
 		return nil, err
@@ -324,8 +349,10 @@ func NewApp(config *Config) (*App, error) {
 		templates: templates,
 	}
 
-	// Initialize database schema
 	if err := app.initSchema(); err != nil {
+		return nil, err
+	}
+	if err := app.ensureDefaultUser(); err != nil {
 		return nil, err
 	}
 
@@ -360,7 +387,31 @@ func (app *App) initSchema() error {
 	return err
 }
 
-// Redis Session Store
+func (app *App) ensureDefaultUser() error {
+	username := app.config.Auth.Username
+	if username == "" {
+		username = "admin"
+	}
+	email := username + "@example.com"
+	pw := app.config.Auth.Password
+	if pw == "" {
+		pw = "admin123"
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = app.db.Exec(
+		`INSERT INTO users (username, email, password_hash) 
+         VALUES ($1, $2, $3)
+         ON CONFLICT (username) DO NOTHING`,
+		username, email, string(hash),
+	)
+	return err
+}
+
+// ---------- sessions ----------
+
 type RedisSessionStore struct {
 	client *redis.Client
 	secret []byte
@@ -374,17 +425,15 @@ func (s *RedisSessionStore) Save(r *http.Request, w http.ResponseWriter, sess *s
 	return sessions.NewCookieStore(s.secret).Save(r, w, sess)
 }
 
-// Middleware
+// ---------- middleware ----------
+
 func (app *App) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Check session auth for web requests
 		session, _ := app.sessions.Get(r, "blog-session")
 		if auth, ok := session.Values["authenticated"].(bool); ok && auth {
 			next(w, r)
 			return
 		}
-
-		// Check API key for API requests
 		if app.config.API.Enabled {
 			apiKey := r.Header.Get("X-API-Key")
 			if apiKey == "" {
@@ -395,18 +444,20 @@ func (app *App) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
-
-		// Check if it's an API request
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   "Unauthorized",
 			})
+			logWarn("business", "Unauthorized API access", map[string]interface{}{
+				"path":   r.URL.Path,
+				"method": r.Method,
+				"ip":     r.RemoteAddr,
+			})
 			return
 		}
-
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	}
 }
@@ -416,42 +467,43 @@ func (app *App) apiMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if !app.config.API.Enabled {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   "API is disabled",
 			})
+			logWarn("business", "API disabled", map[string]interface{}{
+				"path":   r.URL.Path,
+				"method": r.Method,
+			})
 			return
 		}
-
-		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
-		
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-
 		next(w, r)
 	}
 }
 
-// Handlers
+// ---------- handlers ----------
+
 func (app *App) homeHandler(w http.ResponseWriter, r *http.Request) {
 	posts, err := app.posts.GetAll(10, 0)
 	if err != nil {
+		logError("technical", "GetAll posts failed", map[string]interface{}{"error": err.Error()})
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	data := map[string]interface{}{
-		"Title": "Blog",
-		"Posts": posts,
+		"Title":      "Blog",
+		"Posts":      posts,
 		"APIEnabled": app.config.API.Enabled,
 	}
 	if err := app.templates.ExecuteTemplate(w, "index.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+		logError("technical", "Template render error", map[string]interface{}{"error": err.Error(), "template": "index.html"})
 		http.Error(w, "Template rendering error", http.StatusInternalServerError)
 	}
 }
@@ -461,7 +513,7 @@ func (app *App) loginPageHandler(w http.ResponseWriter, r *http.Request) {
 		"APIEnabled": app.config.API.Enabled,
 	}
 	if err := app.templates.ExecuteTemplate(w, "login.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+		logError("technical", "Template render error", map[string]interface{}{"error": err.Error(), "template": "login.html"})
 		http.Error(w, "Template rendering error", http.StatusInternalServerError)
 	}
 }
@@ -471,71 +523,68 @@ func (app *App) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(LoginResponse{
+		_ = json.NewEncoder(w).Encode(LoginResponse{
 			Success: false,
 			Message: "Invalid request format",
 		})
+		logWarn("business", "Invalid login request format", map[string]interface{}{"error": err.Error()})
 		return
 	}
-
 	user, err := app.auth.Authenticate(loginReq.Username, loginReq.Password)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(LoginResponse{
+		_ = json.NewEncoder(w).Encode(LoginResponse{
 			Success: false,
 			Message: "Invalid credentials",
 		})
+		logWarn("business", "Invalid credentials", map[string]interface{}{"username": loginReq.Username})
 		return
 	}
-
-	// Create session
 	session, _ := app.sessions.Get(r, "blog-session")
 	session.Values["authenticated"] = true
 	session.Values["user_id"] = user.ID
-	session.Save(r, w)
-
-	// Return success response
+	_ = session.Save(r, w)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(LoginResponse{
+	_ = json.NewEncoder(w).Encode(LoginResponse{
 		Success: true,
 		User:    user,
-		Token:   "session-created", // In a real app, you might return a JWT token here
+		Token:   "session-created",
 	})
+	logInfo("business", "User login", map[string]interface{}{"user_id": user.ID, "username": user.Username})
 }
 
 func (app *App) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, _ := app.sessions.Get(r, "blog-session")
 	session.Values["authenticated"] = false
-	session.Save(r, w)
-	
-	// Check if it's an API request
+	_ = session.Save(r, w)
 	if r.Header.Get("Content-Type") == "application/json" {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(APIResponse{
+		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    "Logged out successfully",
 		})
+		logInfo("business", "User logout (API)", map[string]interface{}{})
 		return
 	}
-	
+	logInfo("business", "User logout (web)", map[string]interface{}{})
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (app *App) adminHandler(w http.ResponseWriter, r *http.Request) {
 	posts, err := app.posts.GetAll(20, 0)
 	if err != nil {
+		logError("technical", "GetAll posts failed", map[string]interface{}{"error": err.Error()})
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	data := map[string]interface{}{
-		"Title": "Admin Dashboard",
-		"Posts": posts,
+		"Title":      "Admin Dashboard",
+		"Posts":      posts,
 		"APIEnabled": app.config.API.Enabled,
 	}
 	if err := app.templates.ExecuteTemplate(w, "admin.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+		logError("technical", "Template render error", map[string]interface{}{"error": err.Error(), "template": "admin.html"})
 		http.Error(w, "Template rendering error", http.StatusInternalServerError)
 	}
 }
@@ -546,31 +595,30 @@ func (app *App) createPostHandler(w http.ResponseWriter, r *http.Request) {
 			"APIEnabled": app.config.API.Enabled,
 		}
 		if err := app.templates.ExecuteTemplate(w, "editor.html", data); err != nil {
-			log.Printf("Template error: %v", err)
+			logError("technical", "Template render error", map[string]interface{}{"error": err.Error(), "template": "editor.html"})
 			http.Error(w, "Template rendering error", http.StatusInternalServerError)
 		}
 		return
 	}
-
 	session, _ := app.sessions.Get(r, "blog-session")
-	userID := session.Values["user_id"].(int)
-
+	uid, _ := session.Values["user_id"].(int)
+	if uid == 0 {
+		uid = 1
+	}
 	post := &Post{
-		UserID:    userID,
+		UserID:    uid,
 		Title:     r.FormValue("title"),
 		Content:   r.FormValue("content"),
 		Slug:      slugify(r.FormValue("title")),
 		Published: r.FormValue("published") == "on",
 	}
-
 	if err := app.posts.Create(post); err != nil {
+		logError("technical", "Post create failed", map[string]interface{}{"error": err.Error(), "user_id": uid})
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	// Send event via Turbo Stream
 	w.Header().Set("Content-Type", "text/vnd.turbo-stream.html")
-	fmt.Fprintf(w, `<turbo-stream action="append" target="posts-list">
+	_, _ = fmt.Fprintf(w, `<turbo-stream action="append" target="posts-list">
 		<template>
 			<div class="post-item" data-post-id="%d">
 				<h3>%s</h3>
@@ -578,36 +626,33 @@ func (app *App) createPostHandler(w http.ResponseWriter, r *http.Request) {
 			</div>
 		</template>
 	</turbo-stream>`, post.ID, post.Title)
+	logInfo("business", "Post created", map[string]interface{}{"post_id": post.ID, "user_id": uid})
 }
 
 func (app *App) postHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	slug := vars["slug"]
-
 	post, err := app.posts.GetBySlug(slug)
 	if err != nil {
+		logWarn("business", "Post not found", map[string]interface{}{"slug": slug})
 		http.Error(w, "Post not found", http.StatusNotFound)
 		return
 	}
-
 	data := map[string]interface{}{
-		"Title": post.Title,
-		"Post":  post,
+		"Title":      post.Title,
+		"Post":       post,
 		"APIEnabled": app.config.API.Enabled,
 	}
 	if err := app.templates.ExecuteTemplate(w, "post.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+		logError("technical", "Template render error", map[string]interface{}{"error": err.Error(), "template": "post.html"})
 		http.Error(w, "Template rendering error", http.StatusInternalServerError)
 	}
 }
 
-// API Handlers
 func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
 	switch r.Method {
 	case "GET":
-		// Parse pagination
 		page := 1
 		perPage := 10
 		if p := r.URL.Query().Get("page"); p != "" {
@@ -616,22 +661,20 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 		if pp := r.URL.Query().Get("per_page"); pp != "" {
 			fmt.Sscanf(pp, "%d", &perPage)
 		}
-		
 		offset := (page - 1) * perPage
 		posts, err := app.posts.GetAll(perPage, offset)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   err.Error(),
 			})
+			logError("technical", "GetAll posts failed", map[string]interface{}{"error": err.Error()})
 			return
 		}
-		
 		total, _ := app.posts.Count()
 		totalPages := (total + perPage - 1) / perPage
-		
-		json.NewEncoder(w).Encode(APIResponse{
+		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    posts,
 			Meta: &APIMeta{
@@ -641,41 +684,39 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 				TotalPages: totalPages,
 			},
 		})
-		
 	case "POST":
 		var post Post
 		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   "Invalid request body",
 			})
+			logWarn("business", "Invalid post body", map[string]interface{}{"error": err.Error()})
 			return
 		}
-		
-		// Get user from session or API context
 		session, _ := app.sessions.Get(r, "blog-session")
 		if userID, ok := session.Values["user_id"].(int); ok {
 			post.UserID = userID
 		} else {
-			post.UserID = 1 // Default user for API
+			post.UserID = 1
 		}
-		
 		post.Slug = slugify(post.Title)
 		if err := app.posts.Create(&post); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   err.Error(),
 			})
+			logError("technical", "Post create failed", map[string]interface{}{"error": err.Error(), "user_id": post.UserID})
 			return
 		}
-		
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(APIResponse{
+		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    post,
 		})
+		logInfo("business", "Post created (API)", map[string]interface{}{"post_id": post.ID, "user_id": post.UserID})
 	}
 }
 
@@ -683,88 +724,84 @@ func (app *App) apiPostHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
 	idStr := vars["id"]
-	
 	var id int
 	fmt.Sscanf(idStr, "%d", &id)
-	
 	switch r.Method {
 	case "GET":
 		post, err := app.posts.GetByID(id)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   "Post not found",
 			})
+			logWarn("business", "Post not found (API)", map[string]interface{}{"post_id": id})
 			return
 		}
-		
-		json.NewEncoder(w).Encode(APIResponse{
+		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    post,
 		})
-		
 	case "PUT":
 		var post Post
 		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   "Invalid request body",
 			})
+			logWarn("business", "Invalid post body (PUT)", map[string]interface{}{"error": err.Error()})
 			return
 		}
-		
 		post.ID = id
 		post.Slug = slugify(post.Title)
 		if err := app.posts.Update(&post); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   err.Error(),
 			})
+			logError("technical", "Post update failed", map[string]interface{}{"error": err.Error(), "post_id": id})
 			return
 		}
-		
-		json.NewEncoder(w).Encode(APIResponse{
+		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    post,
 		})
-		
 	case "DELETE":
 		if err := app.posts.Delete(id); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(APIResponse{
+			_ = json.NewEncoder(w).Encode(APIResponse{
 				Success: false,
 				Error:   err.Error(),
 			})
+			logError("technical", "Post delete failed", map[string]interface{}{"error": err.Error(), "post_id": id})
 			return
 		}
-		
-		json.NewEncoder(w).Encode(APIResponse{
+		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    "Post deleted successfully",
 		})
+		logInfo("business", "Post deleted", map[string]interface{}{"post_id": id})
 	}
 }
 
 func (app *App) apiLoginHandler(w http.ResponseWriter, r *http.Request) {
-	app.loginHandler(w, r) // Reuse the same login handler
+	app.loginHandler(w, r)
 }
 
 func (app *App) apiStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(APIResponse{
+	_ = json.NewEncoder(w).Encode(APIResponse{
 		Success: true,
 		Data: map[string]interface{}{
-			"status":  "online",
-			"version": "1.0.0",
+			"status":      "online",
+			"version":     "1.0.0",
 			"api_enabled": app.config.API.Enabled,
 		},
 	})
 }
 
-// Helper functions
 func envOrFile(varName, fileVarName string) (string, bool, error) {
 	if p, ok := os.LookupEnv(fileVarName); ok && p != "" {
 		if _, err := os.Stat(p); err == nil {
@@ -783,14 +820,8 @@ func envOrFile(varName, fileVarName string) (string, bool, error) {
 
 func loadCAFromEnvOrFile(val string) (*x509.CertPool, error) {
 	pool := x509.NewCertPool()
-	
-
-
-
-	
 	if ok := pool.AppendCertsFromPEM([]byte(val)); !ok {
 		return nil, fmt.Errorf("invalid CA pem")
-		panic("invalid CA pem") // This should not happen in production code
 	}
 	return pool, nil
 }
@@ -806,48 +837,30 @@ func initDatabase(config DatabaseConfig) (*sql.DB, error) {
 	if dsn == "" {
 		return nil, fmt.Errorf("DSN not configured")
 	}
-
-	// Handle CA certificate for CockroachDB
 	caPEM, ok, err := envOrFile("CA", "CA_CERT_FILE")
-	
 	if err != nil {
 		return nil, err
 	}
 	if !ok && config.CA != "" {
 		caPEM = config.CA
 	}
-
-	var db *sql.DB
 	if caPEM != "" && config.Driver == "postgres" {
-		// CockroachDB with TLS
 		caPool, err := loadCAFromEnvOrFile(caPEM)
 		if err != nil {
 			return nil, err
 		}
-		
-		// Parse DSN and add SSL parameters
 		if !strings.Contains(dsn, "sslmode") {
 			dsn += "?sslmode=require"
 		}
-		
-		// Register custom TLS config
-		tlsConfig := &tls.Config{
-			RootCAs: caPool,
-		}
-		
-		// Note: In production, you'd register this TLS config with the driver
-		_ = tlsConfig
+		_ = (&tls.Config{RootCAs: caPool})
 	}
-
-	db, err = sql.Open(config.Driver, dsn)
+	db, err := sql.Open(config.Driver, dsn)
 	if err != nil {
 		return nil, err
 	}
-
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
-
 	return db, nil
 }
 
@@ -855,7 +868,6 @@ func slugify(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")
 	s = strings.ReplaceAll(s, "_", "-")
-	// Remove special characters
 	var result strings.Builder
 	for _, r := range s {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
@@ -866,7 +878,6 @@ func slugify(s string) string {
 }
 
 func loadConfig() (*Config, error) {
-	// Default configuration
 	config := &Config{
 		Server: ServerConfig{
 			Port: "8080",
@@ -884,20 +895,16 @@ func loadConfig() (*Config, error) {
 			Password: "admin123",
 		},
 		API: APIConfig{
-			Enabled: true,
-			Key:     "your-api-key-here",
+			Enabled:   true,
+			Key:       "your-api-key-here",
 			RateLimit: 60,
 		},
 	}
-
-	// Load from config file if exists
 	if data, err := os.ReadFile("config.json"); err == nil {
 		if err := json.Unmarshal(data, config); err != nil {
 			return nil, err
 		}
 	}
-
-	// Override with environment variables
 	if port := os.Getenv("PORT"); port != "" {
 		config.Server.Port = port
 	}
@@ -907,404 +914,85 @@ func loadConfig() (*Config, error) {
 	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
 		config.API.Key = apiKey
 	}
-
 	return config, nil
 }
 
 func main() {
-	// Initialize gob for session encoding
 	gob.Register(&User{})
-
 	config, err := loadConfig()
 	if err != nil {
-		log.Fatal("Failed to load config:", err)
+		logFatal("technical", "Failed to load config", map[string]interface{}{"error": err.Error()})
 	}
-
 	app, err := NewApp(config)
 	if err != nil {
-		log.Fatal("Failed to initialize app:", err)
+		logFatal("technical", "Failed to initialize app", map[string]interface{}{"error": err.Error()})
 	}
-	defer app.db.Close()
+	defer func() { _ = app.db.Close() }()
 
-	// Setup routes
 	router := mux.NewRouter()
-	
-	// Static files (for Alpine.js, Hotwire, etc.)
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", 
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
 		http.FileServer(http.Dir("./static/"))))
 
-	// Public routes
 	router.HandleFunc("/", app.homeHandler).Methods("GET")
 	router.HandleFunc("/login", app.loginPageHandler).Methods("GET")
 	router.HandleFunc("/login", app.loginHandler).Methods("POST")
 	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
 	router.HandleFunc("/posts/{slug}", app.postHandler).Methods("GET")
-	
-	// API routes (with middleware to check if API is enabled)
+
 	api := router.PathPrefix("/api").Subrouter()
 	api.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			app.apiMiddleware(next.ServeHTTP)(w, r)
 		})
 	})
-	
-	// Public API endpoints
 	api.HandleFunc("/status", app.apiStatusHandler).Methods("GET")
 	api.HandleFunc("/login", app.apiLoginHandler).Methods("POST")
 	api.HandleFunc("/posts", app.apiPostsHandler).Methods("GET")
 	api.HandleFunc("/posts/{id}", app.apiPostHandler).Methods("GET")
-	
-	// Protected API endpoints
 	api.HandleFunc("/posts", app.authMiddleware(app.apiPostsHandler)).Methods("POST")
 	api.HandleFunc("/posts/{id}", app.authMiddleware(app.apiPostHandler)).Methods("PUT", "DELETE")
 	api.HandleFunc("/logout", app.authMiddleware(app.logoutHandler)).Methods("POST")
-	
-	// Admin routes (protected)
+
 	admin := router.PathPrefix("/admin").Subrouter()
 	admin.HandleFunc("", app.authMiddleware(app.adminHandler)).Methods("GET")
 	admin.HandleFunc("/posts/new", app.authMiddleware(app.createPostHandler)).Methods("GET", "POST")
-	
-	// WebSocket endpoint for live updates
+
 	router.HandleFunc("/ws", app.websocketHandler)
 
-	log.Printf("Server starting on port %s", config.Server.Port)
-	log.Printf("API Enabled: %v", config.API.Enabled)
+	logInfo("technical", "Server starting", map[string]interface{}{"port": config.Server.Port})
+	logInfo("business", "API configuration", map[string]interface{}{"enabled": config.API.Enabled})
 	if config.API.Enabled {
-		log.Printf("API Key: %s", config.API.Key)
+		logInfo("technical", "API key set", map[string]interface{}{"present": config.API.Key != ""})
 	}
-	log.Fatal(http.ListenAndServe(":"+config.Server.Port, router))
-}
-
-// Template rendering helper
-func (app *App) renderTemplate(w http.ResponseWriter, name string, data interface{}) {
-	if app.templates == nil {
-		// Fallback to embedded templates if file templates not loaded
-		app.renderEmbeddedTemplate(w, name, data)
-		return
-	}
-	if err := app.templates.ExecuteTemplate(w, name, data); err != nil {
-		log.Printf("Template error: %v", err)
-		http.Error(w, "Template rendering error", http.StatusInternalServerError)
+	if err := http.ListenAndServe(":"+config.Server.Port, router); err != nil {
+		logFatal("technical", "HTTP server error", map[string]interface{}{"error": err.Error()})
 	}
 }
-
-func (app *App) renderEmbeddedTemplate(w http.ResponseWriter, name string, data interface{}) {
-	// Embedded templates as fallback
-	tmplStr := ""
-	switch name {
-	case "index.html":
-		tmplStr = indexHTMLTemplate
-	case "login.html":
-		tmplStr = loginHTMLTemplate
-	case "admin.html":
-		tmplStr = adminHTMLTemplate
-	case "editor.html":
-		tmplStr = editorHTMLTemplate
-	case "post.html":
-		tmplStr = postHTMLTemplate
-	default:
-		http.Error(w, "Template not found", http.StatusNotFound)
-		return
-	}
-	
-	tmpl, err := template.New(name).Parse(tmplStr)
-	if err != nil {
-		http.Error(w, "Template parse error", http.StatusInternalServerError)
-		return
-	}
-	
-	if err := tmpl.Execute(w, data); err != nil {
-		http.Error(w, "Template execution error", http.StatusInternalServerError)
-	}
-}
-
-// Embedded template strings (fallback if template files are not found)
-const indexHTMLTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}}</title>
-    <script src="https://unpkg.com/@hotwired/turbo@7/dist/turbo.es2017-umd.js"></script>
-    <script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-base-200">
-    <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-            <a href="/" class="btn btn-ghost text-xl">Blog</a>
-        </div>
-        <div class="flex-none">
-            <ul class="menu menu-horizontal px-1">
-                <li><a href="/">Home</a></li>
-                <li><a href="/admin">Admin</a></li>
-                <li><a href="/login">Login</a></li>
-            </ul>
-        </div>
-    </div>
-    <div class="container mx-auto mt-8 px-4">
-        <h1 class="text-4xl font-bold mb-8">Welcome to Our Blog</h1>
-        <div class="grid gap-6">
-            {{range .Posts}}
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <h2 class="card-title">{{.Title}}</h2>
-                    <p>{{.Content}}</p>
-                    <div class="card-actions justify-end">
-                        <a href="/posts/{{.Slug}}" class="btn btn-primary">Read More</a>
-                    </div>
-                </div>
-            </div>
-            {{end}}
-        </div>
-    </div>
-</body>
-</html>`
-
-const loginHTMLTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gradient-to-br from-primary/20 to-secondary/20 min-h-screen">
-    <div class="container mx-auto flex items-center justify-center min-h-screen">
-        <div class="card w-96 bg-base-100 shadow-2xl" x-data="loginForm()">
-            <div class="card-body">
-                <h2 class="card-title text-2xl mb-4 justify-center">Login</h2>
-                <div x-show="error" class="alert alert-error mb-4">
-                    <span x-text="error"></span>
-                </div>
-                <form @submit.prevent="submitLogin">
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">Username</span>
-                        </label>
-                        <input type="text" x-model="username" class="input input-bordered" required>
-                    </div>
-                    <div class="form-control mt-4">
-                        <label class="label">
-                            <span class="label-text">Password</span>
-                        </label>
-                        <input type="password" x-model="password" class="input input-bordered" required>
-                    </div>
-                    <div class="form-control mt-6">
-                        <button type="submit" class="btn btn-primary" :disabled="loading">
-                            <span x-show="!loading">Login</span>
-                            <span x-show="loading">Loading...</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <script>
-        function loginForm() {
-            return {
-                username: '',
-                password: '',
-                loading: false,
-                error: '',
-                async submitLogin() {
-                    this.loading = true;
-                    this.error = '';
-                    try {
-                        const response = await fetch('/login', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({username: this.username, password: this.password})
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                            window.location.href = '/admin';
-                        } else {
-                            this.error = data.message || 'Login failed';
-                        }
-                    } catch (err) {
-                        this.error = 'Network error';
-                    } finally {
-                        this.loading = false;
-                    }
-                }
-            }
-        }
-    </script>
-</body>
-</html>`
-
-const adminHTMLTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <script src="https://unpkg.com/@hotwired/turbo@7/dist/turbo.es2017-umd.js"></script>
-    <script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-base-200">
-    <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-            <a class="btn btn-ghost text-xl">Admin Dashboard</a>
-        </div>
-        <div class="flex-none">
-            <a href="/admin/posts/new" class="btn btn-primary">New Post</a>
-            <form method="POST" action="/logout" class="inline ml-2">
-                <button type="submit" class="btn btn-ghost">Logout</button>
-            </form>
-        </div>
-    </div>
-    <div class="container mx-auto mt-8 px-4">
-        <h1 class="text-3xl font-bold mb-6">Posts Management</h1>
-        <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{range .Posts}}
-                    <tr>
-                        <td>{{.Title}}</td>
-                        <td>
-                            {{if .Published}}
-                            <span class="badge badge-success">Published</span>
-                            {{else}}
-                            <span class="badge badge-warning">Draft</span>
-                            {{end}}
-                        </td>
-                        <td>{{.CreatedAt.Format "Jan 2, 2006"}}</td>
-                        <td>
-                            <a href="/posts/{{.Slug}}" class="btn btn-sm">View</a>
-                        </td>
-                    </tr>
-                    {{end}}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</body>
-</html>`
-
-const editorHTMLTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Post</title>
-    <script src="https://unpkg.com/@hotwired/turbo@7/dist/turbo.es2017-umd.js"></script>
-    <script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-base-200">
-    <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-            <a href="/admin" class="btn btn-ghost text-xl">← Back to Dashboard</a>
-        </div>
-    </div>
-    <div class="container mx-auto mt-8 px-4 max-w-4xl">
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-2xl mb-4">Create New Post</h2>
-                <form method="POST" action="/admin/posts/new">
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">Title</span>
-                        </label>
-                        <input type="text" name="title" class="input input-bordered" required>
-                    </div>
-                    <div class="form-control mt-4">
-                        <label class="label">
-                            <span class="label-text">Content</span>
-                        </label>
-                        <textarea name="content" class="textarea textarea-bordered h-64" required></textarea>
-                    </div>
-                    <div class="form-control mt-4">
-                        <label class="label cursor-pointer">
-                            <span class="label-text">Publish immediately</span>
-                            <input type="checkbox" name="published" class="checkbox checkbox-primary">
-                        </label>
-                    </div>
-                    <div class="card-actions justify-end mt-6">
-                        <button type="submit" class="btn btn-primary">Save Post</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`
-
-const postHTMLTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}}</title>
-    <script src="https://unpkg.com/@hotwired/turbo@7/dist/turbo.es2017-umd.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-base-200">
-    <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-            <a href="/" class="btn btn-ghost text-xl">← Back to Blog</a>
-        </div>
-    </div>
-    <article class="container mx-auto mt-8 px-4 max-w-4xl">
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h1 class="text-4xl font-bold mb-4">{{.Post.Title}}</h1>
-                <div class="text-sm text-base-content/70 mb-6">
-                    <span>By {{.Post.Author}}</span> • 
-                    <time>{{.Post.CreatedAt.Format "January 2, 2006"}}</time>
-                </div>
-                <div class="prose prose-lg max-w-none">
-                    {{.Post.Content}}
-                </div>
-            </div>
-        </div>
-    </article>
-</body>
-</html>`
 
 func (app *App) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	// Server-Sent Events for real-time updates
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	
+
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		logError("technical", "SSE streaming unsupported", map[string]interface{}{})
 		return
 	}
-	
-	// Send initial connection event
-	fmt.Fprintf(w, "event: connected\ndata: {\"status\": \"connected\", \"time\": \"%s\"}\n\n", 
+
+	_, _ = fmt.Fprintf(w, "event: connected\ndata: {\"status\": \"connected\", \"time\": \"%s\"}\n\n",
 		time.Now().Format(time.RFC3339))
 	flusher.Flush()
-	
-	// Keep connection alive with periodic pings
+
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Fprintf(w, "event: ping\ndata: {\"time\": \"%s\"}\n\n", 
+			_, _ = fmt.Fprintf(w, "event: ping\ndata: {\"time\": \"%s\"}\n\n",
 				time.Now().Format(time.RFC3339))
 			flusher.Flush()
 		case <-r.Context().Done():
