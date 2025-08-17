@@ -232,6 +232,11 @@ const loadPosts = async (page: number = 1) => {
       posts.value = response.data || []
       meta.value = response.meta
       currentPage.value = page
+      
+      // Add structured data for SEO after posts are loaded
+      if (posts.value.length > 0) {
+        addStructuredData(posts.value)
+      }
     } else {
       error.value = response.message || 'Failed to load posts'
     }
@@ -296,15 +301,6 @@ const changePage = (page: number) => {
 
   // Watch for route changes
   watchRoute()
-
-  // Add structured data when posts are loaded
-  const originalLoadPosts = loadPosts
-  loadPosts = async (page: number = 1) => {
-    await originalLoadPosts(page)
-    if (posts.value.length > 0) {
-      addStructuredData(posts.value)
-    }
-  }
 </script>
 
 <style scoped>
