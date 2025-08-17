@@ -1,187 +1,168 @@
 <template>
-  <div class="blog-editor">
+  <div class="markdown-editor">
     <!-- Toolbar -->
     <div class="editor-toolbar">
       <div class="toolbar-group">
-        <button
-          @click="editor?.chain().focus().toggleBold().run()"
-          :class="{ 'is-active': editor?.isActive('bold') }"
-          class="toolbar-button"
-          title="Bold"
-        >
+        <button @click="insertMarkdown('**', '**')" type="button" class="toolbar-button" title="Bold">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h8a4 4 0 100-8H6v8zm0 0h8a4 4 0 110 8H6v-8z" />
           </svg>
         </button>
         
-        <button
-          @click="editor?.chain().focus().toggleItalic().run()"
-          :class="{ 'is-active': editor?.isActive('italic') }"
-          class="toolbar-button"
-          title="Italic"
-        >
+        <button @click="insertMarkdown('*', '*')" type="button" class="toolbar-button" title="Italic">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
           </svg>
         </button>
         
-        <button
-          @click="editor?.chain().focus().toggleUnderline().run()"
-          :class="{ 'is-active': editor?.isActive('underline') }"
-          class="toolbar-button"
-          title="Underline"
-        >
+        <button @click="insertMarkdown('~~', '~~')" type="button" class="toolbar-button" title="Strikethrough">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
           </svg>
         </button>
       </div>
-
+      
       <div class="toolbar-group">
-        <button
-          @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()"
-          :class="{ 'is-active': editor?.isActive('heading', { level: 1 }) }"
-          class="toolbar-button"
-          title="Heading 1"
-        >
+        <button @click="insertMarkdown('# ', '')" type="button" class="toolbar-button" title="Heading 1">
           H1
         </button>
         
-        <button
-          @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
-          :class="{ 'is-active': editor?.isActive('heading', { level: 2 }) }"
-          class="toolbar-button"
-          title="Heading 2"
-        >
+        <button @click="insertMarkdown('## ', '')" type="button" class="toolbar-button" title="Heading 2">
           H2
         </button>
         
-        <button
-          @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()"
-          :class="{ 'is-active': editor?.isActive('heading', { level: 3 }) }"
-          class="toolbar-button"
-          title="Heading 3"
-        >
+        <button @click="insertMarkdown('### ', '')" type="button" class="toolbar-button" title="Heading 3">
           H3
         </button>
       </div>
-
+      
       <div class="toolbar-group">
-        <button
-          @click="editor?.chain().focus().toggleBulletList().run()"
-          :class="{ 'is-active': editor?.isActive('bulletList') }"
-          class="toolbar-button"
-          title="Bullet List"
-        >
+        <button @click="insertMarkdown('- ', '')" type="button" class="toolbar-button" title="Bullet List">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         </button>
         
-        <button
-          @click="editor?.chain().focus().toggleOrderedList().run()"
-          :class="{ 'is-active': editor?.isActive('orderedList') }"
-          class="toolbar-button"
-          title="Numbered List"
-        >
+        <button @click="insertMarkdown('1. ', '')" type="button" class="toolbar-button" title="Numbered List">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
           </svg>
         </button>
-      </div>
-
-      <div class="toolbar-group">
-        <button
-          @click="editor?.chain().focus().toggleBlockquote().run()"
-          :class="{ 'is-active': editor?.isActive('blockquote') }"
-          class="toolbar-button"
-          title="Quote"
-        >
+        
+        <button @click="insertMarkdown('> ', '')" type="button" class="toolbar-button" title="Quote">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
         </button>
-        
-        <button
-          @click="setLink"
-          :class="{ 'is-active': editor?.isActive('link') }"
-          class="toolbar-button"
-          title="Add Link"
-        >
+      </div>
+      
+      <div class="toolbar-group">
+        <button @click="insertLink" type="button" class="toolbar-button" title="Add Link">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
           </svg>
         </button>
         
-        <button
-          @click="addImage"
-          class="toolbar-button"
-          title="Add Image"
-        >
+        <button @click="insertImage" type="button" class="toolbar-button" title="Add Image">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </button>
+        
+        <button @click="insertMarkdown('```\n', '\n```')" type="button" class="toolbar-button" title="Code Block">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        </button>
+        
+        <button @click="insertTable" type="button" class="toolbar-button" title="Insert Table">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </button>
       </div>
-
+      
       <div class="toolbar-group">
-        <button
-          @click="editor?.chain().focus().setTextAlign('left').run()"
-          :class="{ 'is-active': editor?.isActive({ textAlign: 'left' }) }"
-          class="toolbar-button"
-          title="Align Left"
-        >
+        <button @click="togglePreview" type="button" class="toolbar-button" :class="{ 'is-active': showPreview }" title="Toggle Preview">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h6" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
         </button>
         
-        <button
-          @click="editor?.chain().focus().setTextAlign('center').run()"
-          :class="{ 'is-active': editor?.isActive({ textAlign: 'center' }) }"
-          class="toolbar-button"
-          title="Align Center"
-        >
+        <button v-if="showPreview" @click="toggleSplitMode" type="button" class="toolbar-button" :class="{ 'is-active': splitMode }" title="Toggle Split View">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        
-        <button
-          @click="editor?.chain().focus().setTextAlign('right').run()"
-          :class="{ 'is-active': editor?.isActive({ textAlign: 'right' }) }"
-          class="toolbar-button"
-          title="Align Right"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h6" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         </button>
       </div>
     </div>
-
-    <!-- Editor Content -->
-    <div class="editor-content">
-      <editor-content v-if="editor" :editor="editor" class="prose prose-lg max-w-none" />
+    
+    <!-- Editor Layout -->
+    <div class="editor-layout">
+      <!-- Markdown Input -->
+      <div class="editor-input" :class="{ 'hidden': showPreview && !splitMode }">
+        <textarea
+          ref="textareaRef"
+          v-model="markdownContent"
+          :placeholder="placeholder"
+          class="markdown-textarea"
+          @input="updateContent"
+        ></textarea>
+      </div>
+      
+      <!-- Full Preview (when not in split mode) -->
+      <div v-if="showPreview && !splitMode" class="editor-preview">
+        <div class="preview-content prose prose-lg max-w-none" v-html="renderedContent"></div>
+      </div>
+      
+      <!-- Split View -->
+      <div v-if="showPreview && splitMode" class="editor-split">
+        <div class="split-input">
+          <textarea
+            v-model="markdownContent"
+            :placeholder="placeholder"
+            class="markdown-textarea"
+            @input="updateContent"
+          ></textarea>
+        </div>
+        <div class="split-preview">
+          <div class="preview-content prose prose-lg max-w-none" v-html="renderedContent"></div>
+        </div>
+      </div>
     </div>
-
+    
     <!-- Link Dialog -->
-    <div v-if="showLinkDialog" class="link-dialog-overlay" @click="closeLinkDialog">
-      <div class="link-dialog" @click.stop>
+    <div v-if="showLinkDialog" class="modal-overlay" @click="closeLinkDialog">
+      <div class="modal-content" @click.stop>
         <h3 class="text-lg font-semibold mb-4">Add Link</h3>
-        <input
-          v-model="linkUrl"
-          type="url"
-          placeholder="Enter URL"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <div class="flex justify-end space-x-2 mt-4">
-          <button @click="closeLinkDialog" class="px-4 py-2 text-gray-600 hover:text-gray-800">
-            Cancel
-          </button>
-          <button @click="confirmLink" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-            Add Link
-          </button>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Text</label>
+            <input
+              v-model="linkText"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Link text"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">URL</label>
+            <input
+              v-model="linkUrl"
+              type="url"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://example.com"
+            />
+          </div>
+          <div class="flex justify-end space-x-2">
+            <button @click="closeLinkDialog" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+              Cancel
+            </button>
+            <button @click="confirmLink" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+              Add Link
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -189,203 +170,326 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useEditor, EditorContent } from '@tiptap/vue-3'
-import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
-import Link from '@tiptap/extension-link'
-import Placeholder from '@tiptap/extension-placeholder'
-import TextAlign from '@tiptap/extension-text-align'
-import Underline from '@tiptap/extension-underline'
+import { ref, computed, watch, nextTick } from 'vue'
+import { marked } from 'marked'
 
 interface Props {
   modelValue: string
   placeholder?: string
 }
 
-interface Emits {
-  (e: 'update:modelValue', value: string): void
+const props = withDefaults(defineProps<Props>(), {
+  placeholder: 'Write your blog post content here...'
+})
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+}>()
+
+// Configure marked for better rendering
+marked.use({
+  breaks: true,
+  gfm: true
+})
+
+// Reactive data
+const markdownContent = ref(props.modelValue || `# Welcome to the Markdown Editor
+
+This is a **bold** and *italic* text example.
+
+## Features
+- Real-time preview
+- Beautiful styling
+- Easy to use
+
+> This is a quote block
+
+[Visit our website](https://example.com)
+
+\`\`\`javascript
+console.log('Hello World');
+\`\`\``)
+const showPreview = ref(true) // Enable preview by default
+const showLinkDialog = ref(false)
+const linkText = ref('')
+const linkUrl = ref('')
+const textareaRef = ref<HTMLTextAreaElement>()
+const splitMode = ref(false)
+
+// Computed
+const renderedContent = computed(() => {
+  if (!markdownContent.value) return ''
+  try {
+    const html = marked.parse(markdownContent.value)
+    console.log('Markdown input:', markdownContent.value)
+    console.log('HTML output:', html)
+    return html
+  } catch (error) {
+    console.error('Markdown parsing error:', error)
+    return markdownContent.value
+  }
+})
+
+// Methods
+const updateContent = () => {
+  emit('update:modelValue', markdownContent.value)
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Start writing your blog post...'
-})
+const insertMarkdown = (before: string, after: string) => {
+  const textarea = textareaRef.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = markdownContent.value.substring(start, end)
+  
+  const newText = before + selectedText + after
+  markdownContent.value = markdownContent.value.substring(0, start) + newText + markdownContent.value.substring(end)
+  
+  // Update cursor position
+  nextTick(() => {
+    textarea.focus()
+    textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length)
+  })
+  
+  updateContent()
+}
 
-const emit = defineEmits<Emits>()
-
-// Link dialog state
-const showLinkDialog = ref(false)
-const linkUrl = ref('')
-
-const editor = useEditor({
-  content: props.modelValue,
-  extensions: [
-    StarterKit.configure({
-      heading: {
-        levels: [1, 2, 3]
-      }
-    }),
-    Image.configure({
-      HTMLAttributes: {
-        class: 'max-w-full h-auto rounded-lg shadow-md'
-      }
-    }),
-    Link.configure({
-      openOnClick: false,
-      HTMLAttributes: {
-        class: 'text-blue-600 hover:text-blue-800 underline'
-      }
-    }),
-    Placeholder.configure({
-      placeholder: props.placeholder
-    }),
-    TextAlign.configure({
-      types: ['heading', 'paragraph']
-    }),
-    Underline
-  ],
-  editorProps: {
-    attributes: {
-      class: 'prose prose-lg max-w-none focus:outline-none min-h-[400px] p-4'
-    }
-  },
-  onUpdate: ({ editor }) => {
-    emit('update:modelValue', editor.getHTML())
-  }
-})
-
-// Watch for external content changes
-watch(() => props.modelValue, (newValue) => {
-  if (editor.value && newValue !== editor.value.getHTML()) {
-    editor.value.commands.setContent(newValue)
-  }
-})
-
-// Link handling
-const setLink = () => {
-  if (!editor.value) return
-  const previousUrl = editor.value.getAttributes('link').href
-  linkUrl.value = previousUrl || ''
+const insertLink = () => {
+  const textarea = textareaRef.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = markdownContent.value.substring(start, end)
+  
+  linkText.value = selectedText
+  linkUrl.value = ''
   showLinkDialog.value = true
 }
 
 const confirmLink = () => {
-  if (!editor.value) return
-  if (linkUrl.value) {
-    editor.value.chain().focus().setLink({ href: linkUrl.value }).run()
-  } else {
-    editor.value.chain().focus().unsetLink().run()
+  if (linkText.value && linkUrl.value) {
+    const linkMarkdown = `[${linkText.value}](${linkUrl.value})`
+    insertMarkdown(linkMarkdown, '')
   }
   closeLinkDialog()
 }
 
 const closeLinkDialog = () => {
   showLinkDialog.value = false
+  linkText.value = ''
   linkUrl.value = ''
 }
 
-// Image handling
-const addImage = () => {
-  if (!editor.value) return
+const insertImage = () => {
   const url = window.prompt('Enter image URL:')
   if (url) {
-    editor.value.chain().focus().setImage({ src: url }).run()
+    const alt = window.prompt('Enter image description (for accessibility):') || ''
+    const imageMarkdown = `![${alt}](${url})`
+    insertMarkdown(imageMarkdown, '')
   }
 }
 
-onBeforeUnmount(() => {
-  editor.value?.destroy()
+const insertTable = () => {
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = markdownContent.value.substring(start, end)
+
+  const tableMarkdown = `| ${selectedText} | ${selectedText} |
+| --- | --- |`
+  insertMarkdown(tableMarkdown, '')
+}
+
+const togglePreview = () => {
+  showPreview.value = !showPreview.value
+  if (showPreview.value) {
+    splitMode.value = false // Ensure split mode is off when preview is on
+  }
+}
+
+const toggleSplitMode = () => {
+  splitMode.value = !splitMode.value
+}
+
+// Watch for external changes
+watch(() => props.modelValue, (newValue) => {
+  if (newValue !== markdownContent.value) {
+    markdownContent.value = newValue
+  }
 })
 </script>
 
 <style scoped>
-.blog-editor {
+.markdown-editor {
   @apply border border-gray-300 rounded-lg overflow-hidden;
 }
 
 .editor-toolbar {
-  @apply flex flex-wrap items-center gap-1 p-2 bg-gray-50 border-b border-gray-300;
+  @apply flex items-center gap-2 p-3 bg-gray-50 border-b border-gray-200 flex-wrap;
 }
 
 .toolbar-group {
-  @apply flex items-center gap-1 px-2 border-r border-gray-300 last:border-r-0;
+  @apply flex items-center gap-1;
+}
+
+.toolbar-group:not(:last-child) {
+  @apply border-r border-gray-300 pr-2;
 }
 
 .toolbar-button {
-  @apply p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-md transition-colors duration-200;
+  @apply p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-md transition-colors;
 }
 
 .toolbar-button.is-active {
   @apply bg-blue-100 text-blue-700;
 }
 
-.editor-content {
-  @apply bg-white;
+.editor-layout {
+  @apply relative;
 }
 
-.link-dialog-overlay {
+.editor-input {
+  @apply block;
+}
+
+.editor-input.hidden {
+  display: none;
+}
+
+.markdown-textarea {
+  @apply w-full min-h-[400px] p-4 border-0 resize-none focus:outline-none focus:ring-0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.editor-preview {
+  @apply p-4 bg-white;
+}
+
+.preview-content {
+  @apply min-h-[400px];
+}
+
+.editor-split {
+  @apply grid grid-cols-2 gap-4 p-4;
+}
+
+.split-input {
+  @apply border-r border-gray-200 pr-4;
+}
+
+.split-preview {
+  @apply pl-4;
+}
+
+.modal-overlay {
   @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
 }
 
-.link-dialog {
+.modal-content {
   @apply bg-white rounded-lg p-6 max-w-md w-full mx-4;
 }
 
-/* TipTap specific styles */
-:deep(.ProseMirror) {
-  @apply outline-none;
+/* Prose styles for preview */
+:deep(.prose) {
+  @apply text-gray-900 leading-relaxed;
 }
 
-:deep(.ProseMirror p.is-editor-empty:first-child::before) {
-  @apply text-gray-400 float-left h-0 pointer-events-none;
-  content: attr(data-placeholder);
+:deep(.prose h1) {
+  @apply text-3xl font-bold text-gray-900 mb-6 mt-8 border-b border-gray-200 pb-2;
 }
 
-:deep(.ProseMirror h1) {
-  @apply text-3xl font-bold text-gray-900 mb-4 mt-6;
+:deep(.prose h2) {
+  @apply text-2xl font-bold text-gray-900 mb-4 mt-6;
 }
 
-:deep(.ProseMirror h2) {
-  @apply text-2xl font-bold text-gray-900 mb-3 mt-5;
+:deep(.prose h3) {
+  @apply text-xl font-bold text-gray-900 mb-3 mt-5;
 }
 
-:deep(.ProseMirror h3) {
-  @apply text-xl font-bold text-gray-900 mb-2 mt-4;
+:deep(.prose h4) {
+  @apply text-lg font-semibold text-gray-900 mb-2 mt-4;
 }
 
-:deep(.ProseMirror p) {
-  @apply text-gray-700 leading-relaxed mb-4;
+:deep(.prose p) {
+  @apply mb-4 leading-7 text-gray-700;
 }
 
-:deep(.ProseMirror ul) {
-  @apply list-disc list-inside mb-4 space-y-1;
+:deep(.prose ul) {
+  @apply mb-4 pl-6 space-y-2;
 }
 
-:deep(.ProseMirror ol) {
-  @apply list-decimal list-inside mb-4 space-y-1;
+:deep(.prose ol) {
+  @apply mb-4 pl-6 space-y-2;
 }
 
-:deep(.ProseMirror blockquote) {
-  @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 mb-4;
+:deep(.prose li) {
+  @apply text-gray-700 leading-6;
 }
 
-:deep(.ProseMirror img) {
-  @apply max-w-full h-auto rounded-lg shadow-md my-4;
+:deep(.prose li > ul) {
+  @apply mt-2 mb-0;
 }
 
-:deep(.ProseMirror a) {
-  @apply text-blue-600 hover:text-blue-800 underline;
+:deep(.prose li > ol) {
+  @apply mt-2 mb-0;
 }
 
-:deep(.ProseMirror strong) {
+:deep(.prose blockquote) {
+  @apply border-l-4 border-blue-500 pl-4 italic text-gray-700 mb-4 bg-blue-50 py-2 rounded-r;
+}
+
+:deep(.prose code) {
+  @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800;
+}
+
+:deep(.prose pre) {
+  @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-4;
+}
+
+:deep(.prose pre code) {
+  @apply bg-transparent p-0 text-gray-100;
+}
+
+:deep(.prose a) {
+  @apply text-blue-600 hover:text-blue-800 underline decoration-blue-400 hover:decoration-blue-600;
+}
+
+:deep(.prose img) {
+  @apply max-w-full h-auto rounded-lg shadow-lg my-6 border border-gray-200;
+}
+
+:deep(.prose strong) {
   @apply font-bold text-gray-900;
 }
 
-:deep(.ProseMirror em) {
-  @apply italic;
+:deep(.prose em) {
+  @apply italic text-gray-800;
 }
 
-:deep(.ProseMirror u) {
-  @apply underline;
+:deep(.prose hr) {
+  @apply border-gray-300 my-8;
+}
+
+:deep(.prose table) {
+  @apply w-full border-collapse border border-gray-300 mb-4;
+}
+
+:deep(.prose th) {
+  @apply border border-gray-300 px-4 py-2 bg-gray-50 font-semibold text-left;
+}
+
+:deep(.prose td) {
+  @apply border border-gray-300 px-4 py-2;
+}
+
+:deep(.prose tr:nth-child(even)) {
+  @apply bg-gray-50;
 }
 </style>
+

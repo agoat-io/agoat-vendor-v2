@@ -1,0 +1,155 @@
+{
+  "posts": {
+    "table_name": "posts",
+    "columns": [
+      {
+        "name": "id",
+        "data_type": "bigint",
+        "is_nullable": "NO",
+        "default_value": "unique_rowid()",
+        "is_primary_key": true
+      },
+      {
+        "name": "user_id",
+        "data_type": "bigint",
+        "is_nullable": "YES",
+        "default_value": "",
+        "is_primary_key": false
+      },
+      {
+        "name": "title",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "default_value": "",
+        "is_primary_key": false
+      },
+      {
+        "name": "content",
+        "data_type": "text",
+        "is_nullable": "NO",
+        "default_value": "",
+        "is_primary_key": false
+      },
+      {
+        "name": "slug",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "default_value": "",
+        "is_primary_key": false
+      },
+      {
+        "name": "published",
+        "data_type": "boolean",
+        "is_nullable": "YES",
+        "default_value": "false",
+        "is_primary_key": false
+      },
+      {
+        "name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES",
+        "default_value": "current_timestamp()",
+        "is_primary_key": false
+      },
+      {
+        "name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES",
+        "default_value": "current_timestamp()",
+        "is_primary_key": false
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_posts_published",
+        "columns": "published ASC",
+        "is_unique": false,
+        "index_type": "btree"
+      },
+      {
+        "name": "idx_posts_slug",
+        "columns": "slug ASC",
+        "is_unique": false,
+        "index_type": "btree"
+      },
+      {
+        "name": "posts_slug_key",
+        "columns": "slug ASC",
+        "is_unique": true,
+        "index_type": "btree"
+      }
+    ],
+    "foreign_keys": [
+      {
+        "constraint_name": "posts_user_id_fkey",
+        "table_name": "posts",
+        "column_name": "user_id",
+        "foreign_table": "users",
+        "foreign_column": "id"
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "create_table": "CREATE TABLE posts (id bigint NOT NULL DEFAULT unique_rowid(), user_id bigint, title character varying(255) NOT NULL, content text NOT NULL, slug character varying(255) NOT NULL, published boolean DEFAULT false, created_at timestamp without time zone DEFAULT current_timestamp(), updated_at timestamp without time zone DEFAULT current_timestamp());"
+  },
+  "users": {
+    "table_name": "users",
+    "columns": [
+      {
+        "name": "id",
+        "data_type": "bigint",
+        "is_nullable": "NO",
+        "default_value": "unique_rowid()",
+        "is_primary_key": true
+      },
+      {
+        "name": "username",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "default_value": "",
+        "is_primary_key": false
+      },
+      {
+        "name": "email",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "default_value": "",
+        "is_primary_key": false
+      },
+      {
+        "name": "password_hash",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "default_value": "",
+        "is_primary_key": false
+      },
+      {
+        "name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES",
+        "default_value": "current_timestamp()",
+        "is_primary_key": false
+      }
+    ],
+    "indexes": [
+      {
+        "name": "users_email_key",
+        "columns": "email ASC",
+        "is_unique": true,
+        "index_type": "btree"
+      },
+      {
+        "name": "users_username_key",
+        "columns": "username ASC",
+        "is_unique": true,
+        "index_type": "btree"
+      }
+    ],
+    "foreign_keys": null,
+    "primary_keys": [
+      "id"
+    ],
+    "create_table": "CREATE TABLE users (id bigint NOT NULL DEFAULT unique_rowid(), username character varying(255) NOT NULL, email character varying(255) NOT NULL, password_hash character varying(255) NOT NULL, created_at timestamp without time zone DEFAULT current_timestamp());"
+  }
+}

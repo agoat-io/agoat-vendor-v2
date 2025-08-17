@@ -958,11 +958,23 @@ func loadConfig() (*Config, error) {
 			RateLimit: 60,
 		},
 	}
-	if data, err := os.ReadFile("config.json"); err == nil {
-		if err := json.Unmarshal(data, config); err != nil {
-			return nil, err
-		}
+	
+	// Load database configuration from environment variables
+	if dsn := os.Getenv("DSN"); dsn != "" {
+		config.Database.DSN = dsn
+	} else {
+		return nil, fmt.Errorf("DSN environment variable is required")
 	}
+	
+	if ca := os.Getenv("CA"); ca != "" {
+		config.Database.CA = ca
+	}
+	
+	if driver := os.Getenv("DB_DRIVER"); driver != "" {
+		config.Database.Driver = driver
+	}
+	
+	// Load other configuration from environment variables
 	if port := os.Getenv("PORT"); port != "" {
 		config.Server.Port = port
 	}
@@ -972,6 +984,7 @@ func loadConfig() (*Config, error) {
 	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
 		config.API.Key = apiKey
 	}
+	
 	return config, nil
 }
 
