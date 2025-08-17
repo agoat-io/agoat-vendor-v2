@@ -119,17 +119,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, onBeforeMount, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { usePostsStore } from '../stores/posts'
 import { useAuthStore } from '../stores/auth'
 import { Button } from '../components/ui/button'
+import { extractPostIdFromUrl } from '../utils/seo'
+import type { Post } from '../types'
 
 const route = useRoute()
 const postsStore = usePostsStore()
 const authStore = useAuthStore()
 
-const postId = computed(() => route.params.id as string)
+const postId = computed(() => {
+  // Extract ID from SEO-friendly URL format: /post/:id/:slug
+  const id = route.params.id as string
+  return id
+})
 const post = computed(() => postsStore.currentPost)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 

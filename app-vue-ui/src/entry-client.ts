@@ -53,7 +53,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/post/:id',
+      path: '/post/:id/:slug?',
       name: 'post-view',
       component: PostViewView,
       meta: { requiresAuth: false }

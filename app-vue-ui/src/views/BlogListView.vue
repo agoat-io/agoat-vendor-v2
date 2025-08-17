@@ -90,7 +90,7 @@
             <div class="p-6">
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-xl font-semibold text-gray-900 line-clamp-2 flex-1">
-                  <router-link :to="`/post/${post.id}`" class="hover:text-indigo-600 transition-colors duration-200">{{ post.title }}</router-link>
+                  <router-link :to="createPostUrl(post)" class="hover:text-indigo-600 transition-colors duration-200">{{ post.title }}</router-link>
                 </h3>
                 <span v-if="isAuthenticated && !post.published" class="ml-2 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                   Draft
@@ -101,7 +101,7 @@
                 <span v-if="isAuthenticated && post.updated_at && post.updated_at !== post.created_at" class="ml-2">(updated {{ formatDate(post.updated_at) }})</span>
               </div>
               <div class="text-gray-700 mb-4 line-clamp-4">{{ getPreviewText(post.content) }}</div>
-              <router-link :to="`/post/${post.id}`" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500">
+              <router-link :to="createPostUrl(post)" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500">
                 Read more 
                 <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -167,6 +167,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { api } from '../utils/api'
 import { DateRangePicker } from '../components/ui/date-range-picker'
 import { useAuthStore } from '../stores/auth'
+import { createPostUrl } from '../utils/seo'
 import type { Post, PostsResponse } from '../types'
 
 // SEO meta tags
@@ -347,7 +348,7 @@ const addStructuredData = (posts: Post[]) => {
         "@type": "Person",
         "name": post.author || "Anonymous"
       },
-      "url": `${window.location.origin}/post/${post.id}`
+      "url": `${window.location.origin}${createPostUrl(post)}`
     }))
   }
 
