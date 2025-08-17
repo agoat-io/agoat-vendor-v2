@@ -62,9 +62,8 @@
             </Button>
           </div>
         </div>
-        <Calendar
+        <DateRangePickerCalendar
           v-model="selectedDate"
-          mode="range"
           :number-of-months="2"
           :selected="dateRange"
           :default-month="defaultMonth"
@@ -96,7 +95,7 @@ import { format, subDays, startOfDay, endOfDay, parse, isValid } from 'date-fns'
 import { CalendarIcon } from 'lucide-vue-next'
 import { Button } from '../button'
 import { Input } from '../input'
-import { Calendar } from '../calendar'
+import { DateRangePickerCalendar } from 'radix-vue'
 import { Popover, PopoverContent, PopoverTrigger } from '../popover'
 
 interface DateRange {
