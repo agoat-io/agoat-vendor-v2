@@ -83,9 +83,10 @@ class API {
     return response.data
   }
 
-  async getPost(id: string | number): Promise<PostResponse> {
-    console.log('API: Making request to get post', id)
-    const response: AxiosResponse<PostResponse> = await this.client.get(`/posts/${id}`)
+  async getPost(id: string | number, slug?: string): Promise<PostResponse> {
+    console.log('API: Making request to get post', id, 'with slug:', slug)
+    const url = slug ? `/posts/${id}/${slug}` : `/posts/${id}`
+    const response: AxiosResponse<PostResponse> = await this.client.get(url)
     console.log('API: Response received:', response.data)
     return response.data
   }

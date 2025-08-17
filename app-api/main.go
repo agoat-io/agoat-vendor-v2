@@ -775,6 +775,7 @@ func (app *App) apiPostHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
 	id := vars["id"]
+	slug := vars["slug"] // This will be empty if not provided in URL
 	
 	switch r.Method {
 	case "GET":
@@ -788,6 +789,29 @@ func (app *App) apiPostHandler(w http.ResponseWriter, r *http.Request) {
 			logWarn("business", "Post not found (API)", map[string]interface{}{"post_id": id})
 			return
 		}
+		
+		// Server-side slug validation for SEO
+		if slug != "" {
+			correctSlug := post.Slug
+			if correctSlug == "" {
+				correctSlug = slugify(post.Title)
+			}
+			
+			// If slug doesn't match, redirect to correct URL
+			if slug != correctSlug {
+				correctURL := fmt.Sprintf("/api/posts/%s/%s", id, correctSlug)
+				w.Header().Set("Location", correctURL)
+				w.WriteHeader(http.StatusMovedPermanently) // 301 redirect for SEO
+				logInfo("business", "Slug redirect", map[string]interface{}{
+					"post_id": id,
+					"incorrect_slug": slug,
+					"correct_slug": correctSlug,
+					"redirect_url": correctURL,
+				})
+				return
+			}
+		}
+		
 		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    post,
@@ -977,6 +1001,7 @@ func main() {
 	api.HandleFunc("/login", app.loginHandler).Methods("POST", "OPTIONS")
 	api.HandleFunc("/logout", app.authMiddleware(app.logoutHandler)).Methods("POST", "OPTIONS")
 	api.HandleFunc("/posts", app.apiPostsHandler).Methods("GET", "POST", "OPTIONS")
+	api.HandleFunc("/posts/{id}/{slug}", app.apiPostHandler).Methods("GET", "OPTIONS")
 	api.HandleFunc("/posts/{id}", app.apiPostHandler).Methods("GET", "PUT", "DELETE", "OPTIONS")
 
 	logInfo("technical", "Server starting", map[string]interface{}{"port": config.Server.Port})

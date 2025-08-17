@@ -43,14 +43,14 @@ export const usePostsStore = defineStore('posts', () => {
   }
 
   // Fetch single post
-  const fetchPost = async (id: string | number) => {
+  const fetchPost = async (id: string | number, slug?: string) => {
     loading.value = true
     error.value = null
     
-    console.log('Fetching post with ID:', id)
+    console.log('Fetching post with ID:', id, 'and slug:', slug)
     
     try {
-      const response = await api.getPost(id)
+      const response = await api.getPost(id, slug)
       console.log('API response:', response)
       
       if (response.success && response.data) {

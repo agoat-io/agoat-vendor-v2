@@ -215,19 +215,7 @@ const formatDate = (dateString: string) => {
 
 const loadPost = async () => {
   if (postId.value) {
-    await postsStore.fetchPost(postId.value)
-    
-    // After loading the post, validate the slug
-    if (post.value && currentSlug.value) {
-      const correctSlug = post.value.slug || generateSlug(post.value.title)
-      
-      // If the current slug doesn't match the correct slug, redirect
-      if (currentSlug.value !== correctSlug) {
-        const correctUrl = createPostUrl(post.value)
-        router.replace(correctUrl)
-        return
-      }
-    }
+    await postsStore.fetchPost(postId.value, currentSlug.value)
   }
 }
 
