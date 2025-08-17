@@ -110,8 +110,10 @@ type PostRepository interface {
 	Delete(id int) error
 	GetByID(id int) (*Post, error)
 	GetAll(limit, offset int) ([]Post, error)
+	GetPublished(limit, offset int) ([]Post, error)
 	GetBySlug(slug string) (*Post, error)
 	Count() (int, error)
+	CountPublished() (int, error)
 }
 
 type SessionStore interface {
@@ -267,6 +269,40 @@ func (r *SQLPostRepository) GetBySlug(slug string) (*Post, error) {
 func (r *SQLPostRepository) Count() (int, error) {
 	var count int
 	err := r.db.QueryRow("SELECT COUNT(*) FROM posts").Scan(&count)
+	return count, err
+}
+
+func (r *SQLPostRepository) GetPublished(limit, offset int) ([]Post, error) {
+	query := `
+		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
+		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
+		FROM posts p
+		LEFT JOIN users u ON p.user_id = u.id
+		WHERE p.published = true
+		ORDER BY p.created_at DESC
+		LIMIT $1 OFFSET $2`
+	rows, err := r.db.Query(query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content,
+			&post.Slug, &post.Published, &post.CreatedAt, &post.UpdatedAt, &post.Author)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
+}
+
+func (r *SQLPostRepository) CountPublished() (int, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE published = true").Scan(&count)
 	return count, err
 }
 
@@ -557,14 +593,31 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		page := 1
 		perPage := 10
+		publishedOnly := false
+		
 		if p := r.URL.Query().Get("page"); p != "" {
 			fmt.Sscanf(p, "%d", &page)
 		}
 		if pp := r.URL.Query().Get("per_page"); pp != "" {
 			fmt.Sscanf(pp, "%d", &perPage)
 		}
+		if published := r.URL.Query().Get("published"); published == "true" {
+			publishedOnly = true
+		}
+		
 		offset := (page - 1) * perPage
-		posts, err := app.posts.GetAll(perPage, offset)
+		var posts []Post
+		var err error
+		var total int
+		
+		if publishedOnly {
+			posts, err = app.posts.GetPublished(perPage, offset)
+			total, _ = app.posts.CountPublished()
+		} else {
+			posts, err = app.posts.GetAll(perPage, offset)
+			total, _ = app.posts.Count()
+		}
+		
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(APIResponse{
@@ -574,7 +627,7 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 			logError("technical", "GetAll posts failed", map[string]interface{}{"error": err.Error()})
 			return
 		}
-		total, _ := app.posts.Count()
+		
 		totalPages := (total + perPage - 1) / perPage
 		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,

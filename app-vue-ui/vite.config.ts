@@ -22,5 +22,13 @@ export default defineConfig({
         secure: false
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        app: './index.html',
+        'entry-server': './src/entry-server.ts'
+      }
+    }
   }
 })
