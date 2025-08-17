@@ -204,7 +204,7 @@ import { Button } from '../components/ui/button'
 
 const postsStore = usePostsStore()
 const currentPage = ref(1)
-const deletingPost = ref<number | null>(null)
+const deletingPost = ref<string | null>(null)
 
 const loadPosts = async () => {
   await postsStore.fetchPosts(currentPage.value)
@@ -215,14 +215,19 @@ const changePage = async (page: number) => {
   await loadPosts()
 }
 
-const deletePost = async (id: number) => {
+const deletePost = async (id: string) => {
   if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
     return
   }
   
   deletingPost.value = id
   try {
-    await postsStore.deletePost(id)
+    const success = await postsStore.deletePost(id)
+    if (success) {
+      // Post deleted successfully
+    }
+  } catch (error) {
+    console.error('Error deleting post:', error)
   } finally {
     deletingPost.value = null
   }

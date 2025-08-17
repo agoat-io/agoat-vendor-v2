@@ -121,7 +121,7 @@ export const usePostsStore = defineStore('posts', () => {
   }
 
   // Delete post
-  const deletePost = async (id: number) => {
+  const deletePost = async (id: string | number) => {
     loading.value = true
     error.value = null
     
@@ -130,10 +130,10 @@ export const usePostsStore = defineStore('posts', () => {
       
       if (response.success) {
         // Remove from posts array
-        posts.value = posts.value.filter(p => p.id !== id)
+        posts.value = posts.value.filter(p => p.id !== id.toString())
         
         // Clear current post if it's the same
-        if (currentPost.value?.id === id) {
+        if (currentPost.value?.id === id.toString()) {
           currentPost.value = null
         }
         

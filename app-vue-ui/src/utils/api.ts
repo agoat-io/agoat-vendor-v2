@@ -97,7 +97,7 @@ class API {
     return response.data
   }
 
-  async deletePost(id: number): Promise<APIResponse> {
+  async deletePost(id: string | number): Promise<APIResponse> {
     const response: AxiosResponse<APIResponse> = await this.client.delete(`/posts/${id}`)
     return response.data
   }
