@@ -124,10 +124,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePostsStore } from '../stores/posts'
 import { useAuthStore } from '../stores/auth'
 import { Button } from '../components/ui/button'
-import { extractPostIdFromUrl } from '../utils/seo'
+import { extractPostIdFromUrl, createPostUrl, generateSlug } from '../utils/seo'
 import type { Post } from '../types'
 
 const route = useRoute()
+const router = useRouter()
 const postsStore = usePostsStore()
 const authStore = useAuthStore()
 
@@ -136,6 +137,10 @@ const postId = computed(() => {
   const id = route.params.id as string
   return id
 })
+
+// Get the current slug from the URL
+const currentSlug = computed(() => route.params.slug as string)
+
 const post = computed(() => postsStore.currentPost)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
@@ -143,6 +148,23 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAuthor = computed(() => {
   if (!isAuthenticated.value || !post.value || !authStore.user) return false
   return post.value.user_id === authStore.user.id
+})
+
+// Validate slug and redirect if necessary
+const validateAndRedirect = computed(() => {
+  if (!post.value || !currentSlug.value) return false
+  
+  // Generate the correct slug from the post title
+  const correctSlug = post.value.slug || generateSlug(post.value.title)
+  
+  // If the current slug doesn't match the correct slug, redirect
+  if (currentSlug.value !== correctSlug) {
+    const correctUrl = createPostUrl(post.value)
+    router.replace(correctUrl)
+    return true
+  }
+  
+  return false
 })
 
 // Content display logic
@@ -194,6 +216,18 @@ const formatDate = (dateString: string) => {
 const loadPost = async () => {
   if (postId.value) {
     await postsStore.fetchPost(postId.value)
+    
+    // After loading the post, validate the slug
+    if (post.value && currentSlug.value) {
+      const correctSlug = post.value.slug || generateSlug(post.value.title)
+      
+      // If the current slug doesn't match the correct slug, redirect
+      if (currentSlug.value !== correctSlug) {
+        const correctUrl = createPostUrl(post.value)
+        router.replace(correctUrl)
+        return
+      }
+    }
   }
 }
 
@@ -202,7 +236,77 @@ watch(() => route.params.id, () => {
   loadPost()
 })
 
+// Watch for post changes to update SEO meta tags
+watch(() => post.value, (newPost) => {
+  if (newPost) {
+    // Update page title
+    document.title = `${newPost.title} - AGoat Blog`
+    
+    // Update meta description
+    const metaDescription = document.querySelector('meta[name="description"]')
+    const description = newPost.content.substring(0, 160) + '...'
+    if (metaDescription) {
+      metaDescription.setAttribute('content', description)
+    }
+    
+    // Update canonical URL
+    const canonicalUrl = `${window.location.origin}${createPostUrl(newPost)}`
+    const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
+    if (canonical) {
+      canonical.href = canonicalUrl
+    }
+    
+    // Update Open Graph URL
+    const ogUrl = document.querySelector('meta[property="og:url"]')
+    if (ogUrl) {
+      ogUrl.setAttribute('content', canonicalUrl)
+    }
+  }
+}, { immediate: true })
+
 onMounted(() => {
+  // Set up initial SEO meta tags
+  const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
+  if (!canonical) {
+    const link = document.createElement('link') as HTMLLinkElement
+    link.rel = 'canonical'
+    link.href = window.location.href
+    document.head.appendChild(link)
+  }
+  
+  // Set up Open Graph meta tags if they don't exist
+  const ogTitle = document.querySelector('meta[property="og:title"]')
+  if (!ogTitle) {
+    const meta = document.createElement('meta')
+    meta.setAttribute('property', 'og:title')
+    meta.content = 'AGoat Blog'
+    document.head.appendChild(meta)
+  }
+  
+  const ogDescription = document.querySelector('meta[property="og:description"]')
+  if (!ogDescription) {
+    const meta = document.createElement('meta')
+    meta.setAttribute('property', 'og:description')
+    meta.content = 'Latest articles and insights from AGoat'
+    document.head.appendChild(meta)
+  }
+  
+  const ogUrl = document.querySelector('meta[property="og:url"]')
+  if (!ogUrl) {
+    const meta = document.createElement('meta')
+    meta.setAttribute('property', 'og:url')
+    meta.content = window.location.href
+    document.head.appendChild(meta)
+  }
+  
+  const ogType = document.querySelector('meta[property="og:type"]')
+  if (!ogType) {
+    const meta = document.createElement('meta')
+    meta.setAttribute('property', 'og:type')
+    meta.content = 'article'
+    document.head.appendChild(meta)
+  }
+  
   loadPost()
 })
 </script>
