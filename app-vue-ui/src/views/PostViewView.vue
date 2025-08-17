@@ -59,9 +59,7 @@
       <!-- Post Content -->
       <div class="px-6 py-8">
         <div class="prose prose-lg max-w-none">
-          <div class="whitespace-pre-wrap text-gray-700 leading-relaxed">
-            {{ displayContent }}
-          </div>
+          <div class="text-gray-700 leading-relaxed" v-html="displayContent"></div>
         </div>
         
         <!-- Login Prompt for Non-Authenticated Users -->
@@ -125,7 +123,14 @@ import { usePostsStore } from '../stores/posts'
 import { useAuthStore } from '../stores/auth'
 import { Button } from '../components/ui/button'
 import { extractPostIdFromUrl, createPostUrl, generateSlug } from '../utils/seo'
+import { marked } from 'marked'
 import type { Post } from '../types'
+
+// Configure marked for markdown rendering
+marked.use({
+  breaks: true,
+  gfm: true
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -171,30 +176,32 @@ const validateAndRedirect = computed(() => {
 const displayContent = computed(() => {
   if (!post.value) return ''
   
-  // If user is authenticated, show full content
-  if (isAuthenticated.value) {
-    return post.value.content
+  let content = post.value.content
+  
+  // If user is not authenticated, show truncated content
+  if (!isAuthenticated.value) {
+    const maxLength = 800 // Good for SEO while requiring login for full content
+    
+    if (content.length <= maxLength) {
+      // Convert markdown to HTML
+      return marked.parse(content)
+    }
+    
+    // Find a good breaking point (end of sentence or paragraph)
+    const truncated = content.substring(0, maxLength)
+    const lastPeriod = truncated.lastIndexOf('.')
+    const lastNewline = truncated.lastIndexOf('\n')
+    const breakPoint = Math.max(lastPeriod, lastNewline)
+    
+    if (breakPoint > maxLength * 0.7) { // If we found a good break point
+      content = content.substring(0, breakPoint + 1)
+    } else {
+      content = truncated + '...'
+    }
   }
   
-  // For non-authenticated users, show truncated content
-  const content = post.value.content
-  const maxLength = 800 // Good for SEO while requiring login for full content
-  
-  if (content.length <= maxLength) {
-    return content
-  }
-  
-  // Find a good breaking point (end of sentence or paragraph)
-  const truncated = content.substring(0, maxLength)
-  const lastPeriod = truncated.lastIndexOf('.')
-  const lastNewline = truncated.lastIndexOf('\n')
-  const breakPoint = Math.max(lastPeriod, lastNewline)
-  
-  if (breakPoint > maxLength * 0.7) { // If we found a good break point
-    return content.substring(0, breakPoint + 1)
-  }
-  
-  return truncated + '...'
+  // Convert markdown to HTML
+  return marked.parse(content) as string
 })
 
 // Check if content was truncated

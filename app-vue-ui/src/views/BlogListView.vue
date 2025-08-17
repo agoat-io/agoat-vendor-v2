@@ -100,7 +100,7 @@
                 <time :datetime="post.created_at">{{ formatDate(post.created_at) }}</time>
                 <span v-if="isAuthenticated && post.updated_at && post.updated_at !== post.created_at" class="ml-2">(updated {{ formatDate(post.updated_at) }})</span>
               </div>
-              <div class="text-gray-700 mb-4 line-clamp-4">{{ getPreviewText(post.content) }}</div>
+                              <div class="text-gray-700 mb-4 line-clamp-4" v-html="getPreviewText(post.content)"></div>
               <router-link :to="createPostUrl(post)" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500">
                 Read more 
                 <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +168,14 @@ import { api } from '../utils/api'
 import { DateRangePicker } from '../components/ui/date-range-picker'
 import { useAuthStore } from '../stores/auth'
 import { createPostUrl } from '../utils/seo'
+import { marked } from 'marked'
 import type { Post, PostsResponse } from '../types'
+
+// Configure marked for markdown rendering
+marked.use({
+  breaks: true,
+  gfm: true
+})
 
 // SEO meta tags
 onBeforeMount(() => {
@@ -243,13 +250,14 @@ const getPreviewText = (content: string): string => {
   const firstLines = lines.slice(0, 10).join('\n')
   
   if (firstLines.length <= maxLength) {
-    return firstLines
+    return marked.parse(firstLines) as string
   }
   
   // Truncate to maxLength characters at word boundary
   const truncated = firstLines.substring(0, maxLength)
   const lastSpace = truncated.lastIndexOf(' ')
-  return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...'
+  const finalText = lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...'
+  return marked.parse(finalText) as string
 }
 
 // Format date
