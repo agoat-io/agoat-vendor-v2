@@ -28,7 +28,7 @@
               <label class="text-sm font-medium text-gray-700">Date Range:</label>
               <DateRangePicker v-model="selectedDateRange" @update:modelValue="onDateRangeChange" />
             </div>
-            <div class="flex items-center gap-2">
+            <div v-if="showPublishedFilter" class="flex items-center gap-2">
               <label class="text-sm font-medium text-gray-700">Show:</label>
               <select 
                 v-model="showPublishedOnly" 
@@ -78,7 +78,7 @@
         <div class="text-center mb-8">
           <h2 class="text-3xl font-bold text-gray-900 mb-2">Latest Posts</h2>
           <p class="text-lg text-gray-600">
-            {{ showPublishedOnly ? 'Published articles and insights' : 'All articles and insights' }}
+            {{ effectiveShowPublishedOnly ? 'Published articles and insights' : 'All articles and insights' }}
             <span v-if="selectedDateRange" class="block text-sm text-gray-500 mt-1">
               Filtered by date range: {{ formatDate(selectedDateRange.from) }} - {{ formatDate(selectedDateRange.to) }}
             </span>
@@ -153,7 +153,7 @@
         <div class="max-w-md mx-auto">
           <div class="text-gray-500 text-lg font-medium mb-2">No posts found</div>
           <div class="text-gray-400">
-            {{ showPublishedOnly ? 'No published posts match your criteria.' : 'No posts match your criteria.' }}
+            {{ effectiveShowPublishedOnly ? 'No published posts match your criteria.' : 'No posts match your criteria.' }}
           </div>
         </div>
       </div>
@@ -166,6 +166,7 @@ import { ref, onMounted, computed, onBeforeMount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../utils/api'
 import { DateRangePicker } from '../components/ui/date-range-picker'
+import { useAuthStore } from '../stores/auth'
 import type { Post, PostsResponse } from '../types'
 
 // SEO meta tags
@@ -213,6 +214,7 @@ onBeforeMount(() => {
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const posts = ref<Post[]>([])
 const loading = ref(true)
@@ -221,6 +223,17 @@ const meta = ref<any>(null)
 const currentPage = ref(1)
 const showPublishedOnly = ref(false)
 const selectedDateRange = ref<{ from: Date; to: Date } | null>(null)
+
+// Check if user is authenticated
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+
+// For non-authenticated users, always show only published posts
+const effectiveShowPublishedOnly = computed(() => {
+  return !isAuthenticated.value || showPublishedOnly.value
+})
+
+// Show the published filter only for authenticated users
+const showPublishedFilter = computed(() => isAuthenticated.value)
 
 // Get preview text (first 10 lines or ~500 characters)
 const getPreviewText = (content: string): string => {
@@ -256,8 +269,8 @@ const loadPosts = async (page: number = 1) => {
     const response: PostsResponse = await api.getPosts(
       page, 
       5, // 5 posts per page
-      showPublishedOnly.value,
-      selectedDateRange.value
+      effectiveShowPublishedOnly.value,
+      selectedDateRange.value || undefined
     )
     
     if (response.success) {
@@ -270,18 +283,19 @@ const loadPosts = async (page: number = 1) => {
         addStructuredData(posts.value)
       }
     } else {
-      error.value = response.message || 'Failed to load posts'
+      error.value = response.error || 'Failed to load posts'
     }
   } catch (err: any) {
-    error.value = err.response?.data?.message || 'Failed to load posts'
+    error.value = err.response?.data?.error || 'Failed to load posts'
   } finally {
     loading.value = false
   }
 }
 
 // Change page
-const changePage = (page: number) => {
-  router.push({ query: { page: page.toString() } })
+const changePage = (page: number | string) => {
+  const pageNum = typeof page === 'string' ? parseInt(page) : page
+  router.push({ query: { page: pageNum.toString() } })
 }
 
 // Handle date range change
@@ -293,7 +307,10 @@ const onDateRangeChange = (dateRange: { from: Date; to: Date } | null) => {
 // Clear all filters
 const clearFilters = () => {
   selectedDateRange.value = null
-  showPublishedOnly.value = false
+  // Only reset published filter if user is authenticated
+  if (isAuthenticated.value) {
+    showPublishedOnly.value = false
+  }
   loadPosts(1)
 }
 
