@@ -62,13 +62,16 @@
             </Button>
           </div>
         </div>
-        <DateRangePickerCalendar
-          v-model="selectedDate"
-          :number-of-months="2"
-          :selected="dateRange"
-          :default-month="defaultMonth"
-          @update:selected="handleDateSelection"
-        />
+        
+        <!-- Vue Tailwind Datepicker -->
+        <div class="p-3 border-t">
+          <VueTailwindDatepicker
+            :modelValue="selectedDate ? { startDate: selectedDate.from, endDate: selectedDate.to } : undefined"
+            :config="datepickerConfig"
+            @update:modelValue="handleDateSelection"
+          />
+        </div>
+        
         <div class="flex items-center justify-end gap-2 p-3 border-t">
           <Button
             variant="outline"
@@ -95,8 +98,8 @@ import { format, subDays, startOfDay, endOfDay, parse, isValid } from 'date-fns'
 import { CalendarIcon } from 'lucide-vue-next'
 import { Button } from '../button'
 import { Input } from '../input'
-import { DateRangePickerCalendar } from 'radix-vue'
 import { Popover, PopoverContent, PopoverTrigger } from '../popover'
+import VueTailwindDatepicker from 'vue-tailwind-datepicker'
 
 interface DateRange {
   from: Date
@@ -124,8 +127,42 @@ const selectedDate = ref<DateRange | null>(props.modelValue || null)
 const startDateInput = ref('')
 const endDateInput = ref('')
 
-// Default month for calendar (current month)
-const defaultMonth = computed(() => new Date())
+// Vue Tailwind Datepicker configuration
+const datepickerConfig = computed(() => ({
+  shortcuts: {
+    today: 'Today',
+    yesterday: 'Yesterday',
+    past: (period: number) => `Past ${period} days`,
+    currentMonth: 'Current Month',
+    pastMonth: 'Past Month'
+  },
+  footer: {
+    applyButton: {
+      text: 'Apply',
+      class: 'bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded'
+    },
+    cancelButton: {
+      text: 'Cancel',
+      class: 'bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded'
+    }
+  },
+  datepicker: {
+    modelType: 'range',
+    monthPicker: false,
+    yearPicker: false,
+    weekStart: 1,
+    format: props.dateFormat,
+    placeholder: 'Select date range',
+    inputClasses: 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+    calendarClasses: 'bg-white border border-gray-200 rounded-lg shadow-lg',
+    headerClasses: 'bg-gray-50 border-b border-gray-200 px-4 py-2',
+    weekClasses: 'text-xs text-gray-500 font-medium',
+    dayClasses: 'w-8 h-8 text-sm font-medium rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500',
+    selectedDayClasses: 'bg-blue-500 text-white hover:bg-blue-600',
+    inRangeDayClasses: 'bg-blue-100 text-blue-700',
+    disabledDayClasses: 'text-gray-300 cursor-not-allowed'
+  }
+}))
 
 // Format date for display
 const formatDate = (date: Date): string => {
@@ -180,10 +217,16 @@ const updateInputs = () => {
 }
 
 // Handle date selection from calendar
-const handleDateSelection = (range: DateRange | null) => {
-  selectedDate.value = range
-  dateRange.value = range
-  updateInputs()
+const handleDateSelection = (range: any) => {
+  if (range && range.startDate && range.endDate) {
+    const newRange = {
+      from: new Date(range.startDate),
+      to: new Date(range.endDate)
+    }
+    selectedDate.value = newRange
+    dateRange.value = newRange
+    updateInputs()
+  }
 }
 
 // Parse start date from input
