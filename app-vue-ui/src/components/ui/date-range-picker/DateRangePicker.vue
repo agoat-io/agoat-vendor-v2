@@ -66,7 +66,7 @@
         <!-- Vue Tailwind Datepicker -->
         <div class="p-3 border-t">
           <VueTailwindDatepicker
-            :modelValue="selectedDate ? { startDate: selectedDate.from, endDate: selectedDate.to } : undefined"
+            v-model="datepickerValue"
             :config="datepickerConfig"
             @update:modelValue="handleDateSelection"
           />
@@ -127,6 +127,27 @@ const selectedDate = ref<DateRange | null>(props.modelValue || null)
 const startDateInput = ref('')
 const endDateInput = ref('')
 
+// Datepicker value for vue-tailwind-datepicker
+const datepickerValue = computed({
+  get: () => {
+    if (!selectedDate.value) return undefined
+    return {
+      startDate: selectedDate.value.from,
+      endDate: selectedDate.value.to
+    }
+  },
+  set: (value: any) => {
+    if (value && value.startDate && value.endDate) {
+      selectedDate.value = {
+        from: new Date(value.startDate),
+        to: new Date(value.endDate)
+      }
+    } else {
+      selectedDate.value = null
+    }
+  }
+})
+
 // Vue Tailwind Datepicker configuration
 const datepickerConfig = computed(() => ({
   shortcuts: {
@@ -151,7 +172,7 @@ const datepickerConfig = computed(() => ({
     monthPicker: false,
     yearPicker: false,
     weekStart: 1,
-    format: props.dateFormat,
+    format: 'yyyy-MM-dd',
     placeholder: 'Select date range',
     inputClasses: 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
     calendarClasses: 'bg-white border border-gray-200 rounded-lg shadow-lg',
