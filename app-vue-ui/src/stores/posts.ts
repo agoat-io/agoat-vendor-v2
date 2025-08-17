@@ -36,7 +36,7 @@ export const usePostsStore = defineStore('posts', () => {
   }
 
   // Fetch single post
-  const fetchPost = async (id: number) => {
+  const fetchPost = async (id: string | number) => {
     loading.value = true
     error.value = null
     
@@ -88,7 +88,7 @@ export const usePostsStore = defineStore('posts', () => {
   }
 
   // Update post
-  const updatePost = async (id: number, postData: UpdatePostRequest) => {
+  const updatePost = async (id: string | number, postData: UpdatePostRequest) => {
     loading.value = true
     error.value = null
     
@@ -97,14 +97,14 @@ export const usePostsStore = defineStore('posts', () => {
       
       if (response.success && response.data) {
         // Update in posts array
-        const index = posts.value.findIndex(p => p.id === id)
+        const index = posts.value.findIndex(p => p.id === response.data!.id)
         if (index !== -1) {
-          posts.value[index] = response.data
+          posts.value[index] = response.data!
         }
         
         // Update current post if it's the same
-        if (currentPost.value?.id === id) {
-          currentPost.value = response.data
+        if (currentPost.value?.id === response.data!.id) {
+          currentPost.value = response.data!
         }
         
         return response.data

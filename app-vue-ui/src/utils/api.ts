@@ -80,7 +80,7 @@ class API {
     return response.data
   }
 
-  async getPost(id: number): Promise<PostResponse> {
+  async getPost(id: string | number): Promise<PostResponse> {
     console.log('API: Making request to get post', id)
     const response: AxiosResponse<PostResponse> = await this.client.get(`/posts/${id}`)
     console.log('API: Response received:', response.data)
@@ -92,7 +92,7 @@ class API {
     return response.data
   }
 
-  async updatePost(id: number, post: UpdatePostRequest): Promise<PostResponse> {
+  async updatePost(id: string | number, post: UpdatePostRequest): Promise<PostResponse> {
     const response: AxiosResponse<PostResponse> = await this.client.put(`/posts/${id}`, post)
     return response.data
   }

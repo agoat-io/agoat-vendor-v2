@@ -104,7 +104,7 @@ import { Button } from '../components/ui/button'
 const route = useRoute()
 const postsStore = usePostsStore()
 
-const postId = computed(() => parseInt(route.params.id as string))
+const postId = computed(() => route.params.id as string)
 const post = computed(() => postsStore.currentPost)
 
 const formatDate = (dateString: string) => {

@@ -131,7 +131,7 @@ const errors = ref({
 })
 
 const isEditing = computed(() => route.name === 'post-edit')
-const postId = computed(() => route.params.id ? parseInt(route.params.id as string) : null)
+const postId = computed(() => route.params.id as string)
 
 const isFormValid = computed(() => {
   return form.value.title.trim() && form.value.content.trim()
