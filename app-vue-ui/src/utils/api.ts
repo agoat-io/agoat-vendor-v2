@@ -32,8 +32,10 @@ class API {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
+          // Clear user data but don't redirect - let the navigation guard handle it
           localStorage.removeItem('user')
-          window.location.href = '/login'
+          // Don't use window.location.href as it can cause navigation issues
+          // The navigation guard will handle the redirect
         }
         return Promise.reject(error)
       }

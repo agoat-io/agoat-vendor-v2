@@ -11,7 +11,6 @@ import PostEditorView from './views/PostEditorView.vue'
 import PostViewView from './views/PostViewView.vue'
 import BlogListView from './views/BlogListView.vue'
 import NotFoundView from './views/NotFoundView.vue'
-import { useAuthStore } from './stores/auth'
 
 // Create router
 const router = createRouter({
@@ -67,10 +66,22 @@ const router = createRouter({
   ]
 })
 
-// Navigation guard
+// Create app and pinia
+const app = createApp(App)
+const pinia = createPinia()
+
+app.use(pinia)
+app.use(router)
+
+// Initialize auth store
+const { useAuthStore } = await import('./stores/auth')
+const authStore = useAuthStore()
+authStore.initializeAuth()
+
+// Navigation guard - moved after pinia is created
 router.beforeEach(async (to, from, next) => {
-  // For session-based auth, we need to check with the API
-  // We'll let the auth store handle the authentication check
+  // Import auth store after pinia is available
+  const { useAuthStore } = await import('./stores/auth')
   const authStore = useAuthStore()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -95,13 +106,6 @@ router.beforeEach(async (to, from, next) => {
   
   next()
 })
-
-// Create app
-const app = createApp(App)
-const pinia = createPinia()
-
-app.use(pinia)
-app.use(router)
 
 // Wait for router to be ready before mounting
 router.isReady().then(() => {

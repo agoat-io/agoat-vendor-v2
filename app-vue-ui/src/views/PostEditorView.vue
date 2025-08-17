@@ -156,15 +156,21 @@ const validateForm = () => {
 
 const loadPost = async () => {
   if (isEditing.value && postId.value) {
-    const post = await postsStore.fetchPost(postId.value)
-    if (post) {
-      form.value = {
-        title: post.title,
-        content: post.content,
-        published: post.published
+    try {
+      const post = await postsStore.fetchPost(postId.value)
+      if (post) {
+        form.value = {
+          title: post.title,
+          content: post.content,
+          published: post.published
+        }
+      } else {
+        // Don't redirect immediately, let the user see the error
+        console.error('Post not found')
       }
-    } else {
-      router.push('/dashboard')
+    } catch (error) {
+      console.error('Error loading post:', error)
+      // Don't redirect immediately, let the user see the error
     }
   }
 }

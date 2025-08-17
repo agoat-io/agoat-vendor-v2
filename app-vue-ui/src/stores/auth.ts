@@ -97,9 +97,6 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  // Initialize auth on store creation
-  initializeAuth()
-
   return {
     user,
     token,
@@ -109,6 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     checkAuth,
-    clearError
+    clearError,
+    initializeAuth
   }
 })
