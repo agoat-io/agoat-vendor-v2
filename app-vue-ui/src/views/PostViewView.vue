@@ -35,13 +35,13 @@
               <span>By {{ post.author }}</span>
               <span>•</span>
               <span>{{ formatDate(post.created_at) }}</span>
-              <span v-if="post.updated_at !== post.created_at">
+              <span v-if="isAuthenticated && post.updated_at !== post.created_at">
                 <span>•</span>
                 <span>Updated {{ formatDate(post.updated_at) }}</span>
               </span>
             </div>
           </div>
-          <div class="ml-6">
+          <div v-if="isAuthenticated" class="ml-6">
             <span
               :class="[
                 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium',
