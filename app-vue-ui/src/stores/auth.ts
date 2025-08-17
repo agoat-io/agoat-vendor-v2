@@ -69,6 +69,29 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Check authentication status
+  const checkAuth = async () => {
+    try {
+      const response = await api.getStatus()
+      
+      if (response.success && response.data?.user) {
+        user.value = response.data.user
+        localStorage.setItem('user', JSON.stringify(user.value))
+        return true
+      } else {
+        // Clear user if not authenticated
+        user.value = null
+        localStorage.removeItem('user')
+        return false
+      }
+    } catch (err) {
+      // Clear user if API call fails
+      user.value = null
+      localStorage.removeItem('user')
+      throw err
+    }
+  }
+
   // Clear error
   const clearError = () => {
     error.value = null
@@ -85,6 +108,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     login,
     logout,
+    checkAuth,
     clearError
   }
 })
