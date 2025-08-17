@@ -83,12 +83,28 @@ class API {
     return response.data
   }
 
-  async getPost(id: string | number, slug?: string): Promise<PostResponse> {
+  async getPost(id: string | number, slug?: string): Promise<PostResponse & { redirected?: boolean; redirectUrl?: string }> {
     console.log('API: Making request to get post', id, 'with slug:', slug)
     const url = slug ? `/posts/${id}/${slug}` : `/posts/${id}`
-    const response: AxiosResponse<PostResponse> = await this.client.get(url)
-    console.log('API: Response received:', response.data)
-    return response.data
+    
+    try {
+      const response: AxiosResponse<PostResponse> = await this.client.get(url)
+      console.log('API: Response received:', response.data)
+      return response.data
+    } catch (error: any) {
+      // Check if it's a redirect response
+      if (error.response?.status === 301 || error.response?.status === 302) {
+        const redirectUrl = error.response.headers.location
+        console.log('API: Redirect detected to:', redirectUrl)
+        return {
+          success: false,
+          error: 'Redirect required',
+          redirected: true,
+          redirectUrl: redirectUrl
+        }
+      }
+      throw error
+    }
   }
 
   async createPost(post: CreatePostRequest): Promise<PostResponse> {

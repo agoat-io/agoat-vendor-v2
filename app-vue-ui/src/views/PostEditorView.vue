@@ -42,16 +42,12 @@
 
       <!-- Content -->
       <div>
-        <label for="content" class="block text-sm font-medium text-gray-700">
+        <label for="content" class="block text-sm font-medium text-gray-700 mb-2">
           Content
         </label>
-        <Textarea
-          id="content"
+        <BlogEditor
           v-model="form.content"
-          :rows="12"
-          placeholder="Write your post content here..."
-          :class="errors.content ? 'border-destructive focus-visible:ring-destructive' : ''"
-          required
+          placeholder="Write your blog post content here..."
         />
         <div v-if="errors.content" class="mt-1 text-sm text-destructive">
           {{ errors.content }}
@@ -98,7 +94,10 @@
           type="submit"
           :disabled="!isFormValid || postsStore.loading"
         >
-          <Loader2 v-if="postsStore.loading" class="mr-2 h-4 w-4 animate-spin" />
+          <svg v-if="postsStore.loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
           {{ isEditing ? 'Update Post' : 'Create Post' }}
         </Button>
       </div>
@@ -112,8 +111,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePostsStore } from '../stores/posts'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import { Textarea } from '../components/ui/textarea'
-import { Loader2 } from 'lucide-vue-next'
+import BlogEditor from '../components/BlogEditor.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -158,19 +156,19 @@ const loadPost = async () => {
   if (isEditing.value && postId.value) {
     try {
       const post = await postsStore.fetchPost(postId.value)
-      if (post) {
+      if (post && post.data) {
+        console.log('Loading post data:', post.data)
         form.value = {
-          title: post.title,
-          content: post.content,
-          published: post.published
+          title: post.data.title || '',
+          content: post.data.content || '',
+          published: post.data.published || false
         }
+        console.log('Form data after loading:', form.value)
       } else {
-        // Don't redirect immediately, let the user see the error
         console.error('Post not found')
       }
     } catch (error) {
       console.error('Error loading post:', error)
-      // Don't redirect immediately, let the user see the error
     }
   }
 }

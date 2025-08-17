@@ -53,14 +53,19 @@ export const usePostsStore = defineStore('posts', () => {
       const response = await api.getPost(id, slug)
       console.log('API response:', response)
       
+      // Check if server sent a redirect
+      if (response.redirected) {
+        return response // Return redirect info
+      }
+      
       if (response.success && response.data) {
         currentPost.value = response.data
         console.log('Post loaded successfully:', response.data)
-        return response.data
+        return response
       } else {
         error.value = response.error || 'Post not found'
         console.log('Post not found, error:', response.error)
-        return null
+        return response
       }
     } catch (err: any) {
       console.error('Error fetching post:', err)

@@ -215,13 +215,47 @@ const formatDate = (dateString: string) => {
 
 const loadPost = async () => {
   if (postId.value) {
-    await postsStore.fetchPost(postId.value, currentSlug.value)
+    const response = await postsStore.fetchPost(postId.value, currentSlug.value)
+    
+    // Check if server sent a redirect
+    if (response?.redirected && response?.redirectUrl) {
+      console.log('Redirecting to:', response.redirectUrl)
+      // Convert API URL to frontend URL
+      const frontendUrl = response.redirectUrl.replace('/api/posts/', '/post/')
+      router.replace(frontendUrl)
+      return
+    }
+    
+    // After loading the post, validate the slug and redirect if necessary
+    if (post.value && currentSlug.value) {
+      const correctSlug = post.value.slug || generateSlug(post.value.title)
+      
+      // If the current slug doesn't match the correct slug, redirect
+      if (currentSlug.value !== correctSlug) {
+        const correctUrl = createPostUrl(post.value)
+        router.replace(correctUrl)
+        return
+      }
+    }
   }
 }
 
 // Watch for route changes to load post data
 watch(() => route.params.id, () => {
   loadPost()
+})
+
+// Watch for slug changes in the route
+watch(() => route.params.slug, () => {
+  if (post.value && currentSlug.value) {
+    const correctSlug = post.value.slug || generateSlug(post.value.title)
+    
+    // If the current slug doesn't match the correct slug, redirect
+    if (currentSlug.value !== correctSlug) {
+      const correctUrl = createPostUrl(post.value)
+      router.replace(correctUrl)
+    }
+  }
 })
 
 // Watch for post changes to update SEO meta tags
