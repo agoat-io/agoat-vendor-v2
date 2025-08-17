@@ -1,27 +1,56 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
+    <!-- Header with AGoat Blog title and Admin Login link -->
     <header class="bg-white shadow-sm border-b">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex justify-between items-center">
+          <div>
             <h1 class="text-2xl font-bold text-gray-900">AGoat Blog</h1>
+            <p class="text-sm text-gray-600">All articles and insights</p>
           </div>
-          <div class="flex items-center space-x-4">
-            <router-link
-              to="/login"
-              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Admin Login
-            </router-link>
-          </div>
+          <router-link 
+            to="/login" 
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Admin Login
+          </router-link>
         </div>
       </div>
     </header>
 
-    <!-- Main content -->
+    <!-- Main content with filters, loading, error, and posts list -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Loading state -->
+      <!-- Filters Section -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div class="flex items-center gap-2">
+              <label class="text-sm font-medium text-gray-700">Date Range:</label>
+              <DateRangePicker v-model="selectedDateRange" @update:modelValue="onDateRangeChange" />
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="text-sm font-medium text-gray-700">Show:</label>
+              <select 
+                v-model="showPublishedOnly" 
+                @change="loadPosts(1)"
+                class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option :value="false">All Posts</option>
+                <option :value="true">Published Only</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button 
+              @click="clearFilters"
+              class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div v-if="loading" class="text-center py-12">
         <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-indigo-500 hover:bg-indigo-400 transition ease-in-out duration-150 cursor-not-allowed">
           <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -31,66 +60,49 @@
           Loading posts...
         </div>
       </div>
-
-      <!-- Error state -->
+      
       <div v-else-if="error" class="text-center py-12">
-        <div class="bg-red-50 border border-red-200 rounded-md p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <div class="ml-3">
-              <p class="text-sm text-red-800">
-                {{ error }}
-              </p>
-            </div>
-          </div>
+        <div class="max-w-md mx-auto">
+          <div class="text-red-600 text-lg font-medium mb-2">Error loading posts</div>
+          <div class="text-gray-600 mb-4">{{ error }}</div>
+          <button 
+            @click="loadPosts(currentPage)"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Try Again
+          </button>
         </div>
       </div>
-
-      <!-- Posts list -->
+      
       <div v-else-if="posts.length > 0" class="space-y-8">
         <div class="text-center mb-8">
           <h2 class="text-3xl font-bold text-gray-900 mb-2">Latest Posts</h2>
-          <p class="text-lg text-gray-600">Discover our latest articles and insights</p>
+          <p class="text-lg text-gray-600">
+            {{ showPublishedOnly ? 'Published articles and insights' : 'All articles and insights' }}
+            <span v-if="selectedDateRange" class="block text-sm text-gray-500 mt-1">
+              Filtered by date range: {{ formatDate(selectedDateRange.from) }} - {{ formatDate(selectedDateRange.to) }}
+            </span>
+          </p>
         </div>
-
+        
         <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          <article
-            v-for="post in posts"
-            :key="post.id"
-            class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200"
-          >
+          <article v-for="post in posts" :key="post.id" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
             <div class="p-6">
-              <h3 class="text-xl font-semibold text-gray-900 mb-3 line-clamp-2">
-                <router-link
-                  :to="`/post/${post.id}`"
-                  class="hover:text-indigo-600 transition-colors duration-200"
-                >
-                  {{ post.title }}
-                </router-link>
-              </h3>
-              
-              <div class="text-sm text-gray-500 mb-4">
-                <time :datetime="post.created_at">
-                  {{ formatDate(post.created_at) }}
-                </time>
-                <span v-if="post.updated_at && post.updated_at !== post.created_at" class="ml-2">
-                  (updated {{ formatDate(post.updated_at) }})
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xl font-semibold text-gray-900 line-clamp-2 flex-1">
+                  <router-link :to="`/post/${post.id}`" class="hover:text-indigo-600 transition-colors duration-200">{{ post.title }}</router-link>
+                </h3>
+                <span v-if="!post.published" class="ml-2 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                  Draft
                 </span>
               </div>
-
-              <div class="text-gray-700 mb-4 line-clamp-4">
-                {{ getPreviewText(post.content) }}
+              <div class="text-sm text-gray-500 mb-4">
+                <time :datetime="post.created_at">{{ formatDate(post.created_at) }}</time>
+                <span v-if="post.updated_at && post.updated_at !== post.created_at" class="ml-2">(updated {{ formatDate(post.updated_at) }})</span>
               </div>
-
-              <router-link
-                :to="`/post/${post.id}`"
-                class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Read more
+              <div class="text-gray-700 mb-4 line-clamp-4">{{ getPreviewText(post.content) }}</div>
+              <router-link :to="`/post/${post.id}`" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                Read more 
                 <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -98,49 +110,62 @@
             </div>
           </article>
         </div>
-
+        
         <!-- Pagination -->
         <div v-if="meta && meta.total_pages > 1" class="flex justify-center mt-8">
           <nav class="flex items-center space-x-2">
             <button
-              v-if="currentPage > 1"
               @click="changePage(currentPage - 1)"
-              class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              :disabled="currentPage <= 1"
+              class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
             
-            <span class="px-3 py-2 text-sm text-gray-700">
-              Page {{ currentPage }} of {{ meta.total_pages }}
-            </span>
+            <template v-for="page in visiblePages" :key="page">
+              <button
+                v-if="page !== '...'"
+                @click="changePage(page)"
+                :class="[
+                  'px-3 py-2 text-sm font-medium rounded-md',
+                  page === currentPage
+                    ? 'text-white bg-indigo-600 border border-indigo-600'
+                    : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                ]"
+              >
+                {{ page }}
+              </button>
+              <span v-else class="px-3 py-2 text-sm text-gray-500">...</span>
+            </template>
             
             <button
-              v-if="currentPage < meta.total_pages"
               @click="changePage(currentPage + 1)"
-              class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              :disabled="currentPage >= meta.total_pages"
+              class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
           </nav>
         </div>
       </div>
-
-      <!-- Empty state -->
+      
       <div v-else class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">No posts yet</h3>
-        <p class="mt-1 text-sm text-gray-500">Check back later for new content.</p>
+        <div class="max-w-md mx-auto">
+          <div class="text-gray-500 text-lg font-medium mb-2">No posts found</div>
+          <div class="text-gray-400">
+            {{ showPublishedOnly ? 'No published posts match your criteria.' : 'No posts match your criteria.' }}
+          </div>
+        </div>
       </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeMount } from 'vue'
+import { ref, onMounted, computed, onBeforeMount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../utils/api'
+import { DateRangePicker } from '../components/ui/date-range-picker'
 import type { Post, PostsResponse } from '../types'
 
 // SEO meta tags
@@ -194,6 +219,8 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const meta = ref<any>(null)
 const currentPage = ref(1)
+const showPublishedOnly = ref(false)
+const selectedDateRange = ref<{ from: Date; to: Date } | null>(null)
 
 // Get preview text (first 10 lines or ~500 characters)
 const getPreviewText = (content: string): string => {
@@ -211,8 +238,8 @@ const getPreviewText = (content: string): string => {
 }
 
 // Format date
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
+const formatDate = (dateString: string | Date): string => {
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -226,7 +253,12 @@ const loadPosts = async (page: number = 1) => {
   error.value = null
   
   try {
-    const response: PostsResponse = await api.getPosts(page, 12, true) // 12 posts per page, published only
+    const response: PostsResponse = await api.getPosts(
+      page, 
+      5, // 5 posts per page
+      showPublishedOnly.value,
+      selectedDateRange.value
+    )
     
     if (response.success) {
       posts.value = response.data || []
@@ -252,55 +284,112 @@ const changePage = (page: number) => {
   router.push({ query: { page: page.toString() } })
 }
 
-  // Watch for route changes
-  const watchRoute = () => {
-    const page = parseInt(route.query.page as string) || 1
-    if (page !== currentPage.value) {
-      loadPosts(page)
-    }
-  }
+// Handle date range change
+const onDateRangeChange = (dateRange: { from: Date; to: Date } | null) => {
+  selectedDateRange.value = dateRange
+  loadPosts(1) // Reset to first page when filter changes
+}
 
-  // Add structured data for SEO
-  const addStructuredData = (posts: Post[]) => {
-    // Remove existing structured data
-    const existingScript = document.querySelector('script[type="application/ld+json"]')
-    if (existingScript) {
-      existingScript.remove()
-    }
+// Clear all filters
+const clearFilters = () => {
+  selectedDateRange.value = null
+  showPublishedOnly.value = false
+  loadPosts(1)
+}
 
-    const structuredData = {
-      "@context": "https://schema.org",
-      "@type": "Blog",
-      "name": "AGoat Blog",
-      "description": "Latest articles, insights, and stories from AGoat",
-      "url": window.location.origin,
-      "blogPost": posts.map(post => ({
-        "@type": "BlogPosting",
-        "headline": post.title,
-        "description": getPreviewText(post.content),
-        "datePublished": post.created_at,
-        "dateModified": post.updated_at,
-        "author": {
-          "@type": "Person",
-          "name": post.author || "Anonymous"
-        },
-        "url": `${window.location.origin}/post/${post.id}`
-      }))
-    }
-
-    const script = document.createElement('script')
-    script.type = 'application/ld+json'
-    script.textContent = JSON.stringify(structuredData)
-    document.head.appendChild(script)
-  }
-
-  onMounted(() => {
-    const page = parseInt(route.query.page as string) || 1
+// Watch for route changes
+const watchRoute = () => {
+  const page = parseInt(route.query.page as string) || 1
+  if (page !== currentPage.value) {
     loadPosts(page)
-  })
+  }
+}
 
-  // Watch for route changes
-  watchRoute()
+// Add structured data for SEO
+const addStructuredData = (posts: Post[]) => {
+  // Remove existing structured data
+  const existingScript = document.querySelector('script[type="application/ld+json"]')
+  if (existingScript) {
+    existingScript.remove()
+  }
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "AGoat Blog",
+    "description": "Latest articles, insights, and stories from AGoat",
+    "url": window.location.origin,
+    "blogPost": posts.map(post => ({
+      "@type": "BlogPosting",
+      "headline": post.title,
+      "description": getPreviewText(post.content),
+      "datePublished": post.created_at,
+      "dateModified": post.updated_at,
+      "author": {
+        "@type": "Person",
+        "name": post.author || "Anonymous"
+      },
+      "url": `${window.location.origin}/post/${post.id}`
+    }))
+  }
+
+  const script = document.createElement('script')
+  script.type = 'application/ld+json'
+  script.textContent = JSON.stringify(structuredData)
+  document.head.appendChild(script)
+}
+
+// Computed property for pagination
+const visiblePages = computed(() => {
+  if (!meta.value) return []
+  
+  const totalPages = meta.value.total_pages
+  const current = currentPage.value
+  const pages: (number | string)[] = []
+  
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i)
+    }
+  } else {
+    if (current <= 4) {
+      for (let i = 1; i <= 5; i++) {
+        pages.push(i)
+      }
+      pages.push('...')
+      pages.push(totalPages)
+    } else if (current >= totalPages - 3) {
+      pages.push(1)
+      pages.push('...')
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      pages.push(1)
+      pages.push('...')
+      for (let i = current - 1; i <= current + 1; i++) {
+        pages.push(i)
+      }
+      pages.push('...')
+      pages.push(totalPages)
+    }
+  }
+  
+  return pages
+})
+
+onMounted(() => {
+  const page = parseInt(route.query.page as string) || 1
+  loadPosts(page)
+})
+
+// Watch for route changes
+watch(() => route.query.page, () => {
+  const page = parseInt(route.query.page as string) || 1
+  if (page !== currentPage.value) {
+    loadPosts(page)
+  }
+})
 </script>
 
 <style scoped>

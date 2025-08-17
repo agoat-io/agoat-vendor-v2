@@ -57,14 +57,24 @@ class API {
   }
 
   // Posts endpoints
-  async getPosts(page: number = 1, perPage: number = 10, publishedOnly: boolean = false): Promise<PostsResponse> {
-    const response: AxiosResponse<PostsResponse> = await this.client.get('/posts', {
-      params: { 
-        page, 
-        per_page: perPage,
-        published: publishedOnly ? 'true' : undefined
-      }
-    })
+  async getPosts(
+    page: number = 1, 
+    perPage: number = 10, 
+    publishedOnly: boolean = false,
+    dateRange?: { from: Date; to: Date }
+  ): Promise<PostsResponse> {
+    const params: any = { 
+      page, 
+      per_page: perPage,
+      published: publishedOnly ? 'true' : undefined
+    }
+    
+    if (dateRange) {
+      params.from_date = dateRange.from.toISOString().split('T')[0]
+      params.to_date = dateRange.to.toISOString().split('T')[0]
+    }
+    
+    const response: AxiosResponse<PostsResponse> = await this.client.get('/posts', { params })
     return response.data
   }
 

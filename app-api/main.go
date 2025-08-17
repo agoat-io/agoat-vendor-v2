@@ -111,9 +111,13 @@ type PostRepository interface {
 	GetByID(id int) (*Post, error)
 	GetAll(limit, offset int) ([]Post, error)
 	GetPublished(limit, offset int) ([]Post, error)
+	GetAllInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error)
+	GetPublishedInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error)
 	GetBySlug(slug string) (*Post, error)
 	Count() (int, error)
 	CountPublished() (int, error)
+	CountInDateRange(fromDate, toDate string) (int, error)
+	CountPublishedInDateRange(fromDate, toDate string) (int, error)
 }
 
 type SessionStore interface {
@@ -303,6 +307,74 @@ func (r *SQLPostRepository) GetPublished(limit, offset int) ([]Post, error) {
 func (r *SQLPostRepository) CountPublished() (int, error) {
 	var count int
 	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE published = true").Scan(&count)
+	return count, err
+}
+
+func (r *SQLPostRepository) GetAllInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error) {
+	query := `
+		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
+		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
+		FROM posts p
+		LEFT JOIN users u ON p.user_id = u.id
+		WHERE p.created_at >= $1 AND p.created_at <= $2
+		ORDER BY p.created_at DESC
+		LIMIT $3 OFFSET $4`
+	rows, err := r.db.Query(query, fromDate, toDate, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content,
+			&post.Slug, &post.Published, &post.CreatedAt, &post.UpdatedAt, &post.Author)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
+}
+
+func (r *SQLPostRepository) GetPublishedInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error) {
+	query := `
+		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
+		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
+		FROM posts p
+		LEFT JOIN users u ON p.user_id = u.id
+		WHERE p.published = true AND p.created_at >= $1 AND p.created_at <= $2
+		ORDER BY p.created_at DESC
+		LIMIT $3 OFFSET $4`
+	rows, err := r.db.Query(query, fromDate, toDate, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content,
+			&post.Slug, &post.Published, &post.CreatedAt, &post.UpdatedAt, &post.Author)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
+}
+
+func (r *SQLPostRepository) CountInDateRange(fromDate, toDate string) (int, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE created_at >= $1 AND created_at <= $2", fromDate, toDate).Scan(&count)
+	return count, err
+}
+
+func (r *SQLPostRepository) CountPublishedInDateRange(fromDate, toDate string) (int, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE published = true AND created_at >= $1 AND created_at <= $2", fromDate, toDate).Scan(&count)
 	return count, err
 }
 
@@ -594,6 +666,8 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 		page := 1
 		perPage := 10
 		publishedOnly := false
+		fromDate := r.URL.Query().Get("from_date")
+		toDate := r.URL.Query().Get("to_date")
 		
 		if p := r.URL.Query().Get("page"); p != "" {
 			fmt.Sscanf(p, "%d", &page)
@@ -611,11 +685,21 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 		var total int
 		
 		if publishedOnly {
-			posts, err = app.posts.GetPublished(perPage, offset)
-			total, _ = app.posts.CountPublished()
+			if fromDate != "" && toDate != "" {
+				posts, err = app.posts.GetPublishedInDateRange(perPage, offset, fromDate, toDate)
+				total, _ = app.posts.CountPublishedInDateRange(fromDate, toDate)
+			} else {
+				posts, err = app.posts.GetPublished(perPage, offset)
+				total, _ = app.posts.CountPublished()
+			}
 		} else {
-			posts, err = app.posts.GetAll(perPage, offset)
-			total, _ = app.posts.Count()
+			if fromDate != "" && toDate != "" {
+				posts, err = app.posts.GetAllInDateRange(perPage, offset, fromDate, toDate)
+				total, _ = app.posts.CountInDateRange(fromDate, toDate)
+			} else {
+				posts, err = app.posts.GetAll(perPage, offset)
+				total, _ = app.posts.Count()
+			}
 		}
 		
 		if err != nil {
