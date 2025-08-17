@@ -92,13 +92,13 @@
                 <h3 class="text-xl font-semibold text-gray-900 line-clamp-2 flex-1">
                   <router-link :to="`/post/${post.id}`" class="hover:text-indigo-600 transition-colors duration-200">{{ post.title }}</router-link>
                 </h3>
-                <span v-if="!post.published" class="ml-2 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                <span v-if="isAuthenticated && !post.published" class="ml-2 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                   Draft
                 </span>
               </div>
               <div class="text-sm text-gray-500 mb-4">
                 <time :datetime="post.created_at">{{ formatDate(post.created_at) }}</time>
-                <span v-if="post.updated_at && post.updated_at !== post.created_at" class="ml-2">(updated {{ formatDate(post.updated_at) }})</span>
+                <span v-if="isAuthenticated && post.updated_at && post.updated_at !== post.created_at" class="ml-2">(updated {{ formatDate(post.updated_at) }})</span>
               </div>
               <div class="text-gray-700 mb-4 line-clamp-4">{{ getPreviewText(post.content) }}</div>
               <router-link :to="`/post/${post.id}`" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500">
@@ -235,17 +235,18 @@ const effectiveShowPublishedOnly = computed(() => {
 // Show the published filter only for authenticated users
 const showPublishedFilter = computed(() => isAuthenticated.value)
 
-// Get preview text (first 10 lines or ~500 characters)
+// Get preview text (300 chars for non-auth, 500 for auth users)
 const getPreviewText = (content: string): string => {
+  const maxLength = isAuthenticated.value ? 500 : 300
   const lines = content.split('\n').filter(line => line.trim())
   const firstLines = lines.slice(0, 10).join('\n')
   
-  if (firstLines.length <= 500) {
+  if (firstLines.length <= maxLength) {
     return firstLines
   }
   
-  // Truncate to ~500 characters at word boundary
-  const truncated = firstLines.substring(0, 500)
+  // Truncate to maxLength characters at word boundary
+  const truncated = firstLines.substring(0, maxLength)
   const lastSpace = truncated.lastIndexOf(' ')
   return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...'
 }
