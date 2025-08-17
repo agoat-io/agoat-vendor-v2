@@ -63,13 +63,31 @@
           </div>
         </div>
         
-        <!-- Vue Tailwind Datepicker -->
+        <!-- Simple Date Range Picker -->
         <div class="p-3 border-t">
-          <VueTailwindDatepicker
-            v-model="datepickerValue"
-            :config="datepickerConfig"
-            @update:modelValue="handleDateSelection"
-          />
+          <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
+            <!-- Start Date Picker -->
+            <div class="flex-1">
+              <label class="text-sm font-medium text-gray-700 mb-2 block">Start Date</label>
+              <input
+                type="date"
+                v-model="startDatePicker"
+                @change="updateStartDate"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <!-- End Date Picker -->
+            <div class="flex-1">
+              <label class="text-sm font-medium text-gray-700 mb-2 block">End Date</label>
+              <input
+                type="date"
+                v-model="endDatePicker"
+                @change="updateEndDate"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
         </div>
         
         <div class="flex items-center justify-end gap-2 p-3 border-t">
@@ -99,7 +117,6 @@ import { CalendarIcon } from 'lucide-vue-next'
 import { Button } from '../button'
 import { Input } from '../input'
 import { Popover, PopoverContent, PopoverTrigger } from '../popover'
-import VueTailwindDatepicker from 'vue-tailwind-datepicker'
 
 interface DateRange {
   from: Date
@@ -127,67 +144,18 @@ const selectedDate = ref<DateRange | null>(props.modelValue || null)
 const startDateInput = ref('')
 const endDateInput = ref('')
 
-// Datepicker value for vue-tailwind-datepicker
-const datepickerValue = computed({
-  get: () => {
-    if (!selectedDate.value) return undefined
-    return {
-      startDate: selectedDate.value.from,
-      endDate: selectedDate.value.to
-    }
-  },
-  set: (value: any) => {
-    if (value && value.startDate && value.endDate) {
-      selectedDate.value = {
-        from: new Date(value.startDate),
-        to: new Date(value.endDate)
-      }
-    } else {
-      selectedDate.value = null
-    }
-  }
-})
-
-// Vue Tailwind Datepicker configuration
-const datepickerConfig = computed(() => ({
-  shortcuts: {
-    today: 'Today',
-    yesterday: 'Yesterday',
-    past: (period: number) => `Past ${period} days`,
-    currentMonth: 'Current Month',
-    pastMonth: 'Past Month'
-  },
-  footer: {
-    applyButton: {
-      text: 'Apply',
-      class: 'bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded'
-    },
-    cancelButton: {
-      text: 'Cancel',
-      class: 'bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded'
-    }
-  },
-  datepicker: {
-    modelType: 'range',
-    monthPicker: false,
-    yearPicker: false,
-    weekStart: 1,
-    format: 'yyyy-MM-dd',
-    placeholder: 'Select date range',
-    inputClasses: 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
-    calendarClasses: 'bg-white border border-gray-200 rounded-lg shadow-lg',
-    headerClasses: 'bg-gray-50 border-b border-gray-200 px-4 py-2',
-    weekClasses: 'text-xs text-gray-500 font-medium',
-    dayClasses: 'w-8 h-8 text-sm font-medium rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500',
-    selectedDayClasses: 'bg-blue-500 text-white hover:bg-blue-600',
-    inRangeDayClasses: 'bg-blue-100 text-blue-700',
-    disabledDayClasses: 'text-gray-300 cursor-not-allowed'
-  }
-}))
+// HTML date picker values (YYYY-MM-DD format)
+const startDatePicker = ref('')
+const endDatePicker = ref('')
 
 // Format date for display
 const formatDate = (date: Date): string => {
   return format(date, props.dateFormat)
+}
+
+// Format date for HTML date input (YYYY-MM-DD)
+const formatDateForInput = (date: Date): string => {
+  return format(date, 'yyyy-MM-dd')
 }
 
 // Parse date from string based on format
@@ -226,27 +194,48 @@ const parseDate = (dateString: string): Date | null => {
 const updateInputs = () => {
   if (dateRange.value?.from) {
     startDateInput.value = formatDate(dateRange.value.from)
+    startDatePicker.value = formatDateForInput(dateRange.value.from)
   } else {
     startDateInput.value = ''
+    startDatePicker.value = ''
   }
   
   if (dateRange.value?.to) {
     endDateInput.value = formatDate(dateRange.value.to)
+    endDatePicker.value = formatDateForInput(dateRange.value.to)
   } else {
     endDateInput.value = ''
+    endDatePicker.value = ''
   }
 }
 
-// Handle date selection from calendar
-const handleDateSelection = (range: any) => {
-  if (range && range.startDate && range.endDate) {
-    const newRange = {
-      from: new Date(range.startDate),
-      to: new Date(range.endDate)
+// Update start date from HTML date picker
+const updateStartDate = () => {
+  if (startDatePicker.value) {
+    const date = new Date(startDatePicker.value)
+    if (isValid(date)) {
+      dateRange.value = {
+        from: startOfDay(date),
+        to: dateRange.value?.to || endOfDay(date)
+      }
+      selectedDate.value = dateRange.value
+      updateInputs()
     }
-    selectedDate.value = newRange
-    dateRange.value = newRange
-    updateInputs()
+  }
+}
+
+// Update end date from HTML date picker
+const updateEndDate = () => {
+  if (endDatePicker.value) {
+    const date = new Date(endDatePicker.value)
+    if (isValid(date)) {
+      dateRange.value = {
+        from: dateRange.value?.from || startOfDay(date),
+        to: endOfDay(date)
+      }
+      selectedDate.value = dateRange.value
+      updateInputs()
+    }
   }
 }
 
@@ -259,6 +248,7 @@ const parseStartDate = () => {
       to: dateRange.value?.to || endOfDay(date)
     }
     selectedDate.value = dateRange.value
+    updateInputs()
   }
 }
 
@@ -271,6 +261,7 @@ const parseEndDate = () => {
       to: endOfDay(date)
     }
     selectedDate.value = dateRange.value
+    updateInputs()
   }
 }
 
@@ -307,6 +298,8 @@ const clearDateRange = () => {
   selectedDate.value = null
   startDateInput.value = ''
   endDateInput.value = ''
+  startDatePicker.value = ''
+  endDatePicker.value = ''
   emit('update:modelValue', null)
 }
 
