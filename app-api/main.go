@@ -54,15 +54,15 @@ type APIConfig struct {
 }
 
 type User struct {
-	ID        int       `json:"id"`
+	ID        string    `json:"id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type Post struct {
-	ID        int       `json:"id"`
-	UserID    int       `json:"user_id"`
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
 	Title     string    `json:"title"`
 	Content   string    `json:"content"`
 	Slug      string    `json:"slug"`
@@ -100,15 +100,15 @@ type APIMeta struct {
 
 type Authenticator interface {
 	Authenticate(username, password string) (*User, error)
-	GetUser(id int) (*User, error)
+	GetUser(id string) (*User, error)
 	ValidateAPIKey(key string) bool
 }
 
 type PostRepository interface {
 	Create(post *Post) error
 	Update(post *Post) error
-	Delete(id int) error
-	GetByID(id int) (*Post, error)
+	Delete(id string) error
+	GetByID(id string) (*Post, error)
 	GetAll(limit, offset int) ([]Post, error)
 	GetPublished(limit, offset int) ([]Post, error)
 	GetAllInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error)
@@ -171,7 +171,7 @@ func (h *HardcodedAuth) Authenticate(username, password string) (*User, error) {
 	return u, nil
 }
 
-func (h *HardcodedAuth) GetUser(id int) (*User, error) {
+func (h *HardcodedAuth) GetUser(id string) (*User, error) {
 	u := &User{}
 	err := h.db.QueryRow(`SELECT id, username, email, created_at FROM users WHERE id = $1`, id).
 		Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt)
@@ -210,12 +210,12 @@ func (r *SQLPostRepository) Update(post *Post) error {
 	return err
 }
 
-func (r *SQLPostRepository) Delete(id int) error {
+func (r *SQLPostRepository) Delete(id string) error {
 	_, err := r.db.Exec("DELETE FROM posts WHERE id = $1", id)
 	return err
 }
 
-func (r *SQLPostRepository) GetByID(id int) (*Post, error) {
+func (r *SQLPostRepository) GetByID(id string) (*Post, error) {
 	post := &Post{}
 	query := `
 		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
@@ -735,10 +735,10 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		session, _ := app.sessions.Get(r, "blog-session")
-		if userID, ok := session.Values["user_id"].(int); ok {
+		if userID, ok := session.Values["user_id"].(string); ok {
 			post.UserID = userID
 		} else {
-			post.UserID = 1
+			post.UserID = "1"
 		}
 		post.Slug = slugify(post.Title)
 		if err := app.posts.Create(&post); err != nil {
@@ -774,16 +774,8 @@ func (app *App) apiPostHandler(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
-	idStr := vars["id"]
-	var id int
-	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(APIResponse{
-			Success: false,
-			Error:   "Invalid post ID",
-		})
-		return
-	}
+	id := vars["id"]
+	
 	switch r.Method {
 	case "GET":
 		post, err := app.posts.GetByID(id)
