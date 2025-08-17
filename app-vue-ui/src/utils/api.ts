@@ -81,7 +81,9 @@ class API {
   }
 
   async getPost(id: number): Promise<PostResponse> {
+    console.log('API: Making request to get post', id)
     const response: AxiosResponse<PostResponse> = await this.client.get(`/posts/${id}`)
+    console.log('API: Response received:', response.data)
     return response.data
   }
 

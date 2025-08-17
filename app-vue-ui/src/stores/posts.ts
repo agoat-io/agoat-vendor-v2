@@ -40,17 +40,23 @@ export const usePostsStore = defineStore('posts', () => {
     loading.value = true
     error.value = null
     
+    console.log('Fetching post with ID:', id)
+    
     try {
       const response = await api.getPost(id)
+      console.log('API response:', response)
       
       if (response.success && response.data) {
         currentPost.value = response.data
+        console.log('Post loaded successfully:', response.data)
         return response.data
       } else {
         error.value = response.error || 'Post not found'
+        console.log('Post not found, error:', response.error)
         return null
       }
     } catch (err: any) {
+      console.error('Error fetching post:', err)
       error.value = err.response?.data?.error || 'Failed to fetch post'
       return null
     } finally {
