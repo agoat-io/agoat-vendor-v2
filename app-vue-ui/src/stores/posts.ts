@@ -19,11 +19,18 @@ export const usePostsStore = defineStore('posts', () => {
     loading.value = true
     error.value = null
     
+    console.log('🔍 Fetching posts, page:', page, 'perPage:', perPage)
+    
     try {
       const response = await api.getPosts(page, perPage)
+      console.log('🔍 Raw API response:', response)
       
       if (response.success && response.data) {
+        console.log('🔍 Posts before assignment:', response.data)
+        console.log('🔍 First post ID type:', typeof response.data[0]?.id, 'value:', response.data[0]?.id)
         posts.value = response.data
+        console.log('🔍 Posts after assignment:', posts.value)
+        console.log('🔍 First post ID after assignment:', typeof posts.value[0]?.id, 'value:', posts.value[0]?.id)
         meta.value = response.meta || null
       } else {
         error.value = response.error || 'Failed to fetch posts'

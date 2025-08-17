@@ -76,7 +76,10 @@ class API {
       params.to_date = dateRange.to.toISOString().split('T')[0]
     }
     
+    console.log('🔍 API: Making request to get posts with params:', params)
     const response: AxiosResponse<PostsResponse> = await this.client.get('/posts', { params })
+    console.log('🔍 API: Raw response data:', response.data)
+    console.log('🔍 API: First post ID in response:', response.data.data?.[0]?.id, 'type:', typeof response.data.data?.[0]?.id)
     return response.data
   }
 

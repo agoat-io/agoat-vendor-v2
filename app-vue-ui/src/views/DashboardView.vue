@@ -207,7 +207,9 @@ const currentPage = ref(1)
 const deletingPost = ref<string | null>(null)
 
 const loadPosts = async () => {
+  console.log('🔍 Dashboard: Loading posts for page:', currentPage.value)
   await postsStore.fetchPosts(currentPage.value)
+  console.log('🔍 Dashboard: Posts loaded, first post ID:', postsStore.posts[0]?.id, 'type:', typeof postsStore.posts[0]?.id)
 }
 
 const changePage = async (page: number) => {
