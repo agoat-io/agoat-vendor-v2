@@ -83,16 +83,16 @@
       </div>
       
       <div class="toolbar-group">
+        <button @click="toggleEditMode" type="button" class="toolbar-button" :class="{ 'is-active': isCodeMode }" title="Toggle Code Mode">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        </button>
+        
         <button @click="togglePreview" type="button" class="toolbar-button" :class="{ 'is-active': showPreview }" title="Toggle Preview">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-        </button>
-        
-        <button v-if="showPreview" @click="toggleSplitMode" type="button" class="toolbar-button" :class="{ 'is-active': splitMode }" title="Toggle Split View">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         </button>
       </div>
@@ -100,8 +100,20 @@
     
     <!-- Editor Layout -->
     <div class="editor-layout">
-      <!-- Markdown Input -->
-      <div class="editor-input" :class="{ 'hidden': showPreview && !splitMode }">
+      <!-- Rich Text Mode -->
+      <div v-if="!isCodeMode" class="rich-text-editor">
+        <div 
+          ref="richTextRef"
+          class="rich-text-content"
+          contenteditable="true"
+          @input="updateFromRichText"
+          @paste="handlePaste"
+          v-html="renderedContent"
+        ></div>
+      </div>
+      
+      <!-- Code Mode -->
+      <div v-else class="code-editor">
         <textarea
           ref="textareaRef"
           v-model="markdownContent"
@@ -111,24 +123,9 @@
         ></textarea>
       </div>
       
-      <!-- Full Preview (when not in split mode) -->
-      <div v-if="showPreview && !splitMode" class="editor-preview">
+      <!-- Preview Panel (when enabled) -->
+      <div v-if="showPreview" class="preview-panel">
         <div class="preview-content prose prose-lg max-w-none" v-html="renderedContent"></div>
-      </div>
-      
-      <!-- Split View -->
-      <div v-if="showPreview && splitMode" class="editor-split">
-        <div class="split-input">
-          <textarea
-            v-model="markdownContent"
-            :placeholder="placeholder"
-            class="markdown-textarea"
-            @input="updateContent"
-          ></textarea>
-        </div>
-        <div class="split-preview">
-          <div class="preview-content prose prose-lg max-w-none" v-html="renderedContent"></div>
-        </div>
       </div>
     </div>
     
@@ -193,28 +190,32 @@ marked.use({
 })
 
 // Reactive data
-const markdownContent = ref(props.modelValue || `# Welcome to the Markdown Editor
+const markdownContent = ref(props.modelValue || `# Start Writing Your Blog Post
 
-This is a **bold** and *italic* text example.
+Begin your blog post here. You can use the toolbar above to format your content.
 
-## Features
-- Real-time preview
-- Beautiful styling
-- Easy to use
+## Writing Tips
+- Use **bold** for emphasis
+- Use *italic* for subtle emphasis
+- Create lists with bullet points
+- Add [links](https://example.com) to reference sources
+- Include images for visual appeal
 
-> This is a quote block
-
-[Visit our website](https://example.com)
+> Pro tip: You can see your content rendered in real-time on the right side!
 
 \`\`\`javascript
-console.log('Hello World');
-\`\`\``)
+// You can even include code examples
+console.log('Hello, World!');
+\`\`\`
+
+Happy writing! 🚀`)
 const showPreview = ref(true) // Enable preview by default
 const showLinkDialog = ref(false)
 const linkText = ref('')
 const linkUrl = ref('')
 const textareaRef = ref<HTMLTextAreaElement>()
-const splitMode = ref(false)
+const richTextRef = ref<HTMLDivElement>()
+const isCodeMode = ref(false) // Start in rich text mode
 
 // Computed
 const renderedContent = computed(() => {
@@ -236,36 +237,84 @@ const updateContent = () => {
 }
 
 const insertMarkdown = (before: string, after: string) => {
-  const textarea = textareaRef.value
-  if (!textarea) return
-  
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const selectedText = markdownContent.value.substring(start, end)
-  
-  const newText = before + selectedText + after
-  markdownContent.value = markdownContent.value.substring(0, start) + newText + markdownContent.value.substring(end)
-  
-  // Update cursor position
-  nextTick(() => {
-    textarea.focus()
-    textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length)
-  })
+  if (isCodeMode.value) {
+    // Code mode - insert markdown directly
+    const textarea = textareaRef.value
+    if (!textarea) return
+    
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = markdownContent.value.substring(start, end)
+    
+    const newText = before + selectedText + after
+    markdownContent.value = markdownContent.value.substring(0, start) + newText + markdownContent.value.substring(end)
+    
+    // Update cursor position
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length)
+    })
+  } else {
+    // Rich text mode - use document.execCommand
+    const richTextElement = richTextRef.value
+    if (!richTextElement) return
+    
+    richTextElement.focus()
+    
+    if (before === '**' && after === '**') {
+      document.execCommand('bold', false)
+    } else if (before === '*' && after === '*') {
+      document.execCommand('italic', false)
+    } else if (before === '~~' && after === '~~') {
+      document.execCommand('strikeThrough', false)
+    } else if (before === '# ') {
+      document.execCommand('formatBlock', false, '<h1>')
+    } else if (before === '## ') {
+      document.execCommand('formatBlock', false, '<h2>')
+    } else if (before === '### ') {
+      document.execCommand('formatBlock', false, '<h3>')
+    } else if (before === '- ') {
+      document.execCommand('insertUnorderedList', false)
+    } else if (before === '1. ') {
+      document.execCommand('insertOrderedList', false)
+    } else if (before === '> ') {
+      document.execCommand('formatBlock', false, '<blockquote>')
+    } else {
+      // For other cases, insert the text directly
+      document.execCommand('insertText', false, before + after)
+    }
+    
+    updateFromRichText()
+  }
   
   updateContent()
 }
 
 const insertLink = () => {
-  const textarea = textareaRef.value
-  if (!textarea) return
-  
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const selectedText = markdownContent.value.substring(start, end)
-  
-  linkText.value = selectedText
-  linkUrl.value = ''
-  showLinkDialog.value = true
+  if (isCodeMode.value) {
+    // Code mode
+    const textarea = textareaRef.value
+    if (!textarea) return
+    
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = markdownContent.value.substring(start, end)
+    
+    linkText.value = selectedText
+    linkUrl.value = ''
+    showLinkDialog.value = true
+  } else {
+    // Rich text mode
+    const richTextElement = richTextRef.value
+    if (!richTextElement) return
+    
+    richTextElement.focus()
+    const url = window.prompt('Enter URL:')
+    if (url) {
+      document.execCommand('createLink', false, url)
+      updateFromRichText()
+    }
+  }
 }
 
 const confirmLink = () => {
@@ -286,41 +335,118 @@ const insertImage = () => {
   const url = window.prompt('Enter image URL:')
   if (url) {
     const alt = window.prompt('Enter image description (for accessibility):') || ''
-    const imageMarkdown = `![${alt}](${url})`
-    insertMarkdown(imageMarkdown, '')
+    
+    if (isCodeMode.value) {
+      const imageMarkdown = `![${alt}](${url})`
+      insertMarkdown(imageMarkdown, '')
+    } else {
+      // Rich text mode
+      const richTextElement = richTextRef.value
+      if (!richTextElement) return
+      
+      richTextElement.focus()
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = alt
+      document.execCommand('insertHTML', false, img.outerHTML)
+      updateFromRichText()
+    }
   }
 }
 
 const insertTable = () => {
-  const textarea = textareaRef.value
-  if (!textarea) return
+  if (isCodeMode.value) {
+    // Code mode
+    const textarea = textareaRef.value
+    if (!textarea) return
 
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const selectedText = markdownContent.value.substring(start, end)
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = markdownContent.value.substring(start, end)
 
-  const tableMarkdown = `| ${selectedText} | ${selectedText} |
+    const tableMarkdown = `| ${selectedText} | ${selectedText} |
 | --- | --- |`
-  insertMarkdown(tableMarkdown, '')
+    insertMarkdown(tableMarkdown, '')
+  } else {
+    // Rich text mode
+    const richTextElement = richTextRef.value
+    if (!richTextElement) return
+    
+    richTextElement.focus()
+    const tableHTML = `
+      <table border="1" style="border-collapse: collapse; width: 100%;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;">Header 1</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">Header 2</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;">Cell 1</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">Cell 2</td>
+        </tr>
+      </table>
+    `
+    document.execCommand('insertHTML', false, tableHTML)
+    updateFromRichText()
+  }
 }
 
 const togglePreview = () => {
   showPreview.value = !showPreview.value
-  if (showPreview.value) {
-    splitMode.value = false // Ensure split mode is off when preview is on
-  }
 }
 
-const toggleSplitMode = () => {
-  splitMode.value = !splitMode.value
+const toggleEditMode = () => {
+  isCodeMode.value = !isCodeMode.value
+}
+
+const updateFromRichText = () => {
+  const richTextElement = richTextRef.value
+  if (!richTextElement) return
+  
+  // Convert HTML back to markdown (simplified approach)
+  const html = richTextElement.innerHTML
+  // For now, we'll use a simple conversion - in a real implementation,
+  // you'd want to use a library like turndown to convert HTML to markdown
+  // This is a basic conversion - you might want to use a proper library
+  let markdown = html
+    .replace(/<h1[^>]*>(.*?)<\/h1>/g, '# $1\n\n')
+    .replace(/<h2[^>]*>(.*?)<\/h2>/g, '## $1\n\n')
+    .replace(/<h3[^>]*>(.*?)<\/h3>/g, '### $1\n\n')
+    .replace(/<strong[^>]*>(.*?)<\/strong>/g, '**$1**')
+    .replace(/<b[^>]*>(.*?)<\/b>/g, '**$1**')
+    .replace(/<em[^>]*>(.*?)<\/em>/g, '*$1*')
+    .replace(/<i[^>]*>(.*?)<\/i>/g, '*$1*')
+    .replace(/<p[^>]*>(.*?)<\/p>/g, '$1\n\n')
+    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<ul[^>]*>(.*?)<\/ul>/g, '$1\n\n')
+    .replace(/<ol[^>]*>(.*?)<\/ol>/g, '$1\n\n')
+    .replace(/<li[^>]*>(.*?)<\/li>/g, '- $1\n')
+    .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/g, '> $1\n\n')
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/g, '[$2]($1)')
+    .replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g, '![$2]($1)')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim()
+  
+  markdownContent.value = markdown
+  updateContent()
+}
+
+const handlePaste = (event: ClipboardEvent) => {
+  event.preventDefault()
+  const text = event.clipboardData?.getData('text/plain') || ''
+  document.execCommand('insertText', false, text)
 }
 
 // Watch for external changes
 watch(() => props.modelValue, (newValue) => {
   if (newValue !== markdownContent.value) {
-    markdownContent.value = newValue
+    markdownContent.value = newValue || ''
   }
-})
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -350,41 +476,46 @@ watch(() => props.modelValue, (newValue) => {
 
 .editor-layout {
   @apply relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0;
 }
 
-.editor-input {
-  @apply block;
+.rich-text-editor {
+  @apply bg-white;
 }
 
-.editor-input.hidden {
-  display: none;
+.rich-text-content {
+  @apply w-full min-h-[400px] p-4 border-0 resize-none focus:outline-none focus:ring-0;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-y: auto;
+}
+
+.rich-text-content:focus {
+  @apply outline-none;
+}
+
+.code-editor {
+  @apply bg-white;
 }
 
 .markdown-textarea {
-  @apply w-full min-h-[400px] p-4 border-0 resize-none focus:outline-none focus:ring-0;
+  @apply w-full min-h-[400px] p-4 border-0 resize-none focus:outline-none focus:ring-0 bg-white;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.6;
 }
 
-.editor-preview {
-  @apply p-4 bg-white;
+.preview-panel {
+  @apply bg-gray-50 p-4 border-l border-gray-200;
+  width: 400px;
+  overflow-y: auto;
 }
 
 .preview-content {
   @apply min-h-[400px];
-}
-
-.editor-split {
-  @apply grid grid-cols-2 gap-4 p-4;
-}
-
-.split-input {
-  @apply border-r border-gray-200 pr-4;
-}
-
-.split-preview {
-  @apply pl-4;
 }
 
 .modal-overlay {
