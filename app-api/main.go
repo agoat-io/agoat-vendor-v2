@@ -532,7 +532,11 @@ func (app *App) apiMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			})
 			return
 		}
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			origin = "http://localhost:5173"
+		}
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -549,7 +553,11 @@ func (app *App) apiMiddleware(next http.HandlerFunc) http.HandlerFunc {
 // Missing apiStatusHandler - this was the main error
 func (app *App) apiStatusHandler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers for status
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "http://localhost:5173"
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -577,7 +585,11 @@ func (app *App) apiStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) loginHandler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers for login
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "http://localhost:5173"
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -625,7 +637,11 @@ func (app *App) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers for logout
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "http://localhost:5173"
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -649,7 +665,11 @@ func (app *App) logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers for posts
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "http://localhost:5173"
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -761,7 +781,11 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) apiPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers for individual post
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "http://localhost:5173"
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")

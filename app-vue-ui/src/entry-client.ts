@@ -73,41 +73,37 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
-// Initialize auth store
-const { useAuthStore } = await import('./stores/auth')
-const authStore = useAuthStore()
-authStore.initializeAuth()
-
-// Navigation guard - moved after pinia is created
-router.beforeEach(async (to, from, next) => {
-  // Import auth store after pinia is available
+async function initializeApp() {
+  // Initialize auth store
   const { useAuthStore } = await import('./stores/auth')
   const authStore = useAuthStore()
-  
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    // Try to check if user is authenticated via API
-    try {
-      await authStore.checkAuth()
-    } catch (error) {
-      // If check fails, redirect to login
-      next('/login')
+  authStore.initializeAuth()
+
+  // Navigation guard
+  router.beforeEach(async (to, from, next) => {
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+      try {
+        await authStore.checkAuth()
+      } catch (error) {
+        next('/login')
+        return
+      }
+      
+      if (!authStore.isAuthenticated) {
+        next('/login')
+        return
+      }
+    } else if (to.name === 'login' && authStore.isAuthenticated) {
+      next('/dashboard')
       return
     }
     
-    // If still not authenticated after check, redirect to login
-    if (!authStore.isAuthenticated) {
-      next('/login')
-      return
-    }
-  } else if (to.name === 'login' && authStore.isAuthenticated) {
-    next('/dashboard')
-    return
-  }
-  
-  next()
-})
+    next()
+  })
 
-// Wait for router to be ready before mounting
-router.isReady().then(() => {
+  // Wait for router to be ready before mounting
+  await router.isReady()
   app.mount('#app')
-})
+}
+
+initializeApp()

@@ -9,7 +9,7 @@ echo ""
 cleanup() {
     echo ""
     echo "🛑 Shutting down development servers..."
-    kill $API_PID $UI_PID 2>/dev/null
+    kill $API_PID $UI_PID $VIEWER_PID 2>/dev/null
     exit 0
 }
 
@@ -20,10 +20,12 @@ trap cleanup SIGINT SIGTERM
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 API_DIR="$PROJECT_ROOT/app-api"
 UI_DIR="$PROJECT_ROOT/app-vue-ui"
+VIEWER_DIR="$PROJECT_ROOT/app-vue-ui-viewer"
 
 echo "📁 Project root: $PROJECT_ROOT"
 echo "🔧 API directory: $API_DIR"
 echo "🎨 UI directory: $UI_DIR"
+echo "👁️  Viewer directory: $VIEWER_DIR"
 echo ""
 
 # Check if directories exist
@@ -34,6 +36,11 @@ fi
 
 if [ ! -d "$UI_DIR" ]; then
     echo "❌ Error: UI directory not found at $UI_DIR"
+    exit 1
+fi
+
+if [ ! -d "$VIEWER_DIR" ]; then
+    echo "❌ Error: Viewer directory not found at $VIEWER_DIR"
     exit 1
 fi
 
@@ -57,6 +64,14 @@ fi
 echo "✅ API is running on http://localhost:8080"
 echo ""
 
+# Start Viewer microfrontend using the dedicated script
+echo "👁️  Starting Viewer microfrontend..."
+./local-scripts/start-viewer.sh &
+VIEWER_PID=$!
+
+# Wait a moment for Viewer to start
+sleep 3
+
 # Start Vue UI using the dedicated script
 echo "🎨 Starting Vue UI development server..."
 ./local-scripts/start-ui.sh &
@@ -70,12 +85,14 @@ echo "🎉 AGoat Publisher is now running!"
 echo ""
 echo "📊 API: http://localhost:8080 (with GCP secrets & hot reload)"
 echo "🎨 UI:  http://localhost:5173 (with hot reload)"
+echo "👁️  Viewer: http://localhost:5175 (microfrontend)"
 echo "🔑 Login: admin / admin123"
 echo "☁️  GCP Project: agoat-publisher-dev"
 echo ""
 echo "📝 Individual scripts available:"
 echo "   API only:  ./local-scripts/start-api.sh (with hot reload)"
 echo "   UI only:   ./local-scripts/start-ui.sh (with hot reload)"
+echo "   Viewer:    ./local-scripts/start-viewer.sh (microfrontend)"
 echo ""
 echo "Press Ctrl+C to stop all servers"
 echo ""

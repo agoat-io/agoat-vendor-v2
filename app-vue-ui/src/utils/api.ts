@@ -67,8 +67,12 @@ class API {
   ): Promise<PostsResponse> {
     const params: any = { 
       page, 
-      per_page: perPage,
-      published: publishedOnly ? 'true' : undefined
+      per_page: perPage
+    }
+    
+    // Only add published parameter if we want published only
+    if (publishedOnly) {
+      params.published = 'true'
     }
     
     if (dateRange) {
@@ -77,10 +81,19 @@ class API {
     }
     
     console.log('🔍 API: Making request to get posts with params:', params)
-    const response: AxiosResponse<PostsResponse> = await this.client.get('/posts', { params })
-    console.log('🔍 API: Raw response data:', response.data)
-    console.log('🔍 API: First post ID in response:', response.data.data?.[0]?.id, 'type:', typeof response.data.data?.[0]?.id)
-    return response.data
+    console.log('🔍 API: Request URL:', `${this.baseURL}/posts`)
+    
+    try {
+      const response: AxiosResponse<PostsResponse> = await this.client.get('/posts', { params })
+      console.log('🔍 API: Raw response data:', response.data)
+      console.log('🔍 API: First post ID in response:', response.data.data?.[0]?.id, 'type:', typeof response.data.data?.[0]?.id)
+      return response.data
+    } catch (error: any) {
+      console.error('🔍 API: Error fetching posts:', error)
+      console.error('🔍 API: Error response:', error.response?.data)
+      console.error('🔍 API: Error status:', error.response?.status)
+      throw error
+    }
   }
 
   async getPost(id: string | number, slug?: string): Promise<PostResponse & { redirected?: boolean; redirectUrl?: string }> {
