@@ -35,7 +35,7 @@
         :show-published-only="true"
         :page="page"
         :limit="limit"
-        :is-authenticated="false"
+        :is-authenticated="authStore.isAuthenticated"
         :max-content-length="300"
         @post-clicked="handlePostClick"
         @posts-loaded="handlePostsLoaded"
@@ -85,8 +85,8 @@ const viewerUrl = computed(() => {
   // Add mode
   url.searchParams.set('mode', props.mode)
   
-  // Add authentication status - force to false for testing
-  url.searchParams.set('isAuthenticated', 'false')
+  // Add authentication status
+  url.searchParams.set('isAuthenticated', authStore.isAuthenticated.toString())
   
   // Add API URL
   url.searchParams.set('apiUrl', 'http://localhost:8080/api')

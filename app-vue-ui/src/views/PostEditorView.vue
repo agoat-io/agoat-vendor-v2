@@ -55,16 +55,38 @@
       </div>
 
       <!-- Published Status -->
-      <div class="flex items-center">
-        <input
-          id="published"
-          v-model="form.published"
-          type="checkbox"
-          class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-        />
-        <label for="published" class="ml-2 block text-sm text-gray-900">
-          Publish immediately
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-3">
+          Publication Status
         </label>
+        <div class="flex space-x-6">
+          <div class="flex items-center">
+            <input
+              id="draft"
+              v-model="form.published"
+              :value="false"
+              type="radio"
+              class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+            />
+            <label for="draft" class="ml-2 block text-sm text-gray-900">
+              <span class="font-medium">Draft</span>
+              <span class="text-gray-500 block text-xs">Save as draft - not visible to public</span>
+            </label>
+          </div>
+          <div class="flex items-center">
+            <input
+              id="published"
+              v-model="form.published"
+              :value="true"
+              type="radio"
+              class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+            />
+            <label for="published" class="ml-2 block text-sm text-gray-900">
+              <span class="font-medium">Published</span>
+              <span class="text-gray-500 block text-xs">Make public - visible to all readers</span>
+            </label>
+          </div>
+        </div>
       </div>
 
       <!-- Error Display -->

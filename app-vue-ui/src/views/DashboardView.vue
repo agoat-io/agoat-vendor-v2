@@ -1,6 +1,62 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="mb-8">
+    <!-- Back to dashboard button when viewing single post -->
+    <div v-if="showingPost" class="mb-6">
+      <button
+        @click="backToList"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+      >
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Your Articles
+      </button>
+    </div>
+
+    <!-- Single Post View -->
+    <div v-if="showingPost && currentPost" class="bg-white rounded-lg shadow-sm p-8">
+      <article class="prose prose-lg max-w-none">
+        <header class="mb-8">
+          <h1 class="text-4xl font-bold text-gray-900 mb-4">{{ currentPost.title }}</h1>
+          <div class="flex items-center text-sm text-gray-500 space-x-4">
+            <span>By {{ currentPost.author || 'Admin' }}</span>
+            <span>•</span>
+            <span>{{ formatDate(currentPost.created_at) }}</span>
+            <span v-if="currentPost.updated_at && currentPost.updated_at !== currentPost.created_at">
+              • Updated {{ formatDate(currentPost.updated_at) }}
+            </span>
+          </div>
+        </header>
+        
+        <div class="prose prose-lg max-w-none" v-html="getRenderedContent()"></div>
+        
+        <!-- Edit button and status for authenticated users -->
+        <div class="mt-8 pt-6 border-t border-gray-200">
+          <div class="flex justify-between items-center">
+            <div class="text-sm text-gray-500">
+              <span v-if="currentPost.published" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Published
+              </span>
+              <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                Draft
+              </span>
+            </div>
+            <button
+              @click="editPost"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit Article
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Dashboard Header -->
+    <div v-else class="mb-8">
       <div class="flex justify-between items-center">
         <div>
           <h1 class="text-3xl font-bold text-gray-900">Your Articles</h1>
@@ -18,7 +74,7 @@
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div v-if="!showingPost" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div class="bg-white overflow-hidden shadow rounded-lg">
         <div class="p-5">
           <div class="flex items-center">
@@ -75,7 +131,7 @@
     </div>
 
     <!-- Posts List -->
-    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+    <div v-if="!showingPost" class="bg-white shadow overflow-hidden sm:rounded-md">
       <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
         <h3 class="text-lg leading-6 font-medium text-gray-900">Posts</h3>
       </div>
@@ -123,9 +179,9 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-indigo-600 truncate">
-                  <router-link :to="{path: `/post/${post.id}`, query: {from: 'dashboard'}}" class="hover:underline">
+                  <button @click="viewPost(post)" class="hover:underline text-left">
                     {{ post.title }}
-                  </router-link>
+                  </button>
                 </p>
                 <div class="flex items-center space-x-2">
                   <span
@@ -199,12 +255,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { usePostsStore } from '../stores/posts'
+import { marked } from 'marked'
 import { Button } from '../components/ui/button'
 
+const router = useRouter()
 const postsStore = usePostsStore()
 const currentPage = ref(1)
 const deletingPost = ref<string | null>(null)
+const showingPost = ref(false)
+const currentPost = ref<any>(null)
 
 const loadPosts = async () => {
   console.log('🔍 Dashboard: Loading posts for page:', currentPage.value)
@@ -241,6 +302,36 @@ const formatDate = (dateString: string) => {
     month: 'short',
     day: 'numeric'
   })
+}
+
+const getRenderedContent = () => {
+  if (!currentPost.value) return ''
+  
+  // Convert markdown to HTML
+  return marked.parse(currentPost.value.content) as string
+}
+
+const viewPost = (post: any) => {
+  currentPost.value = post
+  showingPost.value = true
+  
+  // Update page title
+  document.title = `${post.title} - Dashboard - AGoat Blog`
+}
+
+const backToList = () => {
+  showingPost.value = false
+  currentPost.value = null
+  
+  // Reset page title
+  document.title = 'Dashboard - AGoat Blog'
+}
+
+const editPost = () => {
+  if (currentPost.value) {
+    // Navigate to edit page
+    router.push(`/post/${currentPost.value.id}/edit`)
+  }
 }
 
 onMounted(() => {
