@@ -92,8 +92,8 @@
             <span>Slug: {{ post.slug }}</span>
           </div>
           <div class="flex space-x-2">
-            <!-- Only show edit button if user is authenticated and is the author -->
-            <router-link v-if="isAuthenticated && isAuthor" :to="`/post/${post.id}/edit`">
+            <!-- Only show edit button if user came from dashboard and is the author -->
+            <router-link v-if="isAuthenticated && isAuthor && fromAuthorDashboard" :to="`/post/${post.id}/edit`">
               <Button variant="outline" size="sm">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -101,12 +101,13 @@
                 Edit
               </Button>
             </router-link>
-            <router-link to="/">
+            <!-- Back button - returns to dashboard if came from there, otherwise to blog -->
+            <router-link :to="fromAuthorDashboard ? '/dashboard' : '/'">
               <Button variant="secondary" size="sm">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to Blog
+                {{ fromAuthorDashboard ? 'Back to Your Articles' : 'Back to All Articles' }}
               </Button>
             </router-link>
           </div>
@@ -153,6 +154,12 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAuthor = computed(() => {
   if (!isAuthenticated.value || !post.value || !authStore.user) return false
   return post.value.user_id === authStore.user.id
+})
+
+// Check if user came from the author dashboard
+const fromAuthorDashboard = computed(() => {
+  // Check if the referrer path was the dashboard
+  return route.query.from === 'dashboard'
 })
 
 // Validate slug and redirect if necessary

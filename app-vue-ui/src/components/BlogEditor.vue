@@ -99,33 +99,49 @@
     </div>
     
     <!-- Editor Layout -->
-    <div class="editor-layout">
-      <!-- Rich Text Mode -->
-      <div v-if="!isCodeMode" class="rich-text-editor">
-        <div 
-          ref="richTextRef"
-          class="rich-text-content"
-          contenteditable="true"
-          @input="updateFromRichText"
-          @paste="handlePaste"
-          v-html="renderedContent"
-        ></div>
-      </div>
-      
-      <!-- Code Mode -->
-      <div v-else class="code-editor">
-        <textarea
-          ref="textareaRef"
-          v-model="markdownContent"
-          :placeholder="placeholder"
-          class="markdown-textarea"
-          @input="updateContent"
-        ></textarea>
+    <div class="editor-layout" :class="{ 'with-preview': showPreview }">
+      <!-- Single Editing Area -->
+      <div class="editor-main">
+        <!-- Rich Text Mode -->
+        <div v-if="!isCodeMode" class="rich-text-editor">
+          <div 
+            ref="richTextRef"
+            class="rich-text-content"
+            contenteditable="true"
+            @input="updateFromRichText"
+            @paste="handlePaste"
+            @focus="saveSelection"
+            @blur="saveSelection"
+            @keyup="saveSelection"
+            @mouseup="saveSelection"
+          ></div>
+        </div>
+        
+        <!-- Code Mode -->
+        <div v-else class="code-editor">
+          <textarea
+            ref="textareaRef"
+            v-model="markdownContent"
+            :placeholder="placeholder"
+            class="markdown-textarea"
+            @input="updateContent"
+          ></textarea>
+        </div>
       </div>
       
       <!-- Preview Panel (when enabled) -->
       <div v-if="showPreview" class="preview-panel">
-        <div class="preview-content prose prose-lg max-w-none" v-html="renderedContent"></div>
+        <div 
+          ref="previewRef"
+          class="preview-content prose prose-lg max-w-none" 
+          contenteditable="true"
+          @input="updateFromPreview"
+          @paste="handlePaste"
+          @focus="savePreviewSelection"
+          @blur="savePreviewSelection"
+          @keyup="savePreviewSelection"
+          @mouseup="savePreviewSelection"
+        ></div>
       </div>
     </div>
     
@@ -209,12 +225,13 @@ console.log('Hello, World!');
 \`\`\`
 
 Happy writing! 🚀`)
-const showPreview = ref(true) // Enable preview by default
+const showPreview = ref(false) // Disable preview by default - show only editing area
 const showLinkDialog = ref(false)
 const linkText = ref('')
 const linkUrl = ref('')
 const textareaRef = ref<HTMLTextAreaElement>()
 const richTextRef = ref<HTMLDivElement>()
+const previewRef = ref<HTMLDivElement>()
 const isCodeMode = ref(false) // Start in rich text mode
 
 // Computed
@@ -255,11 +272,15 @@ const insertMarkdown = (before: string, after: string) => {
       textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length)
     })
   } else {
-    // Rich text mode - use document.execCommand
-    const richTextElement = richTextRef.value
-    if (!richTextElement) return
+    // Rich text mode or preview mode - use document.execCommand
+    let targetElement = richTextRef.value
+    if (showPreview.value && previewRef.value) {
+      targetElement = previewRef.value
+    }
     
-    richTextElement.focus()
+    if (!targetElement) return
+    
+    targetElement.focus()
     
     if (before === '**' && after === '**') {
       document.execCommand('bold', false)
@@ -284,7 +305,12 @@ const insertMarkdown = (before: string, after: string) => {
       document.execCommand('insertText', false, before + after)
     }
     
-    updateFromRichText()
+    // Update content based on which mode is active
+    if (showPreview.value) {
+      updateFromPreview()
+    } else {
+      updateFromRichText()
+    }
   }
   
   updateContent()
@@ -304,15 +330,23 @@ const insertLink = () => {
     linkUrl.value = ''
     showLinkDialog.value = true
   } else {
-    // Rich text mode
-    const richTextElement = richTextRef.value
-    if (!richTextElement) return
+    // Rich text mode or preview mode
+    let targetElement = richTextRef.value
+    if (showPreview.value && previewRef.value) {
+      targetElement = previewRef.value
+    }
     
-    richTextElement.focus()
+    if (!targetElement) return
+    
+    targetElement.focus()
     const url = window.prompt('Enter URL:')
     if (url) {
       document.execCommand('createLink', false, url)
-      updateFromRichText()
+      if (showPreview.value) {
+        updateFromPreview()
+      } else {
+        updateFromRichText()
+      }
     }
   }
 }
@@ -340,16 +374,24 @@ const insertImage = () => {
       const imageMarkdown = `![${alt}](${url})`
       insertMarkdown(imageMarkdown, '')
     } else {
-      // Rich text mode
-      const richTextElement = richTextRef.value
-      if (!richTextElement) return
+      // Rich text mode or preview mode
+      let targetElement = richTextRef.value
+      if (showPreview.value && previewRef.value) {
+        targetElement = previewRef.value
+      }
       
-      richTextElement.focus()
+      if (!targetElement) return
+      
+      targetElement.focus()
       const img = document.createElement('img')
       img.src = url
       img.alt = alt
       document.execCommand('insertHTML', false, img.outerHTML)
-      updateFromRichText()
+      if (showPreview.value) {
+        updateFromPreview()
+      } else {
+        updateFromRichText()
+      }
     }
   }
 }
@@ -368,11 +410,15 @@ const insertTable = () => {
 | --- | --- |`
     insertMarkdown(tableMarkdown, '')
   } else {
-    // Rich text mode
-    const richTextElement = richTextRef.value
-    if (!richTextElement) return
+    // Rich text mode or preview mode
+    let targetElement = richTextRef.value
+    if (showPreview.value && previewRef.value) {
+      targetElement = previewRef.value
+    }
     
-    richTextElement.focus()
+    if (!targetElement) return
+    
+    targetElement.focus()
     const tableHTML = `
       <table border="1" style="border-collapse: collapse; width: 100%;">
         <tr>
@@ -386,12 +432,26 @@ const insertTable = () => {
       </table>
     `
     document.execCommand('insertHTML', false, tableHTML)
-    updateFromRichText()
+    if (showPreview.value) {
+      updateFromPreview()
+    } else {
+      updateFromRichText()
+    }
   }
 }
 
 const togglePreview = () => {
   showPreview.value = !showPreview.value
+  
+  // Initialize preview content when enabling preview
+  if (showPreview.value) {
+    nextTick(() => {
+      const previewElement = previewRef.value
+      if (previewElement) {
+        previewElement.innerHTML = renderedContent.value as string
+      }
+    })
+  }
 }
 
 const toggleEditMode = () => {
@@ -401,6 +461,9 @@ const toggleEditMode = () => {
 const updateFromRichText = () => {
   const richTextElement = richTextRef.value
   if (!richTextElement) return
+  
+  // Save current selection before updating
+  saveSelection()
   
   // Convert HTML back to markdown (simplified approach)
   const html = richTextElement.innerHTML
@@ -433,6 +496,11 @@ const updateFromRichText = () => {
   
   markdownContent.value = markdown
   updateContent()
+  
+  // Restore selection after updating
+  nextTick(() => {
+    restoreSelection()
+  })
 }
 
 const handlePaste = (event: ClipboardEvent) => {
@@ -441,12 +509,220 @@ const handlePaste = (event: ClipboardEvent) => {
   document.execCommand('insertText', false, text)
 }
 
+// Selection management for rich text mode
+const savedSelection = ref<{ start: number; end: number } | null>(null)
+
+const saveSelection = () => {
+  const richTextElement = richTextRef.value
+  if (!richTextElement) return
+  
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
+  
+  const range = selection.getRangeAt(0)
+  const preCaretRange = range.cloneRange()
+  preCaretRange.selectNodeContents(richTextElement)
+  preCaretRange.setEnd(range.endContainer, range.endOffset)
+  
+  savedSelection.value = {
+    start: preCaretRange.toString().length,
+    end: preCaretRange.toString().length
+  }
+}
+
+const restoreSelection = () => {
+  const richTextElement = richTextRef.value
+  if (!richTextElement || !savedSelection.value) return
+  
+  const selection = window.getSelection()
+  if (!selection) return
+  
+  const range = document.createRange()
+  let charIndex = 0
+  let foundStart = false
+  let foundEnd = false
+  
+  const traverseNodes = (node: Node) => {
+    if (foundEnd) return
+    
+    if (node.nodeType === Node.TEXT_NODE) {
+      const nextCharIndex = charIndex + node.textContent!.length
+      if (!foundStart && savedSelection.value!.start >= charIndex && savedSelection.value!.start <= nextCharIndex) {
+        range.setStart(node, savedSelection.value!.start - charIndex)
+        foundStart = true
+      }
+      if (!foundEnd && savedSelection.value!.end >= charIndex && savedSelection.value!.end <= nextCharIndex) {
+        range.setEnd(node, savedSelection.value!.end - charIndex)
+        foundEnd = true
+        return
+      }
+      charIndex = nextCharIndex
+    } else {
+      for (const child of Array.from(node.childNodes)) {
+        traverseNodes(child)
+      }
+    }
+  }
+  
+  traverseNodes(richTextElement)
+  
+  if (foundStart && foundEnd) {
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }
+}
+
+// Preview selection management
+const savedPreviewSelection = ref<{ start: number; end: number } | null>(null)
+
+const savePreviewSelection = () => {
+  const previewElement = previewRef.value
+  if (!previewElement) return
+  
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
+  
+  const range = selection.getRangeAt(0)
+  const preCaretRange = range.cloneRange()
+  preCaretRange.selectNodeContents(previewElement)
+  preCaretRange.setEnd(range.endContainer, range.endOffset)
+  
+  savedPreviewSelection.value = {
+    start: preCaretRange.toString().length,
+    end: preCaretRange.toString().length
+  }
+}
+
+const updateFromPreview = () => {
+  const previewElement = previewRef.value
+  if (!previewElement) return
+  
+  // Save current selection before updating
+  savePreviewSelection()
+  
+  // Convert HTML back to markdown (same as rich text conversion)
+  const html = previewElement.innerHTML
+  let markdown = html
+    .replace(/<h1[^>]*>(.*?)<\/h1>/g, '# $1\n\n')
+    .replace(/<h2[^>]*>(.*?)<\/h2>/g, '## $1\n\n')
+    .replace(/<h3[^>]*>(.*?)<\/h3>/g, '### $1\n\n')
+    .replace(/<strong[^>]*>(.*?)<\/strong>/g, '**$1**')
+    .replace(/<b[^>]*>(.*?)<\/b>/g, '**$1**')
+    .replace(/<em[^>]*>(.*?)<\/em>/g, '*$1*')
+    .replace(/<i[^>]*>(.*?)<\/i>/g, '*$1*')
+    .replace(/<p[^>]*>(.*?)<\/p>/g, '$1\n\n')
+    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<ul[^>]*>(.*?)<\/ul>/g, '$1\n\n')
+    .replace(/<ol[^>]*>(.*?)<\/ol>/g, '$1\n\n')
+    .replace(/<li[^>]*>(.*?)<\/li>/g, '- $1\n')
+    .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/g, '> $1\n\n')
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/g, '[$2]($1)')
+    .replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g, '![$2]($1)')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim()
+  
+  markdownContent.value = markdown
+  updateContent()
+  
+  // Update the rich text editor if it's visible
+  if (!isCodeMode.value && richTextRef.value) {
+    richTextRef.value.innerHTML = previewElement.innerHTML
+  }
+  
+  // Restore selection after updating
+  nextTick(() => {
+    restorePreviewSelection()
+  })
+}
+
+const restorePreviewSelection = () => {
+  const previewElement = previewRef.value
+  if (!previewElement || !savedPreviewSelection.value) return
+  
+  const selection = window.getSelection()
+  if (!selection) return
+  
+  const range = document.createRange()
+  let charIndex = 0
+  let foundStart = false
+  let foundEnd = false
+  
+  const traverseNodes = (node: Node) => {
+    if (foundEnd) return
+    
+    if (node.nodeType === Node.TEXT_NODE) {
+      const nextCharIndex = charIndex + node.textContent!.length
+      if (!foundStart && savedPreviewSelection.value!.start >= charIndex && savedPreviewSelection.value!.start <= nextCharIndex) {
+        range.setStart(node, savedPreviewSelection.value!.start - charIndex)
+        foundStart = true
+      }
+      if (!foundEnd && savedPreviewSelection.value!.end >= charIndex && savedPreviewSelection.value!.end <= nextCharIndex) {
+        range.setEnd(node, savedPreviewSelection.value!.end - charIndex)
+        foundEnd = true
+        return
+      }
+      charIndex = nextCharIndex
+    } else {
+      for (const child of Array.from(node.childNodes)) {
+        traverseNodes(child)
+      }
+    }
+  }
+  
+  traverseNodes(previewElement)
+  
+  if (foundStart && foundEnd) {
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }
+}
+
 // Watch for external changes
 watch(() => props.modelValue, (newValue) => {
   if (newValue !== markdownContent.value) {
     markdownContent.value = newValue || ''
   }
 }, { immediate: true })
+
+// Initialize rich text content when switching to rich text mode
+watch(() => isCodeMode.value, (newMode) => {
+  if (!newMode) {
+    // Switching to rich text mode
+    nextTick(() => {
+      const richTextElement = richTextRef.value
+      if (richTextElement) {
+        richTextElement.innerHTML = renderedContent.value as string
+      }
+    })
+  }
+}, { immediate: true })
+
+// Initialize preview content when preview is enabled
+watch(() => showPreview.value, (show) => {
+  if (show) {
+    nextTick(() => {
+      const previewElement = previewRef.value
+      if (previewElement) {
+        previewElement.innerHTML = renderedContent.value as string
+      }
+    })
+  }
+}, { immediate: true })
+
+// Update preview content when markdown changes
+watch(() => renderedContent.value, (newContent) => {
+  if (showPreview.value && previewRef.value) {
+    // Only update if the preview is visible and we're not currently editing it
+    if (document.activeElement !== previewRef.value) {
+      previewRef.value.innerHTML = newContent as string
+    }
+  }
+})
 </script>
 
 <style scoped>
@@ -477,8 +753,16 @@ watch(() => props.modelValue, (newValue) => {
 .editor-layout {
   @apply relative;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 0;
+}
+
+.editor-layout.with-preview {
+  grid-template-columns: 1fr auto;
+}
+
+.editor-main {
+  @apply bg-white;
 }
 
 .rich-text-editor {

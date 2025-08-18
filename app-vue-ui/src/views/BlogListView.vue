@@ -9,10 +9,18 @@
             <p class="text-sm text-gray-600">All articles and insights</p>
           </div>
           <router-link 
+            v-if="!isAuthenticated" 
             to="/login" 
             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Admin Login
+          </router-link>
+          <router-link 
+            v-else 
+            to="/dashboard" 
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Dashboard
           </router-link>
         </div>
       </div>
@@ -102,7 +110,7 @@
               </div>
                               <div class="text-gray-700 mb-4 line-clamp-4" v-html="getPreviewText(post.content)"></div>
               <router-link :to="createPostUrl(post)" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                Read more 
+                {{ isAuthenticated ? 'Read more' : 'Read full article' }}
                 <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -246,18 +254,22 @@ const showPublishedFilter = computed(() => isAuthenticated.value)
 // Get preview text (300 chars for non-auth, 500 for auth users)
 const getPreviewText = (content: string): string => {
   const maxLength = isAuthenticated.value ? 500 : 300
+  const maxLines = isAuthenticated.value ? 10 : 5
   const lines = content.split('\n').filter(line => line.trim())
-  const firstLines = lines.slice(0, 10).join('\n')
+  
+  const firstLines = lines.slice(0, maxLines).join('\n')
   
   if (firstLines.length <= maxLength) {
-    return marked.parse(firstLines) as string
+    const parsed = marked.parse(firstLines) as string
+    return isAuthenticated.value ? parsed : parsed + '<p class="text-indigo-600 font-medium mt-2">Log in to read more...</p>'
   }
   
   // Truncate to maxLength characters at word boundary
   const truncated = firstLines.substring(0, maxLength)
   const lastSpace = truncated.lastIndexOf(' ')
   const finalText = lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...'
-  return marked.parse(finalText) as string
+  const parsed = marked.parse(finalText) as string
+  return isAuthenticated.value ? parsed : parsed + '<p class="text-indigo-600 font-medium mt-2">Log in to read more...</p>'
 }
 
 // Format date
@@ -405,9 +417,14 @@ const visiblePages = computed(() => {
   return pages
 })
 
-onMounted(() => {
+onMounted(async () => {
+  // Always set showPublishedOnly to true for non-authenticated users
+  if (!isAuthenticated.value) {
+    showPublishedOnly.value = true
+  }
+  
   const page = parseInt(route.query.page as string) || 1
-  loadPosts(page)
+  await loadPosts(page)
 })
 
 // Watch for route changes

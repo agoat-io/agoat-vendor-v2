@@ -3,8 +3,8 @@
     <div class="mb-8">
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p class="mt-2 text-gray-600">Manage your blog posts and content</p>
+          <h1 class="text-3xl font-bold text-gray-900">Your Articles</h1>
+          <p class="mt-2 text-gray-600">Manage and edit your blog posts</p>
         </div>
         <router-link to="/post/new">
           <Button>
@@ -123,7 +123,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-indigo-600 truncate">
-                  <router-link :to="`/post/${post.id}`" class="hover:underline">
+                  <router-link :to="{path: `/post/${post.id}`, query: {from: 'dashboard'}}" class="hover:underline">
                     {{ post.title }}
                   </router-link>
                 </p>

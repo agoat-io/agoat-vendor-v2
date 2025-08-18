@@ -24,6 +24,7 @@
     "date-fns": "^4.1.0",
     "lucide-vue-next": "^0.294.0",
     "marked": "^16.1.2",
+    "mavon-editor": "^2.10.4",
     "pinia": "^2.1.7",
     "radix-vue": "^1.4.0",
     "reka-ui": "^2.4.1",

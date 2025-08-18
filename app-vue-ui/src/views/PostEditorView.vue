@@ -45,7 +45,7 @@
         <label for="content" class="block text-sm font-medium text-gray-700 mb-2">
           Content
         </label>
-        <BlogEditor
+        <ProfessionalMarkdownEditor
           v-model="form.content"
           placeholder="Write your blog post content here..."
         />
@@ -111,7 +111,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePostsStore } from '../stores/posts'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import BlogEditor from '../components/BlogEditor.vue'
+import ProfessionalMarkdownEditor from '../components/ProfessionalMarkdownEditor.vue'
 
 const route = useRoute()
 const router = useRouter()
