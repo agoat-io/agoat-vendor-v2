@@ -95,7 +95,7 @@
         </article>
       </div>
 
-      <!-- Posts List View -->
+      <!-- SEO-Optimized Posts List View -->
       <div v-else>
         <!-- Loading state -->
         <div v-if="loading" class="flex justify-center items-center py-12">
@@ -105,19 +105,10 @@
 
         <!-- Error state -->
         <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-md p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <div class="ml-3">
-              <p class="text-sm text-red-800">{{ error }}</p>
-            </div>
-          </div>
+          <p class="text-sm text-red-800">{{ error }}</p>
         </div>
 
-        <!-- Posts list -->
+        <!-- Posts list with SEO optimization -->
         <div v-else-if="posts.length > 0" class="posts-list">
           <div class="mb-6 sm:mb-8">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Latest Posts</h1>
@@ -129,9 +120,11 @@
               v-for="post in posts" 
               :key="post.id" 
               class="post-card bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
+              :itemscope="true"
+              itemtype="https://schema.org/BlogPosting"
             >
               <div class="mb-3 sm:mb-4">
-                <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2 leading-tight">
+                <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2 leading-tight" itemprop="headline">
                   <button 
                     @click="handlePostClick(post)"
                     class="hover:text-blue-600 transition-colors text-left w-full"
@@ -140,14 +133,15 @@
                   </button>
                 </h2>
                 <div class="flex flex-col sm:flex-row sm:items-center text-xs sm:text-sm text-gray-500 space-y-1 sm:space-y-0 sm:space-x-4">
-                  <span>Published {{ formatDate(post.created_at) }}</span>
-                  <span v-if="post.updated_at && post.updated_at !== post.created_at" class="hidden sm:inline">
+                  <span itemprop="author">By {{ post.author || 'Admin' }}</span>
+                  <time :datetime="post.created_at" itemprop="datePublished">Published {{ formatDate(post.created_at) }}</time>
+                  <time v-if="post.updated_at && post.updated_at !== post.created_at" :datetime="post.updated_at" itemprop="dateModified" class="hidden sm:inline">
                     • Updated {{ formatDate(post.updated_at) }}
-                  </span>
+                  </time>
                 </div>
               </div>
 
-              <div class="post-preview mb-3 sm:mb-4">
+              <div class="post-preview mb-3 sm:mb-4" itemprop="description">
                 <div class="text-sm sm:text-base text-gray-700 leading-relaxed" v-html="getPreviewText(post.content)"></div>
               </div>
 
@@ -166,28 +160,32 @@
             </article>
           </div>
 
-          <!-- Pagination -->
+          <!-- Pagination with SEO-friendly URLs -->
           <div v-if="totalPages > 1" class="mt-6 sm:mt-8 flex justify-center">
-            <nav class="flex items-center space-x-1 sm:space-x-2">
-              <button 
-                @click="changePage(currentPage - 1)"
-                :disabled="currentPage <= 1"
-                class="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            <nav class="flex items-center space-x-1 sm:space-x-2" role="navigation" aria-label="Pagination">
+              <a 
+                v-if="currentPage > 1"
+                :href="`?page=${currentPage - 1}`"
+                @click.prevent="changePage(currentPage - 1)"
+                class="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                rel="prev"
               >
                 Previous
-              </button>
+              </a>
               
               <span class="px-2 sm:px-3 py-2 text-xs sm:text-sm text-gray-700">
                 Page {{ currentPage }} of {{ totalPages }}
               </span>
               
-              <button 
-                @click="changePage(currentPage + 1)"
-                :disabled="currentPage >= totalPages"
-                class="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              <a 
+                v-if="currentPage < totalPages"
+                :href="`?page=${currentPage + 1}`"
+                @click.prevent="changePage(currentPage + 1)"
+                class="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                rel="next"
               >
                 Next
-              </button>
+              </a>
             </nav>
           </div>
         </div>
@@ -211,6 +209,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { marked } from 'marked'
 import axios from 'axios'
+import FederatedPostsList from '../components/FederatedPostsList.vue'
+import { renderPostsListSSR, renderPostViewerSSR } from '../utils/federation-ssr'
 
 const router = useRouter()
 const route = useRoute()
@@ -291,6 +291,9 @@ const fetchPosts = async () => {
       totalPosts.value = response.data.meta?.total || posts.value.length
       totalPages.value = response.data.meta?.total_pages || Math.ceil(totalPosts.value / postsPerPage.value)
       
+      // Update meta tags for SEO
+      updateSEOMetaTags()
+      
       console.log('BlogListView: Loaded posts:', posts.value.length)
     } else {
       posts.value = []
@@ -312,6 +315,25 @@ const changePage = (page: number) => {
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.set('page', page.toString())
     window.history.pushState({}, '', currentUrl.toString())
+  }
+}
+
+const updateSEOMetaTags = () => {
+  if (posts.value.length > 0) {
+    // Update page title
+    document.title = `AGoat Blog - ${posts.value.length} Latest Articles (Page ${currentPage.value})`
+    
+    // Update meta description
+    const description = `Browse ${posts.value.length} articles and insights. ${posts.value.slice(0, 3).map(p => p.title).join(', ')}`
+    let metaDescription = document.querySelector('meta[name="description"]')
+    if (metaDescription) {
+      metaDescription.setAttribute('content', description)
+    } else {
+      metaDescription = document.createElement('meta')
+      metaDescription.name = 'description'
+      metaDescription.content = description
+      document.head.appendChild(metaDescription)
+    }
   }
 }
 
@@ -385,6 +407,11 @@ const handleLoginRequested = () => {
 
 const handleViewerError = (error: string) => {
   console.error('Viewer error:', error)
+  error.value = error
+}
+
+const handlePostsLoaded = (posts: any[]) => {
+  console.log('Posts loaded via federation:', posts.length)
 }
 
 const checkForPostPath = () => {
@@ -405,39 +432,15 @@ const checkForPostPath = () => {
   }
 }
 
-// SSR data fetching
-const ssrFetchPosts = async (page: number = 1) => {
-  try {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: postsPerPage.value.toString(),
-      published: 'true'
-    })
-    
-    // Use direct fetch for SSR (no axios interceptors)
-    const response = await fetch(`http://localhost:8080/api/posts?${params}`)
-    const data = await response.json()
-    
-    if (data.success && data.data) {
-      posts.value = data.data
-      totalPosts.value = data.meta?.total || data.data.length
-      totalPages.value = data.meta?.total_pages || Math.ceil(totalPosts.value / postsPerPage.value)
-      currentPage.value = page
-    }
-  } catch (err) {
-    console.error('SSR fetch error:', err)
-    // Fallback to client-side fetch
-    await fetchPosts()
-  }
-}
+
 
 // Lifecycle
 onMounted(() => {
   // Check for post-path in URL on initial load
   checkForPostPath()
   
-  // If not showing a specific post and no posts loaded (SSR didn't run), fetch the posts list
-  if (!showingPost.value && posts.value.length === 0) {
+  // If not showing a specific post, fetch the posts list
+  if (!showingPost.value) {
     // Check for page parameter in URL
     const urlParams = new URLSearchParams(window.location.search)
     const pageParam = urlParams.get('page')
@@ -448,30 +451,9 @@ onMounted(() => {
     fetchPosts()
   }
   
-  // Set default page title and meta description
-  if (!showingPost.value) {
-    document.title = 'AGoat Blog - Latest Posts and Insights'
-    
-    const metaDescription = document.querySelector('meta[name="description"]')
-    if (metaDescription) {
-      metaDescription.setAttribute('content', 'Discover the latest articles, insights, and stories from AGoat. Read our blog for valuable content and updates.')
-    } else {
-      const meta = document.createElement('meta')
-      meta.name = 'description'
-      meta.content = 'Discover the latest articles, insights, and stories from AGoat. Read our blog for valuable content and updates.'
-      document.head.appendChild(meta)
-    }
-  }
-  
   // Listen for browser back/forward navigation
   window.addEventListener('popstate', checkForPostPath)
 })
-
-// Server-side data fetching hook
-if (typeof window === 'undefined') {
-  // This runs only on the server
-  ssrFetchPosts()
-}
 
 // Watch for URL changes (though we're handling this manually now)
 watch(() => route.query, () => {

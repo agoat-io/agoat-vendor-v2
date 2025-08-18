@@ -74,6 +74,18 @@ app.use(pinia)
 app.use(router)
 
 async function initializeApp() {
+  // Check for SSR data
+  const ssrData = (window as any).__SSR_DATA__
+  if (ssrData) {
+    console.log('Hydrating with SSR data:', ssrData)
+    
+    // Use pre-rendered data if available
+    if (ssrData.prerenderedData) {
+      // Inject data into stores or components as needed
+      console.log('Pre-rendered data available for hydration')
+    }
+  }
+
   // Initialize auth store
   const { useAuthStore } = await import('./stores/auth')
   const authStore = useAuthStore()
@@ -103,7 +115,13 @@ async function initializeApp() {
 
   // Wait for router to be ready before mounting
   await router.isReady()
-  app.mount('#app')
+  
+  // Mount or hydrate the app
+  if (ssrData) {
+    app.mount('#app', true) // Hydrate existing SSR content
+  } else {
+    app.mount('#app') // Regular client-side mount
+  }
 }
 
 initializeApp()
