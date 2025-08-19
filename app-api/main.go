@@ -141,9 +141,15 @@ func logJSON(level, category, message string, fields map[string]interface{}) {
 	fmt.Println(string(b))
 }
 
-func logInfo(category, message string, fields map[string]interface{})  { logJSON("info", category, message, fields) }
-func logWarn(category, message string, fields map[string]interface{})  { logJSON("warn", category, message, fields) }
-func logError(category, message string, fields map[string]interface{}) { logJSON("error", category, message, fields) }
+func logInfo(category, message string, fields map[string]interface{}) {
+	logJSON("info", category, message, fields)
+}
+func logWarn(category, message string, fields map[string]interface{}) {
+	logJSON("warn", category, message, fields)
+}
+func logError(category, message string, fields map[string]interface{}) {
+	logJSON("error", category, message, fields)
+}
 func logFatal(category, message string, fields map[string]interface{}) {
 	logJSON("fatal", category, message, fields)
 	os.Exit(1)
@@ -555,24 +561,33 @@ func (app *App) apiStatusHandler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers for status
 	origin := r.Header.Get("Origin")
 	if origin == "" {
-		origin = "http://localhost:5173"
+		origin = "http://localhost:3000"
 	}
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	
+
 	// Handle OPTIONS preflight request
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
+
+	// Check authentication status
+	session, _ := app.sessions.Get(r, "blog-session")
+	authenticated := false
+	if auth, ok := session.Values["authenticated"].(bool); ok && auth {
+		authenticated = true
+	}
+
 	status := map[string]interface{}{
-		"status":    "healthy",
-		"timestamp": time.Now().Format(time.RFC3339),
-		"version":   "1.0.0",
+		"status":        "healthy",
+		"authenticated": authenticated,
+		"timestamp":     time.Now().Format(time.RFC3339),
+		"version":       "1.0.0",
 		"api": map[string]interface{}{
 			"enabled": app.config.API.Enabled,
 		},
@@ -593,13 +608,13 @@ func (app *App) loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	
+
 	// Handle OPTIONS preflight request
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	
+
 	var loginReq LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -645,13 +660,13 @@ func (app *App) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	
+
 	// Handle OPTIONS preflight request
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	
+
 	session, _ := app.sessions.Get(r, "blog-session")
 	session.Values["authenticated"] = false
 	_ = session.Save(r, w)
@@ -673,13 +688,13 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	
+
 	// Handle OPTIONS preflight request
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case "GET":
@@ -688,7 +703,7 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 		publishedOnly := false
 		fromDate := r.URL.Query().Get("from_date")
 		toDate := r.URL.Query().Get("to_date")
-		
+
 		if p := r.URL.Query().Get("page"); p != "" {
 			fmt.Sscanf(p, "%d", &page)
 		}
@@ -698,12 +713,12 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 		if published := r.URL.Query().Get("published"); published == "true" {
 			publishedOnly = true
 		}
-		
+
 		offset := (page - 1) * perPage
 		var posts []Post
 		var err error
 		var total int
-		
+
 		if publishedOnly {
 			if fromDate != "" && toDate != "" {
 				posts, err = app.posts.GetPublishedInDateRange(perPage, offset, fromDate, toDate)
@@ -721,7 +736,7 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 				total, _ = app.posts.Count()
 			}
 		}
-		
+
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(APIResponse{
@@ -731,7 +746,7 @@ func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
 			logError("technical", "GetAll posts failed", map[string]interface{}{"error": err.Error()})
 			return
 		}
-		
+
 		totalPages := (total + perPage - 1) / perPage
 		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
@@ -789,18 +804,18 @@ func (app *App) apiPostHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	
+
 	// Handle OPTIONS preflight request
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
 	id := vars["id"]
 	slug := vars["slug"] // This will be empty if not provided in URL
-	
+
 	switch r.Method {
 	case "GET":
 		post, err := app.posts.GetByID(id)
@@ -813,29 +828,29 @@ func (app *App) apiPostHandler(w http.ResponseWriter, r *http.Request) {
 			logWarn("business", "Post not found (API)", map[string]interface{}{"post_id": id})
 			return
 		}
-		
+
 		// Server-side slug validation for SEO
 		if slug != "" {
 			correctSlug := post.Slug
 			if correctSlug == "" {
 				correctSlug = slugify(post.Title)
 			}
-			
+
 			// If slug doesn't match, redirect to correct URL
 			if slug != correctSlug {
 				correctURL := fmt.Sprintf("/api/posts/%s/%s", id, correctSlug)
 				w.Header().Set("Location", correctURL)
 				w.WriteHeader(http.StatusMovedPermanently) // 301 redirect for SEO
 				logInfo("business", "Slug redirect", map[string]interface{}{
-					"post_id": id,
+					"post_id":        id,
 					"incorrect_slug": slug,
-					"correct_slug": correctSlug,
-					"redirect_url": correctURL,
+					"correct_slug":   correctSlug,
+					"redirect_url":   correctURL,
 				})
 				return
 			}
 		}
-		
+
 		_ = json.NewEncoder(w).Encode(APIResponse{
 			Success: true,
 			Data:    post,
@@ -982,22 +997,22 @@ func loadConfig() (*Config, error) {
 			RateLimit: 60,
 		},
 	}
-	
+
 	// Load database configuration from environment variables
 	if dsn := os.Getenv("DSN"); dsn != "" {
 		config.Database.DSN = dsn
 	} else {
 		return nil, fmt.Errorf("DSN environment variable is required")
 	}
-	
+
 	if ca := os.Getenv("CA"); ca != "" {
 		config.Database.CA = ca
 	}
-	
+
 	if driver := os.Getenv("DB_DRIVER"); driver != "" {
 		config.Database.Driver = driver
 	}
-	
+
 	// Load other configuration from environment variables
 	if port := os.Getenv("PORT"); port != "" {
 		config.Server.Port = port
@@ -1008,7 +1023,7 @@ func loadConfig() (*Config, error) {
 	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
 		config.API.Key = apiKey
 	}
-	
+
 	return config, nil
 }
 

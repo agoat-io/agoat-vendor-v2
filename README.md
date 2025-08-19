@@ -268,3 +268,4 @@ For issues and questions:
 ---
 
 **AGoat Publisher** - Modern blog publishing with microfrontend architecture
+

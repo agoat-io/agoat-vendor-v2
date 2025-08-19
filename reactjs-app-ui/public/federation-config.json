@@ -1,0 +1,11 @@
+{
+  "remotes": {
+    "viewer": {
+      "url": "http://localhost:3001/remoteEntry.js",
+      "scope": "viewer"
+    }
+  },
+  "timeout": 10000,
+  "retryAttempts": 3,
+  "retryDelay": 1000
+}
