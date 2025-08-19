@@ -219,8 +219,10 @@ module.exports = function (webpackEnv) {
       assetModuleFilename: 'static/media/[name].[hash][ext]',
       // webpack uses `publicPath` to determine where the app is being served from.
       // It requires a trailing slash, or the file assets will get an incorrect path.
-      // We inferred the "public path" (such as / or /my-project) from homepage.
-      publicPath: paths.publicUrlOrPath,
+      // For Module Federation, we need to use the specific URL where the federated modules are served.
+      publicPath: isEnvDevelopment 
+        ? 'http://localhost:3001/'
+        : paths.publicUrlOrPath,
       // Point sourcemap entries to original disk location (format as URL on Windows)
       devtoolModuleFilenameTemplate: isEnvProduction
         ? info =>
@@ -577,20 +579,24 @@ module.exports = function (webpackEnv) {
           react: { 
             singleton: true, 
             requiredVersion: '^18.3.1',
-            eager: true
+            eager: true,
+            strictVersion: true
           },
           'react-dom': { 
             singleton: true, 
             requiredVersion: '^18.3.1',
-            eager: true
+            eager: true,
+            strictVersion: true
           },
           axios: { 
             singleton: true,
-            requiredVersion: '^1.11.0'
+            requiredVersion: '^1.11.0',
+            eager: true
           },
           marked: { 
             singleton: true,
-            requiredVersion: '^16.2.0'
+            requiredVersion: '^16.2.0',
+            eager: true
           }
         }
       }),

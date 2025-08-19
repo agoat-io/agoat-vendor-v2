@@ -51,14 +51,26 @@ module.exports = {
       shared: {
         react: { 
           singleton: true, 
-          requiredVersion: false 
+          requiredVersion: '^18.3.1',
+          eager: true,
+          strictVersion: true
         },
         'react-dom': { 
           singleton: true, 
-          requiredVersion: false 
+          requiredVersion: '^18.3.1',
+          eager: true,
+          strictVersion: true
         },
-        axios: { singleton: true },
-        marked: { singleton: true }
+        axios: { 
+          singleton: true,
+          requiredVersion: '^1.11.0',
+          eager: true
+        },
+        marked: { 
+          singleton: true,
+          requiredVersion: '^16.2.0',
+          eager: true
+        }
       }
     }),
     
