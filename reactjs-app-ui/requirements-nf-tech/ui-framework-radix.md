@@ -25,6 +25,7 @@ The application's user interface shall be constructed utilizing Radix UI primiti
 - **Design System Integration**: Centralized theming capabilities ensure cohesive visual identity across all application interfaces
 - **Vendor Reliability**: Leveraging Radix Themes' out-of-the-box configurations ensures long-term maintainability and reduces vendor lock-in risks
 - **Extensibility**: Architecture designed to support custom theme combinations while maintaining Radix Themes' design principles
+- **User Experience**: Configuration panel provides intuitive theme customization capabilities across all application pages
 
 ## Acceptance Criteria
 1. All user interface components must be constructed using Radix UI primitive components
@@ -39,6 +40,10 @@ The application's user interface shall be constructed utilizing Radix UI primiti
 10. **Custom theme combinations shall maintain compatibility with Radix Themes' design system principles**
 11. **Theme switching shall be implemented using Radix Themes' native theme configuration options**
 12. **The system shall provide a clear separation between preconfigured and custom theme implementations**
+13. **Theme changes shall affect all page content and components consistently across the application**
+14. **A configuration panel shall be accessible via a standardized icon on all application pages**
+15. **The configuration panel shall utilize Radix Icons for all iconography**
+16. **The configuration icon shall be appropriately positioned and styled for easy discovery and access**
 
 ## Implementation Standards
 - Utilize `@radix-ui/react-*` packages for all component primitives
@@ -53,15 +58,20 @@ The application's user interface shall be constructed utilizing Radix UI primiti
 - **Implement theme switching using Radix Themes' native appearance, accent color, gray color, radius, and scaling options**
 - **Leverage Radix Themes' preconfigured color palettes, spacing scales, and typography systems**
 - **Provide abstraction layer for custom theme combination integration**
+- **Ensure theme changes propagate to all components and page content**
+- **Implement configuration panel with Radix Icons for theme customization**
+- **Position configuration icon consistently across all application pages**
 
 ## Technical Dependencies
 - `@radix-ui/react-*` component primitive packages
 - `@radix-ui/themes` styling and theming framework
+- `@radix-ui/react-icons` for standardized iconography
 - Theme configuration infrastructure
 - Responsive design utilities
 - Design token management system
 - **Radix Themes' out-of-the-box preconfigured theme combinations**
 - **Custom theme combination extension framework**
+- **Configuration panel component system**
 
 ## Architectural Constraints
 - Must maintain compatibility with existing application architecture and component patterns
@@ -73,6 +83,8 @@ The application's user interface shall be constructed utilizing Radix UI primiti
 - **Must leverage Radix Themes' native theme switching capabilities**
 - **Shall provide extensibility for custom theme combinations while maintaining design system integrity**
 - **Custom theme combinations shall not break Radix Themes' core functionality**
+- **Configuration panel shall be accessible from all application pages**
+- **Theme changes shall be immediately visible across all application content**
 
 ## Performance Objectives
 - Achieve a minimum 60% reduction in custom CSS implementation
@@ -81,6 +93,7 @@ The application's user interface shall be constructed utilizing Radix UI primiti
 - Optimize theme switching performance to under 50ms
 - **Leverage Radix Themes' optimized CSS variable system for instant theme switching**
 - **Maintain performance standards when extending with custom theme combinations**
+- **Configuration panel shall open within 100ms of icon click**
 
 ## Quality Assurance Metrics
 - **Code Quality**: Reduction in custom CSS by minimum 60%
@@ -90,6 +103,8 @@ The application's user interface shall be constructed utilizing Radix UI primiti
 - **Maintainability**: 50% reduction in style-related technical debt
 - **Theme Compliance**: 100% utilization of Radix Themes' out-of-the-box configurations as foundation
 - **Extensibility**: Successful integration of custom theme combinations without breaking core functionality
+- **User Experience**: Configuration panel accessible from all pages with appropriate iconography
+- **Theme Propagation**: 100% of page content responds to theme changes
 
 ## Risk Mitigation
 - **Vendor Lock-in**: Implement abstraction layer for potential framework migration
@@ -98,6 +113,7 @@ The application's user interface shall be constructed utilizing Radix UI primiti
 - **Customization Limitations**: Establish clear boundaries for custom styling requirements
 - **Theme Maintenance**: Rely on Radix Themes' maintained and tested theme configurations
 - **Extension Complexity**: Provide clear guidelines and patterns for custom theme combination development
+- **User Confusion**: Ensure configuration panel is easily discoverable and intuitive to use
 
 ## Radix Themes Foundation Requirements
 ### Primary Theme Utilization
@@ -118,6 +134,28 @@ The application shall implement and utilize the following Radix Themes preconfig
 - **Dark Professional**: Dark mode with blue accent, slate grays
 - **Dark Warm**: Dark mode with orange accent, sand grays
 - **Dark Minimal**: Dark mode with gray accent, gray grays
+
+## Configuration Panel Requirements
+### Panel Accessibility
+- **Global Access**: Configuration panel shall be accessible from all application pages
+- **Icon Placement**: Configuration icon shall be consistently positioned across all pages
+- **Icon Design**: Configuration icon shall use Radix Icons for standardization
+- **Visual Feedback**: Icon shall provide appropriate hover and active states
+- **Accessibility**: Icon shall include proper ARIA labels and keyboard navigation
+
+### Panel Functionality
+- **Theme Selection**: Provide access to all preconfigured and custom themes
+- **Real-time Preview**: Theme changes shall be immediately visible
+- **Theme Creation**: Allow creation of custom theme combinations
+- **Theme Management**: Provide theme editing and deletion capabilities
+- **Settings Persistence**: Theme preferences shall persist across sessions
+
+### Icon Requirements
+- **Radix Icons**: All icons shall use `@radix-ui/react-icons` package
+- **Appropriate Icon**: Configuration icon shall be semantically appropriate (e.g., GearIcon, MixIcon)
+- **Consistent Styling**: Icon shall follow Radix Themes' design token system
+- **Responsive Design**: Icon shall adapt to different screen sizes
+- **Accessibility**: Icon shall include proper accessibility attributes
 
 ## Custom Theme Combination Extension Framework
 ### Extension Architecture Requirements

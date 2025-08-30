@@ -2,6 +2,7 @@ import '../globals.css';
 import type { AppProps } from 'next/app';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { AppThemeProvider } from '../src/components/ThemeProvider';
+import { ConfigurationPanel } from '../src/components/ui';
 
 // Bootstrap Module Federation
 if (typeof window !== 'undefined') {
@@ -16,6 +17,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     <AppThemeProvider showThemePanel={process.env.NODE_ENV === 'development'}>
       <ErrorBoundary>
         <Component {...pageProps} />
+        <ConfigurationPanel />
       </ErrorBoundary>
     </AppThemeProvider>
   );

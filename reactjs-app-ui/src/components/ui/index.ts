@@ -63,3 +63,6 @@ export {
   ThemeSelector,
   CustomThemeCreator
 } from '../ThemeProvider';
+
+// Export configuration panel
+export { default as ConfigurationPanel } from '../ConfigurationPanel';

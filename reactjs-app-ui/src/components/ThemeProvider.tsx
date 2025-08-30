@@ -206,6 +206,11 @@ export const AppThemeProvider: React.FC<ThemeProviderProps> = ({
         scaling={scaling}
         panelBackground="solid"
         hasBackground={false}
+        style={{
+          // Ensure theme changes propagate to all content
+          '--accent-color': `var(--${accentColor}-9)`,
+          '--accent-color-contrast': `var(--${accentColor}-12)`,
+        } as React.CSSProperties}
       >
         {children}
         {showThemePanel && <ThemePanel />}
