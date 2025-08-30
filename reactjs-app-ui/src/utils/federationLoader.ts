@@ -29,15 +29,16 @@ async function fetchFederationConfig(): Promise<FederationConfig> {
   }
   
   try {
+    console.log('Fetching federation config from /federation-config.json');
     const response = await fetch('/federation-config.json');
     if (!response.ok) {
       throw new Error(`Failed to fetch federation config: ${response.statusText}`);
     }
     federationConfig = await response.json();
-    console.log('Federation config loaded:', federationConfig);
+    console.log('Federation config loaded successfully:', federationConfig);
     return federationConfig;
   } catch (error) {
-    console.warn('Error fetching federation config:', error);
+    console.error('Error fetching federation config:', error);
     // Return a default config to prevent crashes
     return {
       remotes: {},
@@ -53,15 +54,25 @@ async function fetchFederationConfig(): Promise<FederationConfig> {
  */
 function loadScript(url: string): Promise<void> {
   return new Promise((resolve, reject) => {
+    console.log(`Loading script: ${url}`);
     const existingScript = document.querySelector(`script[src="${url}"]`);
     
     if (existingScript) {
+      console.log(`Script ${url} already exists`);
       // Script already loaded or loading
       if (existingScript.getAttribute('data-loaded') === 'true') {
+        console.log(`Script ${url} already loaded`);
         resolve();
       } else {
-        existingScript.addEventListener('load', () => resolve());
-        existingScript.addEventListener('error', () => reject(new Error(`Failed to load script: ${url}`)));
+        console.log(`Script ${url} is loading, waiting for completion`);
+        existingScript.addEventListener('load', () => {
+          console.log(`Script ${url} loaded successfully`);
+          resolve();
+        });
+        existingScript.addEventListener('error', (error) => {
+          console.error(`Script ${url} failed to load:`, error);
+          reject(new Error(`Failed to load script: ${url}`));
+        });
       }
       return;
     }
@@ -73,16 +84,19 @@ function loadScript(url: string): Promise<void> {
     script.setAttribute('data-loaded', 'false');
     
     script.onload = () => {
+      console.log(`Script ${url} loaded successfully`);
       script.setAttribute('data-loaded', 'true');
       resolve();
     };
     
-    script.onerror = () => {
+    script.onerror = (error) => {
+      console.error(`Script ${url} failed to load:`, error);
       script.remove();
       reject(new Error(`Failed to load script: ${url}`));
     };
     
     document.head.appendChild(script);
+    console.log(`Script ${url} added to document head`);
   });
 }
 
@@ -91,12 +105,17 @@ function loadScript(url: string): Promise<void> {
  */
 async function initSharing(): Promise<void> {
   try {
+    console.log('Initializing webpack sharing');
     // Check if __webpack_init_sharing__ exists
     if (typeof (window as any).__webpack_init_sharing__ === 'function') {
+      console.log('__webpack_init_sharing__ found, calling it');
       await (window as any).__webpack_init_sharing__('default');
+      console.log('Webpack sharing initialized successfully');
+    } else {
+      console.warn('__webpack_init_sharing__ not found');
     }
   } catch (error) {
-    console.warn('Error initializing webpack sharing:', error);
+    console.error('Error initializing webpack sharing:', error);
   }
 }
 
@@ -121,28 +140,38 @@ async function loadRemoteModule(
   
   try {
     // Load the remote entry script
+    console.log(`Loading remote entry script: ${config.url}`);
     await loadScript(config.url);
     
     // Initialize sharing
     await initSharing();
     
     // Get the container from window
+    console.log(`Looking for container '${config.scope}' on window`);
     const container = (window as any)[config.scope];
     
     if (!container) {
+      console.error(`Container '${config.scope}' not found on window. Available keys:`, Object.keys(window));
       throw new Error(`Container '${config.scope}' not found on window after loading script.`);
     }
+    
+    console.log(`Container '${config.scope}' found:`, container);
     
     // Initialize the container
     if (container.init) {
       try {
+        console.log('Initializing container');
         // Check if __webpack_share_scopes__ exists
         const shareScope = (window as any).__webpack_share_scopes__?.default || {};
+        console.log('Share scope:', shareScope);
         await container.init(shareScope);
+        console.log('Container initialized successfully');
       } catch (initError) {
-        console.warn('Error initializing container:', initError);
+        console.error('Error initializing container:', initError);
         // Continue anyway, the container might still work
       }
+    } else {
+      console.log('Container has no init method, skipping initialization');
     }
     
     // Cache the container
@@ -151,7 +180,7 @@ async function loadRemoteModule(
     
     return container;
   } catch (error) {
-    console.warn(`Error loading remote '${remoteName}':`, error);
+    console.error(`Error loading remote '${remoteName}':`, error);
     
     if (attempt < maxAttempts) {
       console.warn(`Retrying load for remote '${remoteName}' in ${retryDelay}ms (attempt ${attempt + 1} of ${maxAttempts})...`);
@@ -188,21 +217,36 @@ export async function loadComponent(
       throw new Error(`Configuration for remote '${remoteName}' not found.`);
     }
     
+    console.log(`Configuration for remote '${remoteName}':`, config);
+    
     // Load the remote container
     const container = await loadRemoteModule(remoteName, config);
     
     // Get the module factory
+    console.log(`Getting module factory for './${componentName}'`);
     const factory = await container.get(`./${componentName}`);
     
+    if (!factory) {
+      throw new Error(`Factory for component '${componentName}' not found in remote '${remoteName}'.`);
+    }
+    
+    console.log(`Factory for '${componentName}' found:`, factory);
+    
     // Execute the factory to get the module
+    console.log(`Executing factory for '${componentName}'`);
     const Module = factory();
+    
+    console.log(`Module for '${componentName}':`, Module);
     
     // Extract the component (handle both default and named exports)
     const Component = Module.default || Module[componentName] || Module;
     
     if (!Component) {
+      console.error(`Available exports in module:`, Object.keys(Module));
       throw new Error(`Component '${componentName}' not found in remote '${remoteName}'.`);
     }
+    
+    console.log(`Component '${componentName}' extracted successfully:`, Component);
     
     // Cache the component
     loadedComponents.set(cacheKey, Component);
@@ -210,7 +254,7 @@ export async function loadComponent(
     
     return Component;
   } catch (error) {
-    console.warn(`Failed to load component ${cacheKey}:`, error);
+    console.error(`Failed to load component ${cacheKey}:`, error);
     throw error;
   }
 }
