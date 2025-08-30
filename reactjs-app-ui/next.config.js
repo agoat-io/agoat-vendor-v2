@@ -25,32 +25,6 @@ const nextConfig = {
       tls: false,
     }
 
-    // Add Module Federation support for client-side only
-    if (!isServer) {
-      const { ModuleFederationPlugin } = require('webpack').container;
-      
-      config.plugins.push(
-        new ModuleFederationPlugin({
-          name: 'host',
-          remotes: {
-            viewer: 'viewer@http://localhost:3001/remoteEntry.js',
-          },
-          shared: {
-            react: {
-              singleton: true,
-              requiredVersion: '^18.3.1',
-              eager: false,
-            },
-            'react-dom': {
-              singleton: true,
-              requiredVersion: '^18.3.1',
-              eager: false,
-            },
-          },
-        })
-      );
-    }
-
     return config
   }
 }
