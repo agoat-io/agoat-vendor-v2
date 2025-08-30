@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Box, Card, Heading, Text, Button, Flex, Badge, Spinner } from '@radix-ui/themes'
+import { 
+  Box, 
+  Heading, 
+  Text, 
+  Badge, 
+  Spinner,
+  Flex,
+  Card,
+  CardContent,
+  Button
+} from '../src/components/ui'
 import { ReaderIcon, Pencil1Icon } from '@radix-ui/react-icons'
 
 interface Post {
@@ -125,15 +135,19 @@ const PostsList: React.FC<PostsListProps> = ({
       const errorMessage = err.response?.data?.message || 'Failed to load posts'
       setError(errorMessage)
       onError?.(errorMessage)
-      console.error('Error fetching posts:', err)
+      console.error('Error retrying posts fetch:', err)
     } finally {
       setRetrying(false)
     }
   }
 
+  const handlePostClick = (post: Post) => {
+    onPostClicked?.(post)
+  }
+
   if (loading) {
     return (
-      <Flex justify="center" align="center" py="9">
+      <Flex justify="center" align="center" style={{ minHeight: '200px' }}>
         <Spinner size="3" />
         <Text ml="3" color="gray">Loading posts...</Text>
       </Flex>
@@ -142,24 +156,46 @@ const PostsList: React.FC<PostsListProps> = ({
 
   if (error) {
     return (
-      <Flex direction="column" align="center" py="9" gap="4">
-        <Text color="red" size="3">Error loading posts: {error}</Text>
-        <Button 
-          onClick={handleRetry}
-          disabled={retrying}
-          variant="soft"
-        >
-          {retrying ? 'Retrying...' : 'Retry'}
-        </Button>
-      </Flex>
+      <Card style={{ backgroundColor: 'var(--red-1)', border: '1px solid var(--red-6)' }}>
+        <CardContent>
+          <Flex direction="column" align="center" gap="3">
+            <Text color="red" size="3" weight="medium">
+              Error loading posts
+            </Text>
+            <Text color="gray" size="2" align="center">
+              {error}
+            </Text>
+            <Button 
+              variant="soft" 
+              color="red" 
+              onClick={handleRetry}
+              loading={retrying}
+            >
+              Try Again
+            </Button>
+          </Flex>
+        </CardContent>
+      </Card>
     )
   }
 
   if (posts.length === 0) {
     return (
-      <Flex justify="center" py="9">
-        <Text color="gray">No posts found.</Text>
-      </Flex>
+      <Card>
+        <CardContent>
+          <Flex direction="column" align="center" gap="3">
+            <Text color="gray" size="3">
+              No posts found
+            </Text>
+            <Text color="gray" size="2" align="center">
+              {showPublishedOnly 
+                ? 'No published posts available at the moment.' 
+                : 'No posts available at the moment.'
+              }
+            </Text>
+          </Flex>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -169,68 +205,78 @@ const PostsList: React.FC<PostsListProps> = ({
         {posts.map((post) => (
           <Card 
             key={post.id} 
-            size="3" 
+            interactive 
+            onClick={() => handlePostClick(post)}
             style={{ cursor: 'pointer' }}
-            onClick={() => onPostClicked?.(post)}
           >
-            <Flex direction="column" gap="3">
-              <Flex justify="between" align="start">
-                <Box style={{ flex: 1 }}>
-                  <Heading size="4" mb="2" style={{ lineHeight: '1.3' }}>
-                    {post.title}
-                  </Heading>
-                  <Flex align="center" gap="2" mb="3">
-                    <Text size="2" color="gray">By {post.author || 'Admin'}</Text>
-                    <Text size="2" color="gray">•</Text>
-                    <Text size="2" color="gray">{formatDate(post.created_at)}</Text>
-                    {!isAuthenticated && post.content.length > maxContentLength && (
-                      <>
-                        <Text size="2" color="gray">•</Text>
-                        <Button
-                          variant="ghost"
-                          size="1"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onPostClicked?.(post)
-                          }}
-                        >
-                          <ReaderIcon />
-                          Read more
-                        </Button>
-                      </>
-                    )}
-                  </Flex>
-                </Box>
-                {isAuthenticated && (
+            <CardContent>
+              <Flex direction="column" gap="3">
+                {/* Post Header */}
+                <Flex justify="between" align="start" gap="3">
+                  <Box style={{ flex: 1 }}>
+                    <Heading size="4" mb="2" style={{ lineHeight: '1.3' }}>
+                      {post.title}
+                    </Heading>
+                    <Flex align="center" gap="2" mb="2">
+                      <Text size="2" color="gray">
+                        By {post.author || 'Admin'}
+                      </Text>
+                      <Text size="2" color="gray">•</Text>
+                      <Text size="2" color="gray">
+                        {formatDate(post.created_at)}
+                      </Text>
+                      {post.updated_at && post.updated_at !== post.created_at && (
+                        <>
+                          <Text size="2" color="gray">•</Text>
+                          <Text size="2" color="gray">
+                            Updated {formatDate(post.updated_at)}
+                          </Text>
+                        </>
+                      )}
+                    </Flex>
+                  </Box>
+                  
+                  {/* Status Badge */}
                   <Badge 
                     color={post.published ? 'green' : 'yellow'} 
                     variant="soft"
+                    size="2"
                   >
                     {post.published ? 'Published' : 'Draft'}
                   </Badge>
-                )}
-              </Flex>
-              
-              <Text size="3" style={{ lineHeight: '1.6' }}>
-                {truncateContent(post.content, maxContentLength)}
-              </Text>
-              
-              {isAuthenticated && (
-                <Flex pt="3" style={{ borderTop: '1px solid var(--gray-6)' }}>
-                  <Button
-                    variant="soft"
-                    size="2"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onPostClicked?.(post)
-                    }}
-                  >
-                    <Pencil1Icon />
-                    View & Edit
-                  </Button>
                 </Flex>
-              )}
-            </Flex>
+
+                {/* Post Content Preview */}
+                <Text 
+                  size="3" 
+                  color="gray" 
+                  style={{ 
+                    lineHeight: '1.6',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {truncateContent(post.content, maxContentLength)}
+                </Text>
+
+                {/* Action Buttons */}
+                <Flex justify="between" align="center">
+                  <Button variant="soft" size="2">
+                    <ReaderIcon />
+                    Read More
+                  </Button>
+                  
+                  {isAuthenticated && (
+                    <Button variant="ghost" size="2">
+                      <Pencil1Icon />
+                      Edit
+                    </Button>
+                  )}
+                </Flex>
+              </Flex>
+            </CardContent>
           </Card>
         ))}
       </Flex>

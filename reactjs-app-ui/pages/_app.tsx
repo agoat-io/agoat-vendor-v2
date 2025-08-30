@@ -1,7 +1,7 @@
 import '../globals.css';
 import type { AppProps } from 'next/app';
 import ErrorBoundary from '../components/ErrorBoundary';
-import { Theme } from '@radix-ui/themes';
+import { AppThemeProvider } from '../src/components/ThemeProvider';
 
 // Bootstrap Module Federation
 if (typeof window !== 'undefined') {
@@ -13,11 +13,11 @@ if (typeof window !== 'undefined') {
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <Theme appearance="light" accentColor="blue" grayColor="gray" radius="medium">
+    <AppThemeProvider showThemePanel={process.env.NODE_ENV === 'development'}>
       <ErrorBoundary>
         <Component {...pageProps} />
       </ErrorBoundary>
-    </Theme>
+    </AppThemeProvider>
   );
 }
 
