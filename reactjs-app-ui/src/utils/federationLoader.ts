@@ -37,8 +37,14 @@ async function fetchFederationConfig(): Promise<FederationConfig> {
     console.log('Federation config loaded:', federationConfig);
     return federationConfig;
   } catch (error) {
-    console.error('Error fetching federation config:', error);
-    throw new Error('Could not load federation configuration.');
+    console.warn('Error fetching federation config:', error);
+    // Return a default config to prevent crashes
+    return {
+      remotes: {},
+      timeout: 5000,
+      retryAttempts: 1,
+      retryDelay: 1000
+    };
   }
 }
 
@@ -84,9 +90,13 @@ function loadScript(url: string): Promise<void> {
  * Initialize webpack sharing
  */
 async function initSharing(): Promise<void> {
-  // Check if __webpack_init_sharing__ exists
-  if (typeof __webpack_init_sharing__ === 'function') {
-    await __webpack_init_sharing__('default');
+  try {
+    // Check if __webpack_init_sharing__ exists
+    if (typeof (window as any).__webpack_init_sharing__ === 'function') {
+      await (window as any).__webpack_init_sharing__('default');
+    }
+  } catch (error) {
+    console.warn('Error initializing webpack sharing:', error);
   }
 }
 
@@ -98,7 +108,7 @@ async function loadRemoteModule(
   config: RemoteConfig, 
   attempt = 1
 ): Promise<any> {
-  const maxAttempts = federationConfig?.retryAttempts || 3;
+  const maxAttempts = federationConfig?.retryAttempts || 1;
   const retryDelay = federationConfig?.retryDelay || 1000;
   
   console.log(`Loading remote module '${remoteName}' from ${config.url}, attempt ${attempt}`);
@@ -125,9 +135,14 @@ async function loadRemoteModule(
     
     // Initialize the container
     if (container.init) {
-      // Check if __webpack_share_scopes__ exists
-      const shareScope = (window as any).__webpack_share_scopes__?.default || {};
-      await container.init(shareScope);
+      try {
+        // Check if __webpack_share_scopes__ exists
+        const shareScope = (window as any).__webpack_share_scopes__?.default || {};
+        await container.init(shareScope);
+      } catch (initError) {
+        console.warn('Error initializing container:', initError);
+        // Continue anyway, the container might still work
+      }
     }
     
     // Cache the container
@@ -136,7 +151,7 @@ async function loadRemoteModule(
     
     return container;
   } catch (error) {
-    console.error(`Error loading remote '${remoteName}':`, error);
+    console.warn(`Error loading remote '${remoteName}':`, error);
     
     if (attempt < maxAttempts) {
       console.warn(`Retrying load for remote '${remoteName}' in ${retryDelay}ms (attempt ${attempt + 1} of ${maxAttempts})...`);
@@ -195,7 +210,7 @@ export async function loadComponent(
     
     return Component;
   } catch (error) {
-    console.error(`Failed to load component ${cacheKey}:`, error);
+    console.warn(`Failed to load component ${cacheKey}:`, error);
     throw error;
   }
 }

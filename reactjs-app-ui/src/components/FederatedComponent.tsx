@@ -6,7 +6,6 @@ import { ReloadIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 interface FederatedComponentProps {
   componentName: string;
   remoteName?: string;
-  fallback?: React.ComponentType<any>;
   onError?: (error: Error) => void;
   [key: string]: any; // Allow any other props to be passed to the component
 }
@@ -14,11 +13,11 @@ interface FederatedComponentProps {
 /**
  * Wrapper component for loading federated modules at runtime
  * Provides loading states, error handling, and retry logic
+ * Federated components are MANDATORY - no fallbacks allowed
  */
 const FederatedComponent: React.FC<FederatedComponentProps> = ({
   componentName,
   remoteName = 'viewer',
-  fallback: FallbackComponent,
   onError,
   ...componentProps
 }) => {
@@ -32,7 +31,14 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
     setError(null);
     
     try {
-      const LoadedComponent = await loadComponent(remoteName, componentName);
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Loading timeout')), 10000);
+      });
+      
+      const loadPromise = loadComponent(remoteName, componentName);
+      const LoadedComponent = await Promise.race([loadPromise, timeoutPromise]);
+      
       setComponent(() => LoadedComponent);
       setLoading(false);
     } catch (err) {
@@ -48,7 +54,17 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
   };
 
   useEffect(() => {
-    loadFederatedComponent();
+    // Only try to load if we're in the browser
+    if (typeof window !== 'undefined') {
+      loadFederatedComponent();
+    } else {
+      setLoading(false);
+      const ssrError = new Error('Federated components not available during SSR');
+      setError(ssrError);
+      if (onError) {
+        onError(ssrError);
+      }
+    }
   }, [componentName, remoteName, retryCount]);
 
   const handleRetry = () => {
@@ -65,32 +81,26 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
     );
   }
 
-  // Error state with fallback
+  // Error state - NO FALLBACK, show error UI
   if (error) {
-    // If a fallback component is provided, use it
-    if (FallbackComponent) {
-      return <FallbackComponent {...componentProps} />;
-    }
-    
-    // Otherwise show error UI
     return (
-      <Callout.Root color="amber" size="2" mt="4">
+      <Callout.Root color="red" size="2" mt="4">
         <Callout.Icon>
           <ExclamationTriangleIcon />
         </Callout.Icon>
         <Flex direction="column" gap="2">
           <Callout.Text>
-            Unable to load {componentName}. The component may be temporarily unavailable.
+            Failed to load required component {componentName}. This component is mandatory and cannot be replaced.
           </Callout.Text>
           <Button size="1" variant="soft" onClick={handleRetry}>
-            <ReloadIcon /> Try Again
+            <ReloadIcon /> Retry Loading
           </Button>
         </Flex>
       </Callout.Root>
     );
   }
 
-  // Component not found
+  // Component not found - NO FALLBACK
   if (!Component) {
     return (
       <Callout.Root color="red" size="2" mt="4">
@@ -98,7 +108,7 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
           <ExclamationTriangleIcon />
         </Callout.Icon>
         <Callout.Text>
-          Component {componentName} could not be rendered.
+          Required component {componentName} could not be rendered. This is a critical error.
         </Callout.Text>
       </Callout.Root>
     );

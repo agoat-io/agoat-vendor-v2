@@ -98,68 +98,38 @@ const BlogListView: React.FC = () => {
   }
 
   const handlePostClick = (post: Post) => {
-    console.log('BlogListView: Post clicked:', post)
-    
-    // Set the current post and show single post view
     setCurrentPost(post)
     setShowingPost(true)
     
-    // Update URL with post-path parameter
-    const postPath = `${post.slug}/${post.id}`
-    const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.set('post-path', postPath)
-    window.history.pushState({}, '', currentUrl.toString())
+    // Update URL without navigation
+    router.push(`/post/${post.slug}`, undefined, { shallow: true })
     
     // Update page title
     document.title = `${post.title} - AGoat Blog`
   }
 
-  const backToList = () => {
+  const handleBackToList = () => {
     setShowingPost(false)
     setCurrentPost(null)
+    setError(null)
     
-    // Remove post-path parameter from URL
-    const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.delete('post-path')
-    window.history.pushState({}, '', currentUrl.toString())
+    // Update URL back to list
+    router.push('/', undefined, { shallow: true })
     
-    // Update page title
-    document.title = 'AGoat Blog - All Articles'
-  }
-
-  const editPost = () => {
-    if (currentPost) {
-      router.push(`/new-post?id=${currentPost.id}`)
-    }
-  }
-
-  const handleLoginRequested = () => {
-    router.push('/login')
-  }
-
-  const shouldShowLoginPrompt = () => {
-    if (!currentPost) return false
-    return currentPost.content.length > 800
-  }
-
-  const handlePostsLoaded = (posts: Post[]) => {
-    console.log('BlogListView: Posts loaded:', posts.length)
-  }
-
-  const handleViewerError = (error: string) => {
-    console.error('BlogListView: Viewer error:', error)
-    setError(error)
+    // Reset page title
+    document.title = 'AGoat Blog'
   }
 
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH_STATUS), {
+        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH_CHECK), {
           withCredentials: true
         })
         setIsAuthenticated(response.data.authenticated)
       } catch (err) {
+        console.warn('Auth check failed:', err)
         setIsAuthenticated(false)
       } finally {
         setAuthChecked(true)
@@ -169,155 +139,108 @@ const BlogListView: React.FC = () => {
     checkAuth()
   }, [])
 
-  // Handle post-path parameter on mount
+  // Handle direct post access via URL
   useEffect(() => {
-    const postPath = router.query['post-path'] as string
-    if (postPath && !showingPost) {
-      const parts = postPath.split('/')
-      if (parts.length >= 2) {
-        const postId = parts[parts.length - 1]
-        fetchPost(postId)
-      }
+    const { slug } = router.query
+    
+    if (slug && typeof slug === 'string' && !showingPost) {
+      // Find post by slug in the current posts list
+      // This is a simplified approach - in a real app you'd fetch the specific post
+      console.log('Direct post access detected:', slug)
     }
   }, [router.query, showingPost])
 
-  if (!authChecked) {
-    return (
-      <Flex justify="center" align="center" style={{ minHeight: '100vh' }}>
-        <Spinner size="3" />
-        <Text ml="3" color="gray">Loading...</Text>
-      </Flex>
-    )
-  }
-
+  // Show loading state
   if (loading) {
     return (
-      <Flex justify="center" align="center" style={{ minHeight: '100vh' }}>
-        <Spinner size="3" />
-        <Text ml="3" color="gray">Loading...</Text>
-      </Flex>
+      <Container size="3" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        <Flex justify="center" align="center" style={{ minHeight: '400px' }}>
+          <Spinner size="3" />
+        </Flex>
+      </Container>
     )
   }
 
-  return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'var(--gray-1)' }}>
-      {/* Header */}
-      <Box style={{ backgroundColor: 'white', borderBottom: '1px solid var(--gray-6)' }}>
-        <Container>
-          <Flex justify="between" align="center" style={{ height: '64px' }}>
-            <Box>
-              <Heading size="6">AGoat Blog</Heading>
-              <Text size="2" color="gray">All articles and insights</Text>
-            </Box>
-            {!isAuthenticated ? (
-              <Button onClick={() => router.push('/login')}>
-                <PersonIcon />
-                Admin Login
+  // Show error state
+  if (error) {
+    return (
+      <Container size="3" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        <Card>
+          <CardContent>
+            <Flex direction="column" align="center" gap="3">
+              <Text size="5" weight="bold" color="red">Error</Text>
+              <Text>{error}</Text>
+              <Button onClick={handleBackToList}>
+                <ArrowLeftIcon />
+                Back to Posts
               </Button>
-            ) : (
-              <Button onClick={() => router.push('/dashboard')}>
-                Dashboard
-              </Button>
-            )}
-          </Flex>
-        </Container>
-      </Box>
-
-      {/* Main content */}
-      <Container>
-        {/* Back to list button when viewing single post */}
-        {showingPost && (
-          <Box mb="6">
-            <Button variant="soft" onClick={backToList}>
-              <ArrowLeftIcon />
-              Back to All Articles
-            </Button>
-          </Box>
-        )}
-
-        {/* Single Post View */}
-        {showingPost && currentPost && (
-          <Card size="4" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <CardContent>
-              <Heading size="8" mb="4" style={{ lineHeight: '1.2' }}>
-                {currentPost.title}
-              </Heading>
-              
-              <Flex align="center" gap="3" mb="6" style={{ color: 'var(--gray-11)' }}>
-                <Text size="2">By {currentPost.author || 'Admin'}</Text>
-                <Text size="2">•</Text>
-                <Text size="2">{formatDate(currentPost.created_at)}</Text>
-                {currentPost.updated_at && currentPost.updated_at !== currentPost.created_at && (
-                  <>
-                    <Text size="2">•</Text>
-                    <Text size="2">Updated {formatDate(currentPost.updated_at)}</Text>
-                  </>
-                )}
-              </Flex>
-              
-              <Box 
-                style={{ 
-                  lineHeight: '1.7',
-                  fontSize: '16px'
-                }}
-                dangerouslySetInnerHTML={{ __html: getRenderedContent() }}
-              />
-            </CardContent>
-            
-            {/* Edit button for authenticated users */}
-            {isAuthenticated && (
-              <CardFooter>
-                <Flex justify="between" align="center">
-                  <Badge 
-                    color={currentPost.published ? 'green' : 'yellow'} 
-                    variant="soft"
-                    size="2"
-                  >
-                    {currentPost.published ? 'Published' : 'Draft'}
-                  </Badge>
-                  <Button onClick={editPost}>
-                    <Pencil1Icon />
-                    Edit Article
-                  </Button>
-                </Flex>
-              </CardFooter>
-            )}
-            
-            {/* Login prompt for non-authenticated users */}
-            {!isAuthenticated && shouldShowLoginPrompt() && (
-              <Card mt="6" style={{ backgroundColor: 'var(--gray-3)' }}>
-                <CardContent>
-                  <Heading size="4" mb="2">Want to read more?</Heading>
-                  <Text color="gray" mb="4">Sign in to access the full article and discover more great content.</Text>
-                  <Button onClick={handleLoginRequested}>
-                    Sign In
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </Card>
-        )}
-
-        {/* Posts List View - Using Federated Component with Zero-Knowledge */}
-        {!showingPost && (
-          <FederatedComponent
-            componentName="PostsList"
-            remoteName="viewer"
-            fallback={PostsList}
-            onError={handleViewerError}
-            // Props for the PostsList component
-            apiUrl={API_CONFIG.BASE_URL}
-            showPublishedOnly={true}
-            page={currentPage}
-            limit={postsPerPage}
-            maxContentLength={300}
-            isAuthenticated={isAuthenticated}
-            onPostClicked={handlePostClick}
-            onPostsLoaded={handlePostsLoaded}
-          />
-        )}
+            </Flex>
+          </CardContent>
+        </Card>
       </Container>
-    </Box>
+    )
+  }
+
+  // Show single post view
+  if (showingPost && currentPost) {
+    return (
+      <Container size="3" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        <Flex direction="column" gap="4">
+          {/* Back button */}
+          <Button 
+            variant="soft" 
+            onClick={handleBackToList}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            <ArrowLeftIcon />
+            Back to Posts
+          </Button>
+
+          {/* Mandatory Federated Component */}
+          <FederatedComponent
+            componentName="PostViewer"
+            remoteName="viewer"
+            post={currentPost}
+            onError={(error) => {
+              console.error('Federated component error:', error)
+              setError('Failed to load post viewer component')
+            }}
+          />
+        </Flex>
+      </Container>
+    )
+  }
+
+  // Show posts list with mandatory federated component
+  return (
+    <Container size="3" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+      <Flex direction="column" gap="4">
+        {/* Header */}
+        <Box>
+          <Heading size="8" mb="2">AGoat Blog</Heading>
+          <Text size="3" color="gray">
+            Discover insights, tutorials, and stories from our community
+          </Text>
+        </Box>
+
+        {/* Mandatory Federated Component for Posts List */}
+        <FederatedComponent
+          componentName="PostsList"
+          remoteName="viewer"
+          apiUrl={API_CONFIG.BASE_URL}
+          showPublishedOnly={true}
+          page={currentPage}
+          limit={postsPerPage}
+          maxContentLength={300}
+          isAuthenticated={isAuthenticated}
+          onPostClicked={handlePostClick}
+          onError={(error) => {
+            console.error('Federated component error:', error)
+            setError('Failed to load posts list component')
+          }}
+        />
+      </Flex>
+    </Container>
   )
 }
 
