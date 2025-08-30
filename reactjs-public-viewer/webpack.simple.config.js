@@ -25,8 +25,8 @@ module.exports = {
           loader: 'babel-loader',
           options: {
             presets: [
-              '@babel/preset-env',
-              '@babel/preset-react',
+              ['@babel/preset-env', { targets: 'defaults' }],
+              ['@babel/preset-react', { runtime: 'automatic' }],
               '@babel/preset-typescript'
             ],
           },
@@ -40,6 +40,10 @@ module.exports = {
   },
   
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify('development'),
+    }),
+    
     new webpack.container.ModuleFederationPlugin({
       name: 'viewer',
       filename: 'remoteEntry.js',
