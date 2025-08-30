@@ -14,26 +14,19 @@ import {
   Card,
   CardContent,
   Select,
-  Label,
-  Switch,
-  Slider
+  Label
 } from '@radix-ui/themes';
 import { 
   GearIcon, 
   MixIcon, 
   PaletteIcon, 
   EyeOpenIcon,
-  EyeClosedIcon,
   SunIcon,
   MoonIcon,
   CheckIcon,
   Cross2Icon
 } from '@radix-ui/react-icons';
-import { 
-  useTheme, 
-  ThemeSelector, 
-  CustomThemeCreator 
-} from './ThemeProvider';
+import { useTheme } from './ThemeProvider';
 
 interface ConfigurationPanelProps {
   children?: React.ReactNode;
@@ -194,12 +187,19 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ children
         {activeTab === 'themes' && (
           <Box>
             <Text size="3" weight="medium" mb="3">Theme Selection</Text>
-            <ThemeSelector />
             
-            <Separator my="4" />
-            
-            <Text size="3" weight="medium" mb="3">Create Custom Theme</Text>
-            <CustomThemeCreator />
+            {/* Simple Theme Selector */}
+            <Box mb="4">
+              <Label size="2" weight="medium" mb="2">Choose Theme:</Label>
+              <Select value={currentTheme} onValueChange={(value) => setTheme(value)}>
+                <Select.Item value="">Select a theme...</Select.Item>
+                {allThemes.map(({ key, config }) => (
+                  <Select.Item key={key} value={key}>
+                    {config.name} ({config.category})
+                  </Select.Item>
+                ))}
+              </Select>
+            </Box>
             
             <Separator my="4" />
             
