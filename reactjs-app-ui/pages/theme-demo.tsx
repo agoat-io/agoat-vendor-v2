@@ -11,8 +11,10 @@ import {
   Container,
   ThemeToggle,
   ThemeSelector,
+  CustomThemeCreator,
   useTheme,
-  PRECONFIGURED_THEMES
+  PRECONFIGURED_THEMES,
+  CUSTOM_THEMES
 } from '../src/components/ui';
 import { 
   PersonIcon, 
@@ -20,21 +22,31 @@ import {
   Pencil1Icon, 
   HeartIcon,
   StarIcon,
-  CheckIcon
+  CheckIcon,
+  PlusIcon
 } from '@radix-ui/react-icons';
 
 const ThemeDemo: React.FC = () => {
-  const { currentTheme, getAvailableThemes } = useTheme();
-  const themes = getAvailableThemes();
+  const { 
+    currentTheme, 
+    currentThemeConfig,
+    getAvailableThemes, 
+    getPreconfiguredThemes,
+    getCustomThemes 
+  } = useTheme();
+  
+  const allThemes = getAvailableThemes();
+  const preconfiguredThemes = getPreconfiguredThemes();
+  const customThemes = getCustomThemes();
 
   return (
     <Container>
       <Box py="6">
         {/* Header */}
         <Box mb="8">
-          <Heading size="8" mb="3">Radix Themes Demo</Heading>
+          <Heading size="8" mb="3">Radix Themes Extensible Demo</Heading>
           <Text size="4" color="gray" mb="6">
-            Explore preconfigured Radix Themes combinations and see how they transform the UI
+            Explore preconfigured Radix Themes combinations and create custom theme combinations
           </Text>
           
           {/* Theme Controls */}
@@ -44,8 +56,13 @@ const ThemeDemo: React.FC = () => {
                 <Box>
                   <Text size="3" weight="medium" mb="2">Current Theme:</Text>
                   <Badge size="2" variant="soft">
-                    {themes.find(t => t.key === currentTheme)?.name || currentTheme}
+                    {currentThemeConfig?.name || currentTheme}
                   </Badge>
+                  {currentThemeConfig?.category === 'custom' && (
+                    <Badge size="1" color="purple" variant="soft" ml="2">
+                      Custom
+                    </Badge>
+                  )}
                 </Box>
                 
                 <ThemeSelector />
@@ -55,17 +72,73 @@ const ThemeDemo: React.FC = () => {
           </Card>
         </Box>
 
-        {/* Theme Showcase */}
+        {/* Theme Categories */}
         <Box mb="8">
-          <Heading size="6" mb="4">Available Preconfigured Themes</Heading>
+          <Heading size="6" mb="4">Theme Categories</Heading>
           <Flex gap="4" wrap="wrap">
-            {themes.map((theme) => (
-              <Card key={theme.key} style={{ minWidth: '200px' }}>
+            <Card style={{ minWidth: '200px' }}>
+              <CardContent>
+                <Text size="3" weight="medium" mb="1">Preconfigured Themes</Text>
+                <Text size="2" color="gray" mb="3">
+                  {preconfiguredThemes.length} built-in Radix Themes combinations
+                </Text>
+                <Badge size="1" variant="soft" color="blue">
+                  Foundation
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card style={{ minWidth: '200px' }}>
+              <CardContent>
+                <Text size="3" weight="medium" mb="1">Custom Themes</Text>
+                <Text size="2" color="gray" mb="3">
+                  {customThemes.length} user-created theme combinations
+                </Text>
+                <Badge size="1" variant="soft" color="purple">
+                  Extensible
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card style={{ minWidth: '200px' }}>
+              <CardContent>
+                <Text size="3" weight="medium" mb="1">Total Themes</Text>
+                <Text size="2" color="gray" mb="3">
+                  {allThemes.length} available theme combinations
+                </Text>
+                <Badge size="1" variant="soft" color="green">
+                  Active
+                </Badge>
+              </CardContent>
+            </Card>
+          </Flex>
+        </Box>
+
+        {/* Preconfigured Themes */}
+        <Box mb="8">
+          <Heading size="6" mb="4">Preconfigured Radix Themes (Foundation)</Heading>
+          <Text size="3" color="gray" mb="4">
+            These are the built-in Radix Themes combinations that serve as the foundation for the design system.
+          </Text>
+          <Flex gap="4" wrap="wrap">
+            {preconfiguredThemes.map(({ key, config }) => (
+              <Card key={key} style={{ minWidth: '200px' }}>
                 <CardContent>
-                  <Text size="3" weight="medium" mb="1">{theme.name}</Text>
-                  <Text size="2" color="gray" mb="3">{theme.description}</Text>
-                  <Badge size="1" variant="soft">
-                    {theme.key}
+                  <Text size="3" weight="medium" mb="1">{config.name}</Text>
+                  <Text size="2" color="gray" mb="3">{config.description}</Text>
+                  <Flex gap="2" mb="3">
+                    <Badge size="1" variant="soft">
+                      {config.appearance}
+                    </Badge>
+                    <Badge size="1" variant="soft" color={config.accentColor}>
+                      {config.accentColor}
+                    </Badge>
+                    <Badge size="1" variant="soft">
+                      {config.radius}
+                    </Badge>
+                  </Flex>
+                  <Badge size="1" variant="soft" color="blue">
+                    {config.category}
                   </Badge>
                 </CardContent>
               </Card>
@@ -73,9 +146,66 @@ const ThemeDemo: React.FC = () => {
           </Flex>
         </Box>
 
+        {/* Custom Themes */}
+        {customThemes.length > 0 && (
+          <Box mb="8">
+            <Heading size="6" mb="4">Custom Theme Combinations</Heading>
+            <Text size="3" color="gray" mb="4">
+              These are user-created theme combinations that extend the Radix Themes foundation.
+            </Text>
+            <Flex gap="4" wrap="wrap">
+              {customThemes.map(({ key, config }) => (
+                <Card key={key} style={{ minWidth: '200px' }}>
+                  <CardContent>
+                    <Text size="3" weight="medium" mb="1">{config.name}</Text>
+                    <Text size="2" color="gray" mb="3">{config.description}</Text>
+                    <Flex gap="2" mb="3">
+                      <Badge size="1" variant="soft">
+                        {config.appearance}
+                      </Badge>
+                      <Badge size="1" variant="soft" color={config.accentColor}>
+                        {config.accentColor}
+                      </Badge>
+                      <Badge size="1" variant="soft">
+                        {config.radius}
+                      </Badge>
+                    </Flex>
+                    <Flex gap="2" align="center">
+                      <Badge size="1" variant="soft" color="purple">
+                        {config.category}
+                      </Badge>
+                      {config.metadata?.author && (
+                        <Text size="1" color="gray">
+                          by {config.metadata.author}
+                        </Text>
+                      )}
+                    </Flex>
+                  </CardContent>
+                </Card>
+              ))}
+            </Flex>
+          </Box>
+        )}
+
+        {/* Custom Theme Creator */}
+        <Box mb="8">
+          <Heading size="6" mb="4">Create Custom Theme</Heading>
+          <Text size="3" color="gray" mb="4">
+            Extend the Radix Themes foundation by creating your own theme combinations.
+          </Text>
+          <Card>
+            <CardContent>
+              <CustomThemeCreator />
+            </CardContent>
+          </Card>
+        </Box>
+
         {/* Component Showcase */}
         <Box mb="8">
           <Heading size="6" mb="4">Component Showcase</Heading>
+          <Text size="3" color="gray" mb="4">
+            See how components look with the current theme: {currentThemeConfig?.name}
+          </Text>
           
           {/* Buttons */}
           <Card mb="6">
@@ -257,7 +387,7 @@ const ThemeDemo: React.FC = () => {
               fontSize: '14px'
             }}>
               <pre>
-                {JSON.stringify(PRECONFIGURED_THEMES[currentTheme], null, 2)}
+                {JSON.stringify(currentThemeConfig, null, 2)}
               </pre>
             </Box>
           </CardContent>

@@ -1,7 +1,7 @@
 /**
  * Design System Configuration
  * Implements Radix Themes design tokens and responsive utilities
- * Aligns with NFR-UI-001 requirements for consistent theming
+ * Aligns with NFR-UI-001 requirements for consistent theming with extensibility
  */
 
 export const DESIGN_TOKENS = {
@@ -145,80 +145,255 @@ export const COMPONENT_TOKENS = {
   },
 };
 
-// Preconfigured Radix Themes combinations
-export const PRECONFIGURED_THEMES = {
+// Theme configuration interface for extensibility
+export interface ThemeConfiguration {
+  appearance: 'light' | 'dark';
+  accentColor: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'orange' | 'pink' | 'gray';
+  grayColor: 'gray' | 'mauve' | 'slate' | 'sage' | 'olive' | 'sand';
+  radius: 'none' | 'small' | 'medium' | 'large' | 'full';
+  scaling: '90%' | '95%' | '100%' | '105%' | '110%';
+  name: string;
+  description: string;
+  category: 'preconfigured' | 'custom';
+  metadata?: {
+    author?: string;
+    version?: string;
+    tags?: string[];
+    compatibility?: string[];
+  };
+}
+
+// Preconfigured Radix Themes combinations (Foundation)
+export const PRECONFIGURED_THEMES: Record<string, ThemeConfiguration> = {
   // Modern Professional
   modern: {
-    appearance: 'light' as const,
-    accentColor: 'blue' as const,
-    grayColor: 'slate' as const,
-    radius: 'medium' as const,
-    scaling: '100%' as const,
+    appearance: 'light',
+    accentColor: 'blue',
+    grayColor: 'slate',
+    radius: 'medium',
+    scaling: '100%',
+    name: 'Modern Professional',
+    description: 'Clean blue theme with slate grays',
+    category: 'preconfigured',
+    metadata: {
+      tags: ['professional', 'clean', 'modern'],
+      compatibility: ['all'],
+    },
   },
   
   // Warm and Friendly
   warm: {
-    appearance: 'light' as const,
-    accentColor: 'orange' as const,
-    grayColor: 'sand' as const,
-    radius: 'large' as const,
-    scaling: '100%' as const,
+    appearance: 'light',
+    accentColor: 'orange',
+    grayColor: 'sand',
+    radius: 'large',
+    scaling: '100%',
+    name: 'Warm & Friendly',
+    description: 'Orange accent with warm sand tones',
+    category: 'preconfigured',
+    metadata: {
+      tags: ['warm', 'friendly', 'approachable'],
+      compatibility: ['all'],
+    },
   },
   
   // Minimal and Clean
   minimal: {
-    appearance: 'light' as const,
-    accentColor: 'gray' as const,
-    grayColor: 'gray' as const,
-    radius: 'small' as const,
-    scaling: '95%' as const,
+    appearance: 'light',
+    accentColor: 'gray',
+    grayColor: 'gray',
+    radius: 'small',
+    scaling: '95%',
+    name: 'Minimal & Clean',
+    description: 'Subtle gray theme with small radius',
+    category: 'preconfigured',
+    metadata: {
+      tags: ['minimal', 'clean', 'subtle'],
+      compatibility: ['all'],
+    },
   },
   
   // Vibrant and Energetic
   vibrant: {
-    appearance: 'light' as const,
-    accentColor: 'purple' as const,
-    grayColor: 'mauve' as const,
-    radius: 'large' as const,
-    scaling: '105%' as const,
+    appearance: 'light',
+    accentColor: 'purple',
+    grayColor: 'mauve',
+    radius: 'large',
+    scaling: '105%',
+    name: 'Vibrant & Energetic',
+    description: 'Purple accent with mauve grays',
+    category: 'preconfigured',
+    metadata: {
+      tags: ['vibrant', 'energetic', 'creative'],
+      compatibility: ['all'],
+    },
   },
   
   // Nature Inspired
   nature: {
-    appearance: 'light' as const,
-    accentColor: 'green' as const,
-    grayColor: 'sage' as const,
-    radius: 'medium' as const,
-    scaling: '100%' as const,
+    appearance: 'light',
+    accentColor: 'green',
+    grayColor: 'sage',
+    radius: 'medium',
+    scaling: '100%',
+    name: 'Nature Inspired',
+    description: 'Green accent with sage grays',
+    category: 'preconfigured',
+    metadata: {
+      tags: ['nature', 'organic', 'calm'],
+      compatibility: ['all'],
+    },
   },
   
   // Dark Professional
   darkProfessional: {
-    appearance: 'dark' as const,
-    accentColor: 'blue' as const,
-    grayColor: 'slate' as const,
-    radius: 'medium' as const,
-    scaling: '100%' as const,
+    appearance: 'dark',
+    accentColor: 'blue',
+    grayColor: 'slate',
+    radius: 'medium',
+    scaling: '100%',
+    name: 'Dark Professional',
+    description: 'Dark mode with blue accent',
+    category: 'preconfigured',
+    metadata: {
+      tags: ['dark', 'professional', 'modern'],
+      compatibility: ['all'],
+    },
   },
   
   // Dark Warm
   darkWarm: {
-    appearance: 'dark' as const,
-    accentColor: 'orange' as const,
-    grayColor: 'sand' as const,
-    radius: 'large' as const,
-    scaling: '100%' as const,
+    appearance: 'dark',
+    accentColor: 'orange',
+    grayColor: 'sand',
+    radius: 'large',
+    scaling: '100%',
+    name: 'Dark Warm',
+    description: 'Dark mode with orange accent',
+    category: 'preconfigured',
+    metadata: {
+      tags: ['dark', 'warm', 'cozy'],
+      compatibility: ['all'],
+    },
   },
   
   // Dark Minimal
   darkMinimal: {
-    appearance: 'dark' as const,
-    accentColor: 'gray' as const,
-    grayColor: 'gray' as const,
-    radius: 'small' as const,
-    scaling: '95%' as const,
+    appearance: 'dark',
+    accentColor: 'gray',
+    grayColor: 'gray',
+    radius: 'small',
+    scaling: '95%',
+    name: 'Dark Minimal',
+    description: 'Dark mode with gray accent',
+    category: 'preconfigured',
+    metadata: {
+      tags: ['dark', 'minimal', 'clean'],
+      compatibility: ['all'],
+    },
   },
 };
+
+// Custom theme combinations registry
+export const CUSTOM_THEMES: Record<string, ThemeConfiguration> = {
+  // Example custom theme - can be extended
+  corporate: {
+    appearance: 'light',
+    accentColor: 'blue',
+    grayColor: 'slate',
+    radius: 'small',
+    scaling: '95%',
+    name: 'Corporate',
+    description: 'Professional corporate theme with conservative styling',
+    category: 'custom',
+    metadata: {
+      author: 'Design Team',
+      version: '1.0.0',
+      tags: ['corporate', 'professional', 'conservative'],
+      compatibility: ['all'],
+    },
+  },
+};
+
+// Theme registry for managing all themes
+export class ThemeRegistry {
+  private themes: Record<string, ThemeConfiguration> = {};
+
+  constructor() {
+    // Initialize with preconfigured themes
+    Object.entries(PRECONFIGURED_THEMES).forEach(([key, theme]) => {
+      this.registerTheme(key, theme);
+    });
+    
+    // Initialize with custom themes
+    Object.entries(CUSTOM_THEMES).forEach(([key, theme]) => {
+      this.registerTheme(key, theme);
+    });
+  }
+
+  registerTheme(key: string, theme: ThemeConfiguration): void {
+    // Validate theme configuration
+    this.validateTheme(theme);
+    this.themes[key] = theme;
+  }
+
+  getTheme(key: string): ThemeConfiguration | undefined {
+    return this.themes[key];
+  }
+
+  getAllThemes(): Record<string, ThemeConfiguration> {
+    return { ...this.themes };
+  }
+
+  getPreconfiguredThemes(): Record<string, ThemeConfiguration> {
+    return Object.fromEntries(
+      Object.entries(this.themes).filter(([_, theme]) => theme.category === 'preconfigured')
+    );
+  }
+
+  getCustomThemes(): Record<string, ThemeConfiguration> {
+    return Object.fromEntries(
+      Object.entries(this.themes).filter(([_, theme]) => theme.category === 'custom')
+    );
+  }
+
+  private validateTheme(theme: ThemeConfiguration): void {
+    // Validate required properties
+    const requiredProps = ['appearance', 'accentColor', 'grayColor', 'radius', 'scaling', 'name', 'description', 'category'];
+    requiredProps.forEach(prop => {
+      if (!(prop in theme)) {
+        throw new Error(`Theme validation failed: Missing required property '${prop}'`);
+      }
+    });
+
+    // Validate enum values
+    const validAppearances = ['light', 'dark'];
+    const validAccentColors = ['blue', 'green', 'red', 'yellow', 'purple', 'orange', 'pink', 'gray'];
+    const validGrayColors = ['gray', 'mauve', 'slate', 'sage', 'olive', 'sand'];
+    const validRadius = ['none', 'small', 'medium', 'large', 'full'];
+    const validScaling = ['90%', '95%', '100%', '105%', '110%'];
+    const validCategories = ['preconfigured', 'custom'];
+
+    if (!validAppearances.includes(theme.appearance)) {
+      throw new Error(`Invalid appearance: ${theme.appearance}`);
+    }
+    if (!validAccentColors.includes(theme.accentColor)) {
+      throw new Error(`Invalid accent color: ${theme.accentColor}`);
+    }
+    if (!validGrayColors.includes(theme.grayColor)) {
+      throw new Error(`Invalid gray color: ${theme.grayColor}`);
+    }
+    if (!validRadius.includes(theme.radius)) {
+      throw new Error(`Invalid radius: ${theme.radius}`);
+    }
+    if (!validScaling.includes(theme.scaling)) {
+      throw new Error(`Invalid scaling: ${theme.scaling}`);
+    }
+    if (!validCategories.includes(theme.category)) {
+      throw new Error(`Invalid category: ${theme.category}`);
+    }
+  }
+}
 
 // Theme configuration for Radix Themes
 export const THEME_CONFIG = {
@@ -253,12 +428,17 @@ export const spacing = {
   },
 };
 
+// Initialize theme registry
+export const themeRegistry = new ThemeRegistry();
+
 export default {
   DESIGN_TOKENS,
   RESPONSIVE_BREAKPOINTS,
   COMPONENT_TOKENS,
   PRECONFIGURED_THEMES,
+  CUSTOM_THEMES,
   THEME_CONFIG,
   responsive,
   spacing,
+  themeRegistry,
 };

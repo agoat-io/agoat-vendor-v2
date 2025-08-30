@@ -49,6 +49,9 @@ export {
   COMPONENT_TOKENS, 
   THEME_CONFIG, 
   PRECONFIGURED_THEMES,
+  CUSTOM_THEMES,
+  themeRegistry,
+  ThemeConfiguration,
   spacing, 
   responsive 
 } from '../../config/design-system';
@@ -57,5 +60,6 @@ export {
 export { 
   useTheme, 
   ThemeToggle, 
-  ThemeSelector 
+  ThemeSelector,
+  CustomThemeCreator
 } from '../ThemeProvider';
