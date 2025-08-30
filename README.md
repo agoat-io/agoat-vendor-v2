@@ -1,250 +1,244 @@
-# AGoat Publisher
+# Top Vitamin Supply - Hotwire Blog Platform
 
-A modern blog publishing platform with a Vue.js frontend, Go API backend, and embedded microfrontend viewer.
+A modern, efficient blog platform built with Go, Hotwire (Turbo + Stimulus), and Liquid templates. This application provides a beautiful, responsive interface for managing and displaying blog content with minimal page reloads.
 
-## 🚀 Quick Start
+## 🚀 Features
+
+- **Hotwire Integration**: Real-time updates with Turbo Streams and Stimulus controllers
+- **Liquid Templates**: Shopify-style templating for flexible content rendering
+- **Responsive Design**: Beautiful Tailwind CSS styling that works on all devices
+- **Markdown Support**: Rich content editing with markdown formatting
+- **SEO Optimized**: Server-side rendering with structured data
+- **Efficient Updates**: Partial page updates to minimize reloads
+- **API Integration**: Consumes the existing AGoat Publisher API
+
+## 🏗️ Architecture
+
+```
+topvitaminsupply.com/app/
+├── cmd/server/           # Main application entry point
+├── internal/             # Private application code
+│   ├── database/         # Database operations
+│   ├── handlers/         # HTTP request handlers
+│   ├── middleware/       # HTTP middleware
+│   └── templates/        # Template engine
+├── web/                  # Web assets and templates
+│   ├── static/           # CSS, JS, images
+│   └── templates/        # Liquid templates
+├── scripts/              # Build and deployment scripts
+└── migrations/           # Database migrations
+```
+
+## 🛠️ Technology Stack
+
+- **Backend**: Go with Gorilla Mux router
+- **Templates**: Liquid (Shopify-style) with Go template conversion
+- **Styling**: Tailwind CSS
+- **Real-time**: Hotwire (Turbo + Stimulus)
+- **Database**: SQLite (local development)
+- **API**: HTTP client consuming external API
+
+## 📦 Installation
 
 ### Prerequisites
-- Node.js 18+ and npm
-- Go 1.21+
-- Google Cloud CLI (for database secrets)
-- CockroachDB (or access to a CockroachDB instance)
 
-### One-Command Setup
-```bash
-# Start everything (API + UI + Embedded Viewer)
-./local-scripts/start-full-stack.sh
+- Go 1.21 or higher
+- The AGoat Publisher API server running on `http://localhost:8080`
+
+### Quick Start
+
+1. **Clone and navigate to the project**:
+   ```bash
+   cd topvitaminsupply.com/app
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   go mod tidy
+   ```
+
+3. **Start the application**:
+   ```bash
+   ./scripts/start.sh
+   ```
+
+4. **Access the application**:
+   - Web Interface: http://localhost:3000
+   - API Server: http://localhost:8080 (must be running)
+
+## 🎯 Usage
+
+### For Content Creators
+
+1. **Login**: Use `admin / admin123` to access the dashboard
+2. **Create Posts**: Click "New Post" to create content with markdown
+3. **Edit Posts**: Click "Edit" on any post to modify content
+4. **Publish**: Toggle publish status to control visibility
+
+### For Developers
+
+1. **Template Development**: Edit `.liquid` files in `web/templates/`
+2. **Styling**: Modify Tailwind classes or add custom CSS
+3. **Hotwire Features**: Add Turbo Streams for real-time updates
+4. **API Integration**: Extend handlers to consume additional API endpoints
+
+## 🔧 Configuration
+
+### Environment Variables
+
+- `PORT`: Server port (default: 3000)
+- `API_BASE_URL`: External API base URL (default: http://localhost:8080/api)
+
+### Template Customization
+
+The application uses Liquid templates that are converted to Go templates:
+
+```liquid
+{% extends "layout" %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ post.title }}</h1>
+    <div class="content">
+        {{ post.content | markdown }}
+    </div>
+</div>
+{% endblock %}
 ```
 
-This will:
-1. Start the Go API with GCP secrets and hot reload
-2. Start the viewer microfrontend on a separate port
-3. Start the Vue UI with hot reload
-4. Make everything available at:
-   - API: http://localhost:8080
-   - UI: http://localhost:5173
-   - Viewer: http://localhost:5175
+## 🎨 Styling
 
-## 📁 Project Structure
+The application uses Tailwind CSS with a custom color scheme:
 
-```
-agoat-publisher/
-├── app-api/                    # Go API backend
-├── app-vue-ui/                 # Main Vue.js application
-├── app-vue-ui-viewer/          # Microfrontend viewer (separate project)
-├── app-api-database-schema/    # Database schema extraction tools
-└── local-scripts/              # Development and deployment scripts
-```
+- **Primary**: Green tones for vitamin/health theme
+- **Secondary**: Blue accents
+- **Responsive**: Mobile-first design approach
 
-## 🎯 Key Features
+### Custom CSS Classes
 
-### Main Application
-- **Blog Management**: Create, edit, and publish blog posts
-- **Authentication**: Secure login system
-- **Rich Text Editor**: Medium-style WYSIWYG editor with markdown support
-- **SEO Optimization**: SEO-friendly URLs and meta tags
-- **Responsive Design**: Mobile-first design with Tailwind CSS
+```css
+/* Primary button styling */
+.btn-primary {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+}
 
-### Microfrontend Viewer
-- **Embeddable**: Can be embedded in any website via iframe
-- **Authentication-aware**: Different content for logged-in vs anonymous users
-- **Configurable**: Customizable via URL parameters or JavaScript API
-- **SEO-friendly**: Proper meta tags and structured data
-- **No Dependencies**: Self-contained, no external dependencies required
-
-## 🔧 Development Scripts
-
-### Full Stack Development
-```bash
-# Start everything (recommended for development)
-./local-scripts/start-full-stack.sh
+/* Card styling */
+.card {
+    @apply bg-white shadow-lg rounded-lg p-6;
+}
 ```
 
-### Individual Services
-```bash
-# API only (with GCP secrets & hot reload)
-./local-scripts/start-api.sh
+## 🔄 Hotwire Features
 
-# UI only (with hot reload)
-./local-scripts/start-ui.sh
+### Turbo Streams
 
-# Build and embed viewer
-./local-scripts/build-viewer-embedded.sh
+Real-time updates without full page reloads:
 
-# Rebuild viewer after changes
-./local-scripts/rebuild-viewer.sh
+```go
+// Example Turbo Stream response
+func (h *Handlers) TurboPosts(w http.ResponseWriter, r *http.Request) {
+    posts := h.fetchPosts()
+    h.templateEngine.RenderTurboStream(w, "replace", "posts-list", "posts_list", posts)
+}
 ```
 
-## 🌐 Using the Embedded Viewer
+### Stimulus Controllers
 
-### Iframe Embedding
-```html
-<!-- Single post -->
-<iframe 
-  src="http://localhost:5173/viewer/?mode=single&postSlug=my-post-title"
-  width="100%" 
-  height="600"
-  frameborder="0">
-</iframe>
+Interactive JavaScript components:
 
-<!-- Posts list -->
-<iframe 
-  src="http://localhost:5173/viewer/?mode=list&page=1&limit=5"
-  width="100%" 
-  height="800"
-  frameborder="0">
-</iframe>
-```
-
-### URL Parameters
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `mode` | `single` \| `list` | View mode |
-| `postId` | string | Load post by ID |
-| `postSlug` | string | Load post by slug |
-| `page` | number | Page number for list view |
-| `limit` | number | Posts per page |
-| `isAuthenticated` | boolean | User login status |
-| `maxContentLength` | number | Content truncation limit |
-| `apiUrl` | string | Custom API endpoint |
-
-### JavaScript API
 ```javascript
-// Set configuration
-window.postMessage({
-  type: 'set-config',
-  apiUrl: 'https://api.example.com',
-  isAuthenticated: true,
-  maxContentLength: 1000
-}, '*')
+// Example Stimulus controller
+import { Controller } from "@hotwired/stimulus"
 
-// Show single post
-window.postMessage({
-  type: 'set-post-slug',
-  postSlug: 'my-post-title'
-}, '*')
-
-// Listen for events
-window.addEventListener('message', (event) => {
-  if (event.data.type === 'post-loaded') {
-    console.log('Post loaded:', event.data.post)
-  }
-})
+export default class extends Controller {
+    connect() {
+        console.log("Post form controller connected")
+    }
+    
+    async submit(event) {
+        event.preventDefault()
+        // Handle form submission
+    }
+}
 ```
 
-## 🗄️ Database
+## 📱 Responsive Design
 
-The application uses CockroachDB with secure configuration:
+The application is fully responsive with breakpoints:
 
-- **Credentials**: Stored in Google Cloud Secret Manager
-- **Connection**: Loaded via environment variables
-- **Schema**: Auto-generated from live database
-- **Migration**: Automatic schema extraction and documentation
+- **Mobile**: < 640px
+- **Tablet**: 640px - 1024px  
+- **Desktop**: > 1024px
 
-### Database Schema Extraction
+## 🔍 SEO Features
+
+- **Structured Data**: JSON-LD markup for articles
+- **Meta Tags**: Open Graph and Twitter Card support
+- **Server-Side Rendering**: Full HTML output for crawlers
+- **Clean URLs**: SEO-friendly routing
+
+## 🚀 Deployment
+
+### Local Development
+
 ```bash
-# Extract current database schema
-./local-scripts/extract-schema.sh
+# Start with hot reload
+./scripts/start.sh
+
+# Or run directly
+go run cmd/server/main.go
 ```
 
-This creates:
-- SQL schema files
-- JSON documentation
-- Markdown documentation
+### Production
 
-## 🔐 Security
+1. **Build the application**:
+   ```bash
+   go build -o bin/server cmd/server/main.go
+   ```
 
-- **Database**: Credentials stored in GCP Secret Manager
-- **Authentication**: Session-based with secure cookies
-- **Content**: HTML sanitization with DOMPurify
-- **CORS**: Properly configured for microfrontend embedding
+2. **Set environment variables**:
+   ```bash
+   export PORT=3000
+   export API_BASE_URL=https://your-api-domain.com/api
+   ```
 
-## 🎨 UI Components
+3. **Run the server**:
+   ```bash
+   ./bin/server
+   ```
 
-### Editor Options
-- **Medium-style Editor**: WYSIWYG editor with toolbar
-- **Markdown Editor**: Code-based with live preview
-- **Switching**: Users can choose their preferred editor
+## 🔧 Development
 
-### Styling
-- **Tailwind CSS**: Utility-first CSS framework
-- **Responsive**: Mobile-first design
-- **Theming**: Consistent design system
+### Project Structure
 
-## 📦 Deployment
-
-### Production Build
-```bash
-# Build the main application
-cd app-vue-ui
-npm run build
-
-# Build the viewer
-cd ../app-vue-ui-viewer
-npm run build
+```
+├── cmd/server/main.go          # Application entry point
+├── internal/
+│   ├── database/database.go    # Database operations
+│   ├── handlers/handlers.go    # HTTP handlers
+│   ├── middleware/middleware.go # Middleware functions
+│   └── templates/engine.go     # Template engine
+├── web/
+│   ├── templates/              # Liquid templates
+│   │   ├── layout.liquid       # Base layout
+│   │   ├── home.liquid         # Home page
+│   │   ├── post.liquid         # Single post
+│   │   ├── dashboard.liquid    # Admin dashboard
+│   │   ├── login.liquid        # Login page
+│   │   ├── new_post.liquid     # Create post
+│   │   ├── edit_post.liquid    # Edit post
+│   │   ├── posts_list.liquid   # Posts list partial
+│   │   └── post_content.liquid # Post content partial
+│   └── static/                 # Static assets
+└── scripts/start.sh            # Startup script
 ```
 
-### Docker Deployment
-```bash
-# Build and run with Docker
-docker-compose up -d
-```
+### Adding New Features
 
-## 🔄 Development Workflow
-
-1. **Start Development**: `./local-scripts/start-full-stack.sh`
-2. **Edit Code**: Make changes to API, UI, or viewer
-3. **Hot Reload**: Changes automatically reload
-4. **Rebuild Viewer**: `./local-scripts/rebuild-viewer.sh` (if viewer changes)
-5. **Test**: Check all functionality works
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**API won't start:**
-- Check GCP authentication: `gcloud auth login`
-- Verify GCP project: `gcloud config set project agoat-publisher-dev`
-- Check secrets exist in GCP Secret Manager
-
-**Viewer not loading:**
-- Rebuild viewer: `./local-scripts/rebuild-viewer.sh`
-- Check viewer files: `ls app-vue-ui/public/viewer/`
-- Verify iframe URL: `http://localhost:5173/viewer/`
-
-**Database connection issues:**
-- Extract schema: `./local-scripts/extract-schema.sh`
-- Check CockroachDB is running
-- Verify environment variables
-
-### Logs
-- **API logs**: Check terminal running `start-api.sh`
-- **UI logs**: Check terminal running `start-ui.sh`
-- **Viewer logs**: Check browser console at `/viewer/`
-
-## 📚 API Documentation
-
-### Authentication
-```
-POST /api/login
-POST /api/logout
-GET  /api/status
-```
-
-### Posts
-```
-GET    /api/posts              # List posts
-POST   /api/posts              # Create post
-GET    /api/posts/:id          # Get post by ID
-GET    /api/posts/slug/:slug   # Get post by slug
-PUT    /api/posts/:id          # Update post
-DELETE /api/posts/:id          # Delete post
-```
-
-### Parameters
-- `page`: Page number (default: 1)
-- `limit`: Posts per page (default: 10)
-- `published`: Filter published posts (true/false)
+1. **New Template**: Create `.liquid` file in `web/templates/`
+2. **New Handler**: Add method to `internal/handlers/handlers.go`
+3. **New Route**: Register in `cmd/server/main.go`
+4. **Styling**: Add Tailwind classes or custom CSS
 
 ## 🤝 Contributing
 
@@ -256,16 +250,19 @@ DELETE /api/posts/:id          # Delete post
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+This project is part of the AGoat Publisher ecosystem.
 
 ## 🆘 Support
 
 For issues and questions:
-1. Check the troubleshooting section
-2. Review the logs
-3. Create an issue with detailed information
+
+1. Check the existing documentation
+2. Review the AGoat Publisher API documentation
+3. Create an issue in the repository
 
 ---
 
-**AGoat Publisher** - Modern blog publishing with microfrontend architecture
+**Built with ❤️ using Go, Hotwire, and Liquid templates**
+
+
 

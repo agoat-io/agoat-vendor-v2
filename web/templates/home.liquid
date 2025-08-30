@@ -1,0 +1,192 @@
+{% extends "layout" %}
+
+{% block content %}
+<div class="bg-white">
+    <!-- Hero Section -->
+    <div class="relative bg-gradient-to-r from-primary-600 to-primary-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+            <div class="text-center">
+                <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
+                    Your Health Partner
+                </h1>
+                <p class="mt-6 max-w-2xl mx-auto text-xl text-primary-100">
+                    Discover the best vitamins and supplements to support your wellness journey. 
+                    Expert guidance, premium quality, and proven results.
+                </p>
+                <div class="mt-10">
+                    <a href="#featured-posts" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-white hover:bg-gray-50">
+                        Explore Articles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Posts Section -->
+    <div id="featured-posts" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                    Latest Health Insights
+                </h2>
+                <p class="mt-4 text-lg text-gray-600">
+                    Stay informed with our expert articles on vitamins, supplements, and wellness.
+                </p>
+            </div>
+
+            <!-- Posts Grid -->
+            <div id="posts-list" class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {% for post in Posts %}
+                <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                    <div class="p-6">
+                        <div class="flex items-center text-sm text-gray-500 mb-2">
+                            <time datetime="{{ post.CreatedAt | formatDate }}">{{ post.CreatedAt | formatDate }}</time>
+                            <span class="mx-2">•</span>
+                            <span>{{ post.Author }}</span>
+                        </div>
+                        
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">
+                            <a href="/post/{{ post.ID }}" class="hover:text-primary-600 transition-colors duration-200">
+                                {{ post.Title }}
+                            </a>
+                        </h3>
+                        
+                        <div class="prose prose-sm text-gray-600 mb-4">
+                            {{ post.Content | truncate: 150 | markdown }}
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <a href="/post/{{ post.ID }}" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                                Read more →
+                            </a>
+                            {% if post.Published %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Published
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Draft
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+
+            <!-- Load More Button (for Turbo) -->
+            <div class="mt-12 text-center">
+                <button 
+                    data-turbo-frame="posts-list"
+                    data-turbo-action="replace"
+                    data-turbo-stream-src="/turbo/posts"
+                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Refresh Posts
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                    Why Choose Top Vitamin Supply?
+                </h2>
+                <p class="mt-4 text-lg text-gray-600">
+                    We're committed to providing you with the best nutritional guidance and products.
+                </p>
+            </div>
+
+            <div class="mt-12 grid gap-8 md:grid-cols-3">
+                <div class="text-center">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-600 text-white mx-auto">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">Premium Quality</h3>
+                    <p class="mt-2 text-base text-gray-600">
+                        All our products meet the highest quality standards and are thoroughly tested.
+                    </p>
+                </div>
+
+                <div class="text-center">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-600 text-white mx-auto">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">Expert Guidance</h3>
+                    <p class="mt-2 text-base text-gray-600">
+                        Get personalized advice from our team of nutrition and wellness experts.
+                    </p>
+                </div>
+
+                <div class="text-center">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-600 text-white mx-auto">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">Fast Shipping</h3>
+                    <p class="mt-2 text-base text-gray-600">
+                        Quick and reliable delivery to get your supplements when you need them.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Structured Data for SEO -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Top Vitamin Supply",
+  "url": "https://topvitaminsupply.com",
+  "logo": "https://topvitaminsupply.com/logo.png",
+  "description": "Your trusted source for high-quality vitamins and supplements",
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "US"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+1-555-123-4567",
+    "contactType": "customer service",
+    "email": "info@topvitaminsupply.com"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Health Articles",
+  "description": "Latest health insights and wellness articles",
+  "itemListElement": [
+    {% for post in Posts %}
+    {
+      "@type": "ListItem",
+      "position": {{ forloop.index }},
+      "item": {
+        "@type": "Article",
+        "name": "{{ post.Title }}",
+        "url": "https://topvitaminsupply.com/post/{{ post.ID }}",
+        "author": {
+          "@type": "Person",
+          "name": "{{ post.Author }}"
+        },
+        "datePublished": "{{ post.CreatedAt | formatDate }}",
+        "description": "{{ post.Content | truncate: 200 }}"
+      }
+    }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}

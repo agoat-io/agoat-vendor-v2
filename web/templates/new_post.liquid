@@ -1,0 +1,140 @@
+{% extends "layout" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Create New Post</h1>
+                <p class="mt-1 text-sm text-gray-600">Write a new blog post for your audience.</p>
+            </div>
+
+            <form action="/api/posts" method="POST" data-turbo="false" class="space-y-6">
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+                    <input type="text" name="title" id="title" required
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                           placeholder="Enter your post title">
+                </div>
+
+                <div>
+                    <label for="slug" class="block text-sm font-medium text-gray-700">Slug</label>
+                    <input type="text" name="slug" id="slug" required
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                           placeholder="url-friendly-slug">
+                    <p class="mt-1 text-sm text-gray-500">URL-friendly version of the title (e.g., "my-awesome-post")</p>
+                </div>
+
+                <div>
+                    <label for="content" class="block text-sm font-medium text-gray-700">Content</label>
+                    <textarea name="content" id="content" rows="20" required
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                              placeholder="# Your Post Title
+
+Write your content here using Markdown formatting.
+
+## Subheading
+
+- Bullet points
+- More bullet points
+
+**Bold text** and *italic text* work too!"># New Post
+
+Welcome to your new blog post! 
+
+## Getting Started
+
+This is a sample post to help you get started. You can:
+
+- Write engaging content
+- Use **bold** and *italic* formatting
+- Add [links](https://example.com)
+- Include images and more
+
+## Tips for Great Content
+
+1. Start with a compelling headline
+2. Use clear, concise language
+3. Break up text with subheadings
+4. Include relevant examples
+5. End with a call to action
+
+Happy writing!</textarea>
+                    <p class="mt-1 text-sm text-gray-500">Use Markdown formatting for rich content</p>
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" name="published" id="published"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <label for="published" class="ml-2 block text-sm text-gray-900">
+                        Publish immediately
+                    </label>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="/dashboard" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Create Post
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const titleInput = document.getElementById('title');
+    const slugInput = document.getElementById('slug');
+
+    // Auto-generate slug from title
+    titleInput.addEventListener('input', function() {
+        const title = this.value;
+        const slug = title.toLowerCase()
+            .replace(/[^a-z0-9 -]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim('-');
+        slugInput.value = slug;
+    });
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = {
+            title: formData.get('title'),
+            content: formData.get('content'),
+            slug: formData.get('slug'),
+            published: formData.get('published') === 'on'
+        };
+
+        try {
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Redirect to the new post
+                window.location.href = '/post/' + result.data.id;
+            } else {
+                alert(result.error || 'Failed to create post. Please try again.');
+            }
+        } catch (error) {
+            alert('Network error. Please try again.');
+        }
+    });
+});
+</script>
+{% endblock %}

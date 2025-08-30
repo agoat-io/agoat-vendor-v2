@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ Title }} - Top Vitamin Supply</title>
+    <meta name="description" content="Your trusted source for high-quality vitamins and supplements. Expert guidance for your health and wellness journey.">
+    <meta name="keywords" content="vitamins, supplements, health, wellness, nutrition, top vitamin supply">
+    
+    <!-- SEO Meta Tags -->
+    <meta property="og:title" content="{{ Title }}">
+    <meta property="og:description" content="Your trusted source for high-quality vitamins and supplements">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ RequestURL }}">
+    <meta name="twitter:card" content="summary_large_image">
+    
+    <!-- Compiled CSS -->
+    <link rel="stylesheet" href="/static/css/main.min.css">
+    
+    <!-- Hotwire/Turbo -->
+    <script type="module">
+        import { Application } from "https://cdn.skypack.dev/@hotwired/turbo"
+        Application.start()
+    </script>
+    
+    <!-- Custom CSS -->
+    <style>
+        .prose {
+            max-width: 65ch;
+            color: #374151;
+        }
+        .prose h1 {
+            color: #111827;
+            font-weight: 800;
+            font-size: 2.25em;
+            margin-top: 0;
+            margin-bottom: 0.8888889em;
+            line-height: 1.1111111;
+        }
+        .prose h2 {
+            color: #111827;
+            font-weight: 700;
+            font-size: 1.5em;
+            margin-top: 2em;
+            margin-bottom: 1em;
+            line-height: 1.3333333;
+        }
+        .prose h3 {
+            color: #111827;
+            font-weight: 600;
+            font-size: 1.25em;
+            margin-top: 1.6em;
+            margin-bottom: 0.6em;
+            line-height: 1.6;
+        }
+        .prose p {
+            margin-top: 1.25em;
+            margin-bottom: 1.25em;
+        }
+        .prose ul {
+            margin-top: 1.25em;
+            margin-bottom: 1.25em;
+            padding-left: 1.625em;
+        }
+        .prose li {
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+        }
+        .prose strong {
+            color: #111827;
+            font-weight: 600;
+        }
+        .prose em {
+            color: #111827;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex-shrink-0 flex items-center">
+                        <span class="text-2xl font-bold text-primary-600">Top Vitamin Supply</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                        Home
+                    </a>
+                    {% if user %}
+                        <a href="/dashboard" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                            Dashboard
+                        </a>
+                        <a href="/new-post" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            New Post
+                        </a>
+                        <form action="/logout" method="POST" class="inline">
+                            <button type="submit" class="text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">
+                                Logout
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="/login" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Login
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            {{ content }}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Vitamin Supply</h3>
+                    <p class="text-gray-600">Your trusted source for high-quality vitamins and supplements.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-600 hover:text-primary-600">Home</a></li>
+                        <li><a href="/about" class="text-gray-600 hover:text-primary-600">About</a></li>
+                        <li><a href="/contact" class="text-gray-600 hover:text-primary-600">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact</h3>
+                    <p class="text-gray-600">Email: info@topvitaminsupply.com</p>
+                    <p class="text-gray-600">Phone: (555) 123-4567</p>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-200">
+                <p class="text-center text-gray-600">&copy; 2024 Top Vitamin Supply. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Turbo Frame for dynamic content -->
+    <div id="turbo-frame-container"></div>
+</body>
+</html>
