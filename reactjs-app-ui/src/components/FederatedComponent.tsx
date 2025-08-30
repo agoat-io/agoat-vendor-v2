@@ -2,7 +2,6 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { loadComponent } from '../utils/federationLoader';
 import { Flex, Text, Button, Spinner, Callout } from '@radix-ui/themes';
 import { ReloadIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { MockPostsList, MockPostViewer } from './MockFederatedComponents';
 
 interface FederatedComponentProps {
   componentName: string;
@@ -14,7 +13,7 @@ interface FederatedComponentProps {
 /**
  * Wrapper component for loading federated modules at runtime
  * Provides loading states, error handling, and retry logic
- * Federated components are MANDATORY - uses mock components as fallback
+ * Federated components are MANDATORY - NO FALLBACKS ALLOWED
  */
 const FederatedComponent: React.FC<FederatedComponentProps> = ({
   componentName,
@@ -26,17 +25,15 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [useMock, setUseMock] = useState(false);
 
   const loadFederatedComponent = async () => {
     setLoading(true);
     setError(null);
-    setUseMock(false);
     
     try {
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Loading timeout')), 5000);
+        setTimeout(() => reject(new Error('Loading timeout')), 10000);
       });
       
       const loadPromise = loadComponent(remoteName, componentName);
@@ -46,12 +43,9 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
       setLoading(false);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      console.warn(`Error loading federated component ${remoteName}/${componentName}:`, error);
+      console.error(`Error loading federated component ${remoteName}/${componentName}:`, error);
       setError(error);
       setLoading(false);
-      
-      // Use mock component as fallback
-      setUseMock(true);
       
       if (onError) {
         onError(error);
@@ -65,7 +59,6 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
       loadFederatedComponent();
     } else {
       setLoading(false);
-      setUseMock(true);
       const ssrError = new Error('Federated components not available during SSR');
       setError(ssrError);
       if (onError) {
@@ -88,33 +81,8 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
     );
   }
 
-  // Use mock components when remote service is not available
-  if (useMock) {
-    console.log(`Using mock component for ${componentName}`);
-    
-    if (componentName === 'PostsList') {
-      return <MockPostsList {...componentProps} />;
-    }
-    
-    if (componentName === 'PostViewer') {
-      return <MockPostViewer {...componentProps} />;
-    }
-    
-    // Fallback for unknown components
-    return (
-      <Callout.Root color="amber" size="2" mt="4">
-        <Callout.Icon>
-          <ExclamationTriangleIcon />
-        </Callout.Icon>
-        <Callout.Text>
-          Using mock component for {componentName}. Remote service is not available.
-        </Callout.Text>
-      </Callout.Root>
-    );
-  }
-
-  // Error state - show error UI with retry option
-  if (error && !useMock) {
+  // Error state - NO FALLBACK, show error UI
+  if (error) {
     return (
       <Callout.Root color="red" size="2" mt="4">
         <Callout.Icon>
@@ -122,7 +90,7 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
         </Callout.Icon>
         <Flex direction="column" gap="2">
           <Callout.Text>
-            Failed to load required component {componentName}. Using mock component as fallback.
+            Failed to load required component {componentName}. This component is mandatory and cannot be replaced.
           </Callout.Text>
           <Button size="1" variant="soft" onClick={handleRetry}>
             <ReloadIcon /> Retry Loading
@@ -132,8 +100,8 @@ const FederatedComponent: React.FC<FederatedComponentProps> = ({
     );
   }
 
-  // Component not found
-  if (!Component && !useMock) {
+  // Component not found - NO FALLBACK
+  if (!Component) {
     return (
       <Callout.Root color="red" size="2" mt="4">
         <Callout.Icon>
