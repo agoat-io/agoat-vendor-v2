@@ -580,13 +580,13 @@ module.exports = function (webpackEnv) {
             singleton: true, 
             requiredVersion: '^18.3.1',
             eager: true,
-            strictVersion: true
+            strictVersion: false
           },
           'react-dom': { 
             singleton: true, 
             requiredVersion: '^18.3.1',
             eager: true,
-            strictVersion: true
+            strictVersion: false
           },
           axios: { 
             singleton: true,
