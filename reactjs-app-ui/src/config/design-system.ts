@@ -145,6 +145,81 @@ export const COMPONENT_TOKENS = {
   },
 };
 
+// Preconfigured Radix Themes combinations
+export const PRECONFIGURED_THEMES = {
+  // Modern Professional
+  modern: {
+    appearance: 'light' as const,
+    accentColor: 'blue' as const,
+    grayColor: 'slate' as const,
+    radius: 'medium' as const,
+    scaling: '100%' as const,
+  },
+  
+  // Warm and Friendly
+  warm: {
+    appearance: 'light' as const,
+    accentColor: 'orange' as const,
+    grayColor: 'sand' as const,
+    radius: 'large' as const,
+    scaling: '100%' as const,
+  },
+  
+  // Minimal and Clean
+  minimal: {
+    appearance: 'light' as const,
+    accentColor: 'gray' as const,
+    grayColor: 'gray' as const,
+    radius: 'small' as const,
+    scaling: '95%' as const,
+  },
+  
+  // Vibrant and Energetic
+  vibrant: {
+    appearance: 'light' as const,
+    accentColor: 'purple' as const,
+    grayColor: 'mauve' as const,
+    radius: 'large' as const,
+    scaling: '105%' as const,
+  },
+  
+  // Nature Inspired
+  nature: {
+    appearance: 'light' as const,
+    accentColor: 'green' as const,
+    grayColor: 'sage' as const,
+    radius: 'medium' as const,
+    scaling: '100%' as const,
+  },
+  
+  // Dark Professional
+  darkProfessional: {
+    appearance: 'dark' as const,
+    accentColor: 'blue' as const,
+    grayColor: 'slate' as const,
+    radius: 'medium' as const,
+    scaling: '100%' as const,
+  },
+  
+  // Dark Warm
+  darkWarm: {
+    appearance: 'dark' as const,
+    accentColor: 'orange' as const,
+    grayColor: 'sand' as const,
+    radius: 'large' as const,
+    scaling: '100%' as const,
+  },
+  
+  // Dark Minimal
+  darkMinimal: {
+    appearance: 'dark' as const,
+    accentColor: 'gray' as const,
+    grayColor: 'gray' as const,
+    radius: 'small' as const,
+    scaling: '95%' as const,
+  },
+};
+
 // Theme configuration for Radix Themes
 export const THEME_CONFIG = {
   appearance: 'light' as const,
@@ -182,6 +257,7 @@ export default {
   DESIGN_TOKENS,
   RESPONSIVE_BREAKPOINTS,
   COMPONENT_TOKENS,
+  PRECONFIGURED_THEMES,
   THEME_CONFIG,
   responsive,
   spacing,

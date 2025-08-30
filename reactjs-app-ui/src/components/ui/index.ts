@@ -44,4 +44,18 @@ export {
 
 // Export design system configuration
 export { default as designSystem } from '../../config/design-system';
-export { DESIGN_TOKENS, COMPONENT_TOKENS, THEME_CONFIG, spacing, responsive } from '../../config/design-system';
+export { 
+  DESIGN_TOKENS, 
+  COMPONENT_TOKENS, 
+  THEME_CONFIG, 
+  PRECONFIGURED_THEMES,
+  spacing, 
+  responsive 
+} from '../../config/design-system';
+
+// Export theme management components
+export { 
+  useTheme, 
+  ThemeToggle, 
+  ThemeSelector 
+} from '../ThemeProvider';
