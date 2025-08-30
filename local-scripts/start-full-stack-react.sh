@@ -2,6 +2,7 @@
 
 # Start Full Stack React Development Environment with Module Federation
 echo "🚀 Starting AGoat Publisher React Full Stack with Runtime Module Federation..."
+echo "🧹 All services will clear their cache and temporary files before starting..."
 
 PROJECT_ROOT="$(dirname "$0")/.."
 cd "$PROJECT_ROOT"

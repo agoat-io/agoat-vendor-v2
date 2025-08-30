@@ -40,6 +40,15 @@ echo ""
 
 cd "$PROJECT_ROOT"
 
+# Clear Go build cache and temporary files
+echo "🧹 Clearing Go build cache and temporary files..."
+go clean -cache -modcache -i -r
+rm -rf "$API_DIR/tmp/"
+rm -rf "$API_DIR/*.log"
+rm -rf "$API_DIR/air_tmp/"
+echo "✅ Cache cleared"
+echo ""
+
 # GCP project configuration
 gcp_project="agoat-publisher-dev"
 echo "☁️  Using GCP project: $gcp_project"

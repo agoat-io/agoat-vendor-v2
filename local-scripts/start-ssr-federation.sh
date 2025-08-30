@@ -2,6 +2,7 @@
 
 # Start SSR Federation Development Environment
 echo "🚀 Starting AGoat Publisher with Server-Side Module Federation..."
+echo "🧹 All services will clear their cache and temporary files before starting..."
 
 PROJECT_ROOT="$(dirname "$0")/.."
 cd "$PROJECT_ROOT"
@@ -26,6 +27,16 @@ sleep 3
 
 echo "📡 Starting Viewer Remote (Federation Module)..."
 cd app-vue-ui-viewer
+
+# Clear Vue/Vite cache for viewer
+echo "🧹 Clearing viewer cache..."
+rm -rf node_modules/.vite/
+rm -rf node_modules/.cache/
+rm -rf dist/
+rm -rf .vite/
+rm -rf *.log
+echo "✅ Viewer cache cleared"
+
 if [ ! -d "node_modules" ]; then
     echo "Installing viewer dependencies..."
     npm install
@@ -43,6 +54,18 @@ cd ..
 
 echo "🖥️  Starting Main App with SSR..."
 cd app-vue-ui
+
+# Clear Vue/Vite cache for main app
+echo "🧹 Clearing main app cache..."
+rm -rf node_modules/.vite/
+rm -rf node_modules/.cache/
+rm -rf dist/
+rm -rf .vite/
+rm -rf .nuxt/
+rm -rf .output/
+rm -rf *.log
+echo "✅ Main app cache cleared"
+
 if [ ! -d "node_modules" ]; then
     echo "Installing main app dependencies..."
     npm install

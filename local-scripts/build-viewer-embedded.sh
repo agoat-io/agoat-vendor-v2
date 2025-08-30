@@ -28,6 +28,16 @@ fi
 echo "🔨 Building viewer microfrontend..."
 cd "$VIEWER_DIR"
 
+# Clear Vue/Vite cache before building
+echo "🧹 Clearing Vue/Vite cache..."
+rm -rf node_modules/.vite/
+rm -rf node_modules/.cache/
+rm -rf dist/
+rm -rf .vite/
+rm -rf *.log
+echo "✅ Cache cleared"
+echo ""
+
 # Install dependencies if needed
 if [ ! -d "node_modules" ]; then
     echo "📦 Installing viewer dependencies..."

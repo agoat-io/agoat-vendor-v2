@@ -24,10 +24,22 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
+# Clear Vue/Vite cache and temporary files
+echo "🧹 Clearing Vue/Vite cache and temporary files..."
+cd "$UI_DIR"
+rm -rf node_modules/.vite/
+rm -rf node_modules/.cache/
+rm -rf dist/
+rm -rf .vite/
+rm -rf .nuxt/
+rm -rf .output/
+rm -rf *.log
+echo "✅ Cache cleared"
+echo ""
+
 # Check if dependencies are installed
 if [ ! -d "$UI_DIR/node_modules" ]; then
     echo "📦 Installing dependencies..."
-    cd "$UI_DIR"
     npm install
 fi
 

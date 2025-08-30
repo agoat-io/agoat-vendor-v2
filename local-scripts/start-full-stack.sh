@@ -3,6 +3,7 @@
 # AGoat Publisher Full-Stack Development Startup Script
 
 echo "🚀 Starting AGoat Publisher Full-Stack Development Environment..."
+echo "🧹 All services will clear their cache and temporary files before starting..."
 echo ""
 
 # Function to cleanup background processes on exit

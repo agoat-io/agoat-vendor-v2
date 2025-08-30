@@ -6,6 +6,18 @@ echo "🚀 Starting React Main UI (Next.js)..."
 PROJECT_ROOT="$(dirname "$0")/.."
 cd "$PROJECT_ROOT/reactjs-app-ui"
 
+# Clear Next.js and webpack cache
+echo "🧹 Clearing Next.js and webpack cache..."
+rm -rf .next/
+rm -rf node_modules/.cache/
+rm -rf .webpack/
+rm -rf dist/
+rm -rf build/
+rm -rf *.log
+rm -rf .turbo/
+echo "✅ Cache cleared"
+echo ""
+
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
     echo "📦 Installing dependencies..."
