@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button as RadixButton, ButtonProps as RadixButtonProps } from '@radix-ui/themes';
 import { COMPONENT_TOKENS } from '../../config/design-system';
 
@@ -26,6 +26,25 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   ...props
 }) => {
+  // Add CSS for loading spinner animation - client-side only
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      // Check if the style already exists to avoid duplicates
+      const existingStyle = document.getElementById('button-spinner-style');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'button-spinner-style';
+        style.textContent = `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  }, []);
+
   return (
     <RadixButton
       variant={variant}
@@ -60,15 +79,5 @@ export const Button: React.FC<ButtonProps> = ({
     </RadixButton>
   );
 };
-
-// Add CSS for loading spinner animation
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-document.head.appendChild(style);
 
 export default Button;

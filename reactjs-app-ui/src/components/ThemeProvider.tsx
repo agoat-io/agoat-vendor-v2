@@ -37,6 +37,30 @@ interface ThemeProviderProps {
   showThemePanel?: boolean;
 }
 
+// Helper function to safely access localStorage
+const getLocalStorageItem = (key: string): string | null => {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.warn('Failed to access localStorage:', error);
+      return null;
+    }
+  }
+  return null;
+};
+
+// Helper function to safely set localStorage
+const setLocalStorageItem = (key: string, value: string): void => {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.warn('Failed to set localStorage:', error);
+    }
+  }
+};
+
 export const AppThemeProvider: React.FC<ThemeProviderProps> = ({ 
   children, 
   showThemePanel = process.env.NODE_ENV === 'development' 
@@ -50,12 +74,12 @@ export const AppThemeProvider: React.FC<ThemeProviderProps> = ({
 
   // Load theme preferences from localStorage on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme-current');
-    const savedAppearance = localStorage.getItem('theme-appearance');
-    const savedAccent = localStorage.getItem('theme-accent-color');
-    const savedGray = localStorage.getItem('theme-gray-color');
-    const savedRadius = localStorage.getItem('theme-radius');
-    const savedScaling = localStorage.getItem('theme-scaling');
+    const savedTheme = getLocalStorageItem('theme-current');
+    const savedAppearance = getLocalStorageItem('theme-appearance');
+    const savedAccent = getLocalStorageItem('theme-accent-color');
+    const savedGray = getLocalStorageItem('theme-gray-color');
+    const savedRadius = getLocalStorageItem('theme-radius');
+    const savedScaling = getLocalStorageItem('theme-scaling');
 
     if (savedTheme && themeRegistry.getTheme(savedTheme)) {
       // Load saved theme configuration
@@ -78,7 +102,7 @@ export const AppThemeProvider: React.FC<ThemeProviderProps> = ({
 
   // Save theme preferences to localStorage
   const saveThemePreference = (key: string, value: string) => {
-    localStorage.setItem(key, value);
+    setLocalStorageItem(key, value);
   };
 
   const toggleAppearance = () => {
@@ -140,7 +164,7 @@ export const AppThemeProvider: React.FC<ThemeProviderProps> = ({
       themeRegistry.registerTheme(key, theme);
       // Save custom themes to localStorage for persistence
       const customThemes = getCustomThemes();
-      localStorage.setItem('custom-themes', JSON.stringify(customThemes));
+      setLocalStorageItem('custom-themes', JSON.stringify(customThemes));
     } catch (error) {
       console.error('Failed to register custom theme:', error);
     }
