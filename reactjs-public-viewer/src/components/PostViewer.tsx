@@ -122,7 +122,7 @@ const PostViewer: React.FC<PostViewerProps> = ({
     if (postId || postSlug) {
       fetchPost()
     }
-  }, [fetchPost])
+  }, [fetchPost, postId, postSlug])
 
   if (loading) {
     return (

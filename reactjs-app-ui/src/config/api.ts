@@ -8,6 +8,7 @@ export const API_CONFIG = {
     LOGOUT: '/logout',
     POSTS: '/posts',
     POST: (id: string) => `/posts/${id}`,
+    AUTH_CHECK: '/status',
   }
 } as const
 
