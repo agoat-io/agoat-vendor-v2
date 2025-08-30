@@ -1,0 +1,8 @@
+always start apps and run tests with scripts in local-scripts
+always include puppeteer or similar tool to ensure you detect client side redndered content to see content and errors. Additionally to curl or any other tools
+make sure you can see the content of the equivalent of browser dev conole to see all errors returned client side
+then do what is necessary jumpging though different apps.
+
+You can figure out what apps need to work together and what you need to tests
+lokning at script start-full-stack-react.sh
+

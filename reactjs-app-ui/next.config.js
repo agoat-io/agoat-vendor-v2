@@ -1,3 +1,5 @@
+// const { NextFederationPlugin } = require('@module-federation/nextjs-mf');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configure for different environments
@@ -24,6 +26,32 @@ const nextConfig = {
       net: false,
       tls: false,
     }
+
+    // Module Federation temporarily disabled
+    // TODO: Re-enable once basic app is stable
+    /*
+    if (!isServer) {
+      const { ModuleFederationPlugin } = require('webpack').container;
+      config.plugins.push(
+        new ModuleFederationPlugin({
+          name: 'host',
+          remotes: {
+            viewer: 'viewer@http://localhost:3001/remoteEntry.js',
+          },
+          shared: {
+            react: {
+              singleton: true,
+              eager: false,
+            },
+            'react-dom': {
+              singleton: true,
+              eager: false,
+            },
+          },
+        })
+      );
+    }
+    */
 
     return config
   }
