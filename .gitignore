@@ -56,6 +56,7 @@ temp/
 .cache/
 .parcel-cache/
 .vite/
+.vite/deps/
 
 # Go specific
 *.exe
