@@ -1,23 +1,74 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"database/sql"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
-	"golang.org/x/crypto/bcrypt"
 )
+
+// Updated structs for multitenancy
+type User struct {
+	ID          string    `json:"id"`
+	Username    string    `json:"username"`
+	Email       string    `json:"email"`
+	CustomerID  string    `json:"customer_id,omitempty"`
+	SiteID      string    `json:"site_id,omitempty"`
+	Role        string    `json:"role,omitempty"`
+	Status      string    `json:"status,omitempty"`
+	ExternalID  string    `json:"external_id,omitempty"`
+	IAMProvider string    `json:"iam_provider,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type Post struct {
+	ID          string     `json:"id"`
+	UserID      string     `json:"user_id"`
+	SiteID      string     `json:"site_id"`
+	Title       string     `json:"title"`
+	Content     string     `json:"content"`
+	Slug        string     `json:"slug"`
+	Status      string     `json:"status"`
+	Published   bool       `json:"published"`
+	PublishedAt *time.Time `json:"published_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	Author      string     `json:"author"`
+}
+
+type Site struct {
+	ID         string    `json:"id"`
+	CustomerID string    `json:"customer_id"`
+	Name       string    `json:"name"`
+	Slug       string    `json:"slug"`
+	Status     string    `json:"status"`
+	Template   string    `json:"template"`
+	Settings   string    `json:"settings"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type Customer struct {
+	ID               string    `json:"id"`
+	Name             string    `json:"name"`
+	Email            string    `json:"email"`
+	Status           string    `json:"status"`
+	SubscriptionPlan string    `json:"subscription_plan"`
+	MaxSites         int       `json:"max_sites"`
+	MaxStorageGB     int       `json:"max_storage_gb"`
+	MaxBandwidthGB   int       `json:"max_bandwidth_gb"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
 
 type Config struct {
 	Server   ServerConfig   `json:"server"`
@@ -53,25 +104,6 @@ type APIConfig struct {
 	RateLimit int    `json:"rateLimit"`
 }
 
-type User struct {
-	ID        string    `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type Post struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	Slug      string    `json:"slug"`
-	Published bool      `json:"published"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Author    string    `json:"author"`
-}
-
 type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -98,121 +130,57 @@ type APIMeta struct {
 	TotalPages int `json:"total_pages,omitempty"`
 }
 
-type Authenticator interface {
-	Authenticate(username, password string) (*User, error)
-	GetUser(id string) (*User, error)
-	ValidateAPIKey(key string) bool
-}
-
+// Updated repository interfaces
 type PostRepository interface {
 	Create(post *Post) error
 	Update(post *Post) error
 	Delete(id string) error
 	GetByID(id string) (*Post, error)
-	GetAll(limit, offset int) ([]Post, error)
-	GetPublished(limit, offset int) ([]Post, error)
-	GetAllInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error)
-	GetPublishedInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error)
-	GetBySlug(slug string) (*Post, error)
-	Count() (int, error)
-	CountPublished() (int, error)
-	CountInDateRange(fromDate, toDate string) (int, error)
-	CountPublishedInDateRange(fromDate, toDate string) (int, error)
+	GetBySlug(slug string, siteID string) (*Post, error)
+	GetAll(limit, offset int, siteID string) ([]Post, error)
+	GetPublished(limit, offset int, siteID string) ([]Post, error)
+	Count(siteID string) (int, error)
+	CountPublished(siteID string) (int, error)
 }
 
-type SessionStore interface {
-	Get(r *http.Request, name string) (*sessions.Session, error)
-	Save(r *http.Request, w http.ResponseWriter, s *sessions.Session) error
+type SiteRepository interface {
+	GetByID(id string) (*Site, error)
+	GetBySlug(slug string, customerID string) (*Site, error)
+	GetAll(customerID string) ([]Site, error)
+	Create(site *Site) error
+	Update(site *Site) error
+	Delete(id string) error
 }
 
-// ----- logging -----
-
-func logJSON(level, category, message string, fields map[string]interface{}) {
-	entry := map[string]interface{}{
-		"ts":       time.Now().Format(time.RFC3339Nano),
-		"level":    level,
-		"category": category,
-		"message":  message,
-	}
-	for k, v := range fields {
-		entry[k] = v
-	}
-	b, _ := json.Marshal(entry)
-	fmt.Println(string(b))
+type CustomerRepository interface {
+	GetByID(id string) (*Customer, error)
+	GetByEmail(email string) (*Customer, error)
+	Create(customer *Customer) error
+	Update(customer *Customer) error
 }
 
-func logInfo(category, message string, fields map[string]interface{}) {
-	logJSON("info", category, message, fields)
-}
-func logWarn(category, message string, fields map[string]interface{}) {
-	logJSON("warn", category, message, fields)
-}
-func logError(category, message string, fields map[string]interface{}) {
-	logJSON("error", category, message, fields)
-}
-func logFatal(category, message string, fields map[string]interface{}) {
-	logJSON("fatal", category, message, fields)
-	os.Exit(1)
-}
-
-// ----- auth -----
-
-type HardcodedAuth struct {
-	username string
-	password string
-	apiKey   string
-	db       *sql.DB
-}
-
-func (h *HardcodedAuth) Authenticate(username, password string) (*User, error) {
-	if username != h.username || password != h.password {
-		return nil, fmt.Errorf("invalid credentials")
-	}
-	u := &User{}
-	err := h.db.QueryRow(`SELECT id, username, email, created_at FROM users WHERE username = $1`, h.username).
-		Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("user not found in db")
-	}
-	return u, nil
-}
-
-func (h *HardcodedAuth) GetUser(id string) (*User, error) {
-	u := &User{}
-	err := h.db.QueryRow(`SELECT id, username, email, created_at FROM users WHERE id = $1`, id).
-		Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("user not found")
-	}
-	return u, nil
-}
-
-func (h *HardcodedAuth) ValidateAPIKey(key string) bool {
-	return h.apiKey != "" && h.apiKey == key
-}
-
-// ----- posts repo -----
-
+// Updated repositories
 type SQLPostRepository struct {
 	db *sql.DB
 }
 
 func (r *SQLPostRepository) Create(post *Post) error {
 	query := `
-		INSERT INTO posts (user_id, title, content, slug, published, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO posts (user_id, site_id, title, content, slug, status, published, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id`
-	err := r.db.QueryRow(query, post.UserID, post.Title, post.Content,
-		post.Slug, post.Published, time.Now(), time.Now()).Scan(&post.ID)
+	now := time.Now()
+	err := r.db.QueryRow(query, post.UserID, post.SiteID, post.Title, post.Content,
+		post.Slug, post.Status, post.Published, now, now).Scan(&post.ID)
 	return err
 }
 
 func (r *SQLPostRepository) Update(post *Post) error {
 	query := `
 		UPDATE posts SET title = $1, content = $2, slug = $3, 
-		published = $4, updated_at = $5 WHERE id = $6`
+		status = $4, published = $5, updated_at = $6 WHERE id = $7`
 	_, err := r.db.Exec(query, post.Title, post.Content, post.Slug,
-		post.Published, time.Now(), post.ID)
+		post.Status, post.Published, time.Now(), post.ID)
 	return err
 }
 
@@ -224,74 +192,41 @@ func (r *SQLPostRepository) Delete(id string) error {
 func (r *SQLPostRepository) GetByID(id string) (*Post, error) {
 	post := &Post{}
 	query := `
-		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
-		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
+		SELECT p.id, p.user_id, p.site_id, p.title, p.content, p.slug, p.status, p.published, 
+		p.published_at, p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
 		FROM posts p
 		LEFT JOIN users u ON p.user_id = u.id
 		WHERE p.id = $1`
-	err := r.db.QueryRow(query, id).Scan(&post.ID, &post.UserID, &post.Title,
-		&post.Content, &post.Slug, &post.Published, &post.CreatedAt,
-		&post.UpdatedAt, &post.Author)
+	err := r.db.QueryRow(query, id).Scan(&post.ID, &post.UserID, &post.SiteID, &post.Title,
+		&post.Content, &post.Slug, &post.Status, &post.Published, &post.PublishedAt,
+		&post.CreatedAt, &post.UpdatedAt, &post.Author)
 	return post, err
 }
 
-func (r *SQLPostRepository) GetAll(limit, offset int) ([]Post, error) {
-	query := `
-		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
-		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
-		FROM posts p
-		LEFT JOIN users u ON p.user_id = u.id
-		ORDER BY p.created_at DESC
-		LIMIT $1 OFFSET $2`
-	rows, err := r.db.Query(query, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var posts []Post
-	for rows.Next() {
-		var post Post
-		err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content,
-			&post.Slug, &post.Published, &post.CreatedAt, &post.UpdatedAt, &post.Author)
-		if err != nil {
-			return nil, err
-		}
-		posts = append(posts, post)
-	}
-	return posts, nil
-}
-
-func (r *SQLPostRepository) GetBySlug(slug string) (*Post, error) {
+func (r *SQLPostRepository) GetBySlug(slug string, siteID string) (*Post, error) {
 	post := &Post{}
 	query := `
-		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
-		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
+		SELECT p.id, p.user_id, p.site_id, p.title, p.content, p.slug, p.status, p.published, 
+		p.published_at, p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
 		FROM posts p
 		LEFT JOIN users u ON p.user_id = u.id
-		WHERE p.slug = $1`
-	err := r.db.QueryRow(query, slug).Scan(&post.ID, &post.UserID, &post.Title,
-		&post.Content, &post.Slug, &post.Published, &post.CreatedAt,
-		&post.UpdatedAt, &post.Author)
+		WHERE p.slug = $1 AND p.site_id = $2`
+	err := r.db.QueryRow(query, slug, siteID).Scan(&post.ID, &post.UserID, &post.SiteID, &post.Title,
+		&post.Content, &post.Slug, &post.Status, &post.Published, &post.PublishedAt,
+		&post.CreatedAt, &post.UpdatedAt, &post.Author)
 	return post, err
 }
 
-func (r *SQLPostRepository) Count() (int, error) {
-	var count int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM posts").Scan(&count)
-	return count, err
-}
-
-func (r *SQLPostRepository) GetPublished(limit, offset int) ([]Post, error) {
+func (r *SQLPostRepository) GetAll(limit, offset int, siteID string) ([]Post, error) {
 	query := `
-		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
-		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
+		SELECT p.id, p.user_id, p.site_id, p.title, p.content, p.slug, p.status, p.published, 
+		p.published_at, p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
 		FROM posts p
 		LEFT JOIN users u ON p.user_id = u.id
-		WHERE p.published = true
+		WHERE p.site_id = $1
 		ORDER BY p.created_at DESC
-		LIMIT $1 OFFSET $2`
-	rows, err := r.db.Query(query, limit, offset)
+		LIMIT $2 OFFSET $3`
+	rows, err := r.db.Query(query, siteID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -300,8 +235,9 @@ func (r *SQLPostRepository) GetPublished(limit, offset int) ([]Post, error) {
 	var posts []Post
 	for rows.Next() {
 		var post Post
-		err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content,
-			&post.Slug, &post.Published, &post.CreatedAt, &post.UpdatedAt, &post.Author)
+		err := rows.Scan(&post.ID, &post.UserID, &post.SiteID, &post.Title, &post.Content,
+			&post.Slug, &post.Status, &post.Published, &post.PublishedAt,
+			&post.CreatedAt, &post.UpdatedAt, &post.Author)
 		if err != nil {
 			return nil, err
 		}
@@ -310,22 +246,16 @@ func (r *SQLPostRepository) GetPublished(limit, offset int) ([]Post, error) {
 	return posts, nil
 }
 
-func (r *SQLPostRepository) CountPublished() (int, error) {
-	var count int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE published = true").Scan(&count)
-	return count, err
-}
-
-func (r *SQLPostRepository) GetAllInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error) {
+func (r *SQLPostRepository) GetPublished(limit, offset int, siteID string) ([]Post, error) {
 	query := `
-		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
-		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
+		SELECT p.id, p.user_id, p.site_id, p.title, p.content, p.slug, p.status, p.published, 
+		p.published_at, p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
 		FROM posts p
 		LEFT JOIN users u ON p.user_id = u.id
-		WHERE p.created_at >= $1 AND p.created_at <= $2
+		WHERE p.site_id = $1 AND p.published = true
 		ORDER BY p.created_at DESC
-		LIMIT $3 OFFSET $4`
-	rows, err := r.db.Query(query, fromDate, toDate, limit, offset)
+		LIMIT $2 OFFSET $3`
+	rows, err := r.db.Query(query, siteID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -334,8 +264,9 @@ func (r *SQLPostRepository) GetAllInDateRange(limit, offset int, fromDate, toDat
 	var posts []Post
 	for rows.Next() {
 		var post Post
-		err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content,
-			&post.Slug, &post.Published, &post.CreatedAt, &post.UpdatedAt, &post.Author)
+		err := rows.Scan(&post.ID, &post.UserID, &post.SiteID, &post.Title, &post.Content,
+			&post.Slug, &post.Status, &post.Published, &post.PublishedAt,
+			&post.CreatedAt, &post.UpdatedAt, &post.Author)
 		if err != nil {
 			return nil, err
 		}
@@ -344,54 +275,82 @@ func (r *SQLPostRepository) GetAllInDateRange(limit, offset int, fromDate, toDat
 	return posts, nil
 }
 
-func (r *SQLPostRepository) GetPublishedInDateRange(limit, offset int, fromDate, toDate string) ([]Post, error) {
-	query := `
-		SELECT p.id, p.user_id, p.title, p.content, p.slug, p.published, 
-		p.created_at, p.updated_at, COALESCE(u.username, 'Anonymous')
-		FROM posts p
-		LEFT JOIN users u ON p.user_id = u.id
-		WHERE p.published = true AND p.created_at >= $1 AND p.created_at <= $2
-		ORDER BY p.created_at DESC
-		LIMIT $3 OFFSET $4`
-	rows, err := r.db.Query(query, fromDate, toDate, limit, offset)
+func (r *SQLPostRepository) Count(siteID string) (int, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE site_id = $1", siteID).Scan(&count)
+	return count, err
+}
+
+func (r *SQLPostRepository) CountPublished(siteID string) (int, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE site_id = $1 AND published = true", siteID).Scan(&count)
+	return count, err
+}
+
+// Site repository implementation
+type SQLSiteRepository struct {
+	db *sql.DB
+}
+
+func (r *SQLSiteRepository) GetByID(id string) (*Site, error) {
+	site := &Site{}
+	query := `SELECT id, customer_id, name, slug, status, template, settings, created_at, updated_at FROM sites WHERE id = $1`
+	err := r.db.QueryRow(query, id).Scan(&site.ID, &site.CustomerID, &site.Name, &site.Slug, &site.Status, &site.Template, &site.Settings, &site.CreatedAt, &site.UpdatedAt)
+	return site, err
+}
+
+func (r *SQLSiteRepository) GetBySlug(slug string, customerID string) (*Site, error) {
+	site := &Site{}
+	query := `SELECT id, customer_id, name, slug, status, template, settings, created_at, updated_at FROM sites WHERE slug = $1 AND customer_id = $2`
+	err := r.db.QueryRow(query, slug, customerID).Scan(&site.ID, &site.CustomerID, &site.Name, &site.Slug, &site.Status, &site.Template, &site.Settings, &site.CreatedAt, &site.UpdatedAt)
+	return site, err
+}
+
+func (r *SQLSiteRepository) GetAll(customerID string) ([]Site, error) {
+	query := `SELECT id, customer_id, name, slug, status, template, settings, created_at, updated_at FROM sites WHERE customer_id = $1 ORDER BY created_at DESC`
+	rows, err := r.db.Query(query, customerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var posts []Post
+	var sites []Site
 	for rows.Next() {
-		var post Post
-		err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content,
-			&post.Slug, &post.Published, &post.CreatedAt, &post.UpdatedAt, &post.Author)
+		var site Site
+		err := rows.Scan(&site.ID, &site.CustomerID, &site.Name, &site.Slug, &site.Status, &site.Template, &site.Settings, &site.CreatedAt, &site.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
-		posts = append(posts, post)
+		sites = append(sites, site)
 	}
-	return posts, nil
+	return sites, nil
 }
 
-func (r *SQLPostRepository) CountInDateRange(fromDate, toDate string) (int, error) {
-	var count int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE created_at >= $1 AND created_at <= $2", fromDate, toDate).Scan(&count)
-	return count, err
+func (r *SQLSiteRepository) Create(site *Site) error {
+	query := `INSERT INTO sites (customer_id, name, slug, status, template, settings, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	now := time.Now()
+	err := r.db.QueryRow(query, site.CustomerID, site.Name, site.Slug, site.Status, site.Template, site.Settings, now, now).Scan(&site.ID)
+	return err
 }
 
-func (r *SQLPostRepository) CountPublishedInDateRange(fromDate, toDate string) (int, error) {
-	var count int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM posts WHERE published = true AND created_at >= $1 AND created_at <= $2", fromDate, toDate).Scan(&count)
-	return count, err
+func (r *SQLSiteRepository) Update(site *Site) error {
+	query := `UPDATE sites SET name = $1, slug = $2, status = $3, template = $4, settings = $5, updated_at = $6 WHERE id = $7`
+	_, err := r.db.Exec(query, site.Name, site.Slug, site.Status, site.Template, site.Settings, time.Now(), site.ID)
+	return err
 }
 
-// ----- app -----
+func (r *SQLSiteRepository) Delete(id string) error {
+	_, err := r.db.Exec("DELETE FROM sites WHERE id = $1", id)
+	return err
+}
 
+// Main app structure
 type App struct {
 	config   *Config
 	db       *sql.DB
-	auth     Authenticator
 	posts    PostRepository
-	sessions SessionStore
+	sites    SiteRepository
+	sessions *sessions.CookieStore
 }
 
 func NewApp(config *Config) (*App, error) {
@@ -400,570 +359,18 @@ func NewApp(config *Config) (*App, error) {
 		return nil, err
 	}
 
-	var auth Authenticator
-	switch config.Auth.Provider {
-	case "hardcoded":
-		auth = &HardcodedAuth{
-			username: config.Auth.Username,
-			password: config.Auth.Password,
-			apiKey:   config.API.Key,
-			db:       db,
-		}
-	default:
-		auth = &HardcodedAuth{
-			username: "admin",
-			password: "admin123",
-			apiKey:   config.API.Key,
-			db:       db,
-		}
-	}
-
-	var sessionStore SessionStore
-	sessionStore = sessions.NewCookieStore([]byte(config.Session.Secret))
-
 	app := &App{
 		config:   config,
 		db:       db,
-		auth:     auth,
 		posts:    &SQLPostRepository{db: db},
-		sessions: sessionStore,
-	}
-
-	if err := app.initSchema(); err != nil {
-		return nil, err
-	}
-	if err := app.ensureDefaultUser(); err != nil {
-		return nil, err
+		sites:    &SQLSiteRepository{db: db},
+		sessions: sessions.NewCookieStore([]byte(config.Session.Secret)),
 	}
 
 	return app, nil
 }
 
-func (app *App) initSchema() error {
-	schema := `
-	CREATE TABLE IF NOT EXISTS users (
-		id SERIAL PRIMARY KEY,
-		username VARCHAR(255) UNIQUE NOT NULL,
-		email VARCHAR(255) UNIQUE NOT NULL,
-		password_hash VARCHAR(255) NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS posts (
-		id SERIAL PRIMARY KEY,
-		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-		title VARCHAR(255) NOT NULL,
-		content TEXT NOT NULL,
-		slug VARCHAR(255) UNIQUE NOT NULL,
-		published BOOLEAN DEFAULT false,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug);
-	CREATE INDEX IF NOT EXISTS idx_posts_published ON posts(published);
-	`
-	_, err := app.db.Exec(schema)
-	return err
-}
-
-func (app *App) ensureDefaultUser() error {
-	username := app.config.Auth.Username
-	if username == "" {
-		username = "admin"
-	}
-	email := username + "@example.com"
-	pw := app.config.Auth.Password
-	if pw == "" {
-		pw = "admin123"
-	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	_, err = app.db.Exec(
-		`INSERT INTO users (username, email, password_hash) 
-         VALUES ($1, $2, $3)
-         ON CONFLICT (username) DO NOTHING`,
-		username, email, string(hash),
-	)
-	return err
-}
-
-// ----- middleware -----
-
-func (app *App) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		session, _ := app.sessions.Get(r, "blog-session")
-		if auth, ok := session.Values["authenticated"].(bool); ok && auth {
-			next(w, r)
-			return
-		}
-		if app.config.API.Enabled {
-			apiKey := r.Header.Get("X-API-Key")
-			if apiKey == "" {
-				apiKey = r.URL.Query().Get("api_key")
-			}
-			if app.auth.ValidateAPIKey(apiKey) {
-				next(w, r)
-				return
-			}
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(APIResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
-		logWarn("business", "Unauthorized API access", map[string]interface{}{
-			"path":   r.URL.Path,
-			"method": r.Method,
-			"ip":     r.RemoteAddr,
-		})
-	}
-}
-
-func (app *App) apiMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !app.config.API.Enabled {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			_ = json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   "API is disabled",
-			})
-			logWarn("business", "API disabled", map[string]interface{}{
-				"path":   r.URL.Path,
-				"method": r.Method,
-			})
-			return
-		}
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			origin = "http://localhost:5173"
-		}
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next(w, r)
-	}
-}
-
-// ----- handlers (REST only) -----
-
-// Missing apiStatusHandler - this was the main error
-func (app *App) apiStatusHandler(w http.ResponseWriter, r *http.Request) {
-	// Set CORS headers for status
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		origin = "http://localhost:3000"
-	}
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-	// Handle OPTIONS preflight request
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	// Check authentication status
-	session, _ := app.sessions.Get(r, "blog-session")
-	authenticated := false
-	if auth, ok := session.Values["authenticated"].(bool); ok && auth {
-		authenticated = true
-	}
-
-	status := map[string]interface{}{
-		"status":        "healthy",
-		"authenticated": authenticated,
-		"timestamp":     time.Now().Format(time.RFC3339),
-		"version":       "1.0.0",
-		"api": map[string]interface{}{
-			"enabled": app.config.API.Enabled,
-		},
-	}
-	_ = json.NewEncoder(w).Encode(APIResponse{
-		Success: true,
-		Data:    status,
-	})
-}
-
-func (app *App) loginHandler(w http.ResponseWriter, r *http.Request) {
-	// Set CORS headers for login
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		origin = "http://localhost:5173"
-	}
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-	// Handle OPTIONS preflight request
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	var loginReq LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(LoginResponse{
-			Success: false,
-			Message: "Invalid request format",
-		})
-		logWarn("business", "Invalid login request format", map[string]interface{}{"error": err.Error()})
-		return
-	}
-	user, err := app.auth.Authenticate(loginReq.Username, loginReq.Password)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(LoginResponse{
-			Success: false,
-			Message: "Invalid credentials",
-		})
-		logWarn("business", "Invalid credentials", map[string]interface{}{"username": loginReq.Username})
-		return
-	}
-	session, _ := app.sessions.Get(r, "blog-session")
-	session.Values["authenticated"] = true
-	session.Values["user_id"] = user.ID
-	_ = session.Save(r, w)
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(LoginResponse{
-		Success: true,
-		User:    user,
-		Token:   "session-created",
-	})
-	logInfo("business", "User login", map[string]interface{}{"user_id": user.ID, "username": user.Username})
-}
-
-func (app *App) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	// Set CORS headers for logout
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		origin = "http://localhost:5173"
-	}
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-	// Handle OPTIONS preflight request
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	session, _ := app.sessions.Get(r, "blog-session")
-	session.Values["authenticated"] = false
-	_ = session.Save(r, w)
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(APIResponse{
-		Success: true,
-		Data:    "Logged out successfully",
-	})
-	logInfo("business", "User logout (API)", map[string]interface{}{})
-}
-
-func (app *App) apiPostsHandler(w http.ResponseWriter, r *http.Request) {
-	// Set CORS headers for posts
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		origin = "http://localhost:5173"
-	}
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-	// Handle OPTIONS preflight request
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	switch r.Method {
-	case "GET":
-		page := 1
-		perPage := 10
-		publishedOnly := false
-		fromDate := r.URL.Query().Get("from_date")
-		toDate := r.URL.Query().Get("to_date")
-
-		if p := r.URL.Query().Get("page"); p != "" {
-			fmt.Sscanf(p, "%d", &page)
-		}
-		if pp := r.URL.Query().Get("per_page"); pp != "" {
-			fmt.Sscanf(pp, "%d", &perPage)
-		}
-		if published := r.URL.Query().Get("published"); published == "true" {
-			publishedOnly = true
-		}
-
-		offset := (page - 1) * perPage
-		var posts []Post
-		var err error
-		var total int
-
-		if publishedOnly {
-			if fromDate != "" && toDate != "" {
-				posts, err = app.posts.GetPublishedInDateRange(perPage, offset, fromDate, toDate)
-				total, _ = app.posts.CountPublishedInDateRange(fromDate, toDate)
-			} else {
-				posts, err = app.posts.GetPublished(perPage, offset)
-				total, _ = app.posts.CountPublished()
-			}
-		} else {
-			if fromDate != "" && toDate != "" {
-				posts, err = app.posts.GetAllInDateRange(perPage, offset, fromDate, toDate)
-				total, _ = app.posts.CountInDateRange(fromDate, toDate)
-			} else {
-				posts, err = app.posts.GetAll(perPage, offset)
-				total, _ = app.posts.Count()
-			}
-		}
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
-			logError("technical", "GetAll posts failed", map[string]interface{}{"error": err.Error()})
-			return
-		}
-
-		totalPages := (total + perPage - 1) / perPage
-		_ = json.NewEncoder(w).Encode(APIResponse{
-			Success: true,
-			Data:    posts,
-			Meta: &APIMeta{
-				Page:       page,
-				PerPage:    perPage,
-				Total:      total,
-				TotalPages: totalPages,
-			},
-		})
-	case "POST":
-		var post Post
-		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   "Invalid request body",
-			})
-			logWarn("business", "Invalid post body", map[string]interface{}{"error": err.Error()})
-			return
-		}
-		session, _ := app.sessions.Get(r, "blog-session")
-		if userID, ok := session.Values["user_id"].(string); ok {
-			post.UserID = userID
-		} else {
-			post.UserID = "1"
-		}
-		post.Slug = slugify(post.Title)
-		if err := app.posts.Create(&post); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
-			logError("technical", "Post create failed", map[string]interface{}{"error": err.Error(), "user_id": post.UserID})
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(APIResponse{
-			Success: true,
-			Data:    post,
-		})
-		logInfo("business", "Post created (API)", map[string]interface{}{"post_id": post.ID, "user_id": post.UserID})
-	}
-}
-
-func (app *App) apiPostHandler(w http.ResponseWriter, r *http.Request) {
-	// Set CORS headers for individual post
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		origin = "http://localhost:5173"
-	}
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-	// Handle OPTIONS preflight request
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	vars := mux.Vars(r)
-	id := vars["id"]
-	slug := vars["slug"] // This will be empty if not provided in URL
-
-	switch r.Method {
-	case "GET":
-		post, err := app.posts.GetByID(id)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			_ = json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   "Post not found",
-			})
-			logWarn("business", "Post not found (API)", map[string]interface{}{"post_id": id})
-			return
-		}
-
-		// Server-side slug validation for SEO
-		if slug != "" {
-			correctSlug := post.Slug
-			if correctSlug == "" {
-				correctSlug = slugify(post.Title)
-			}
-
-			// If slug doesn't match, redirect to correct URL
-			if slug != correctSlug {
-				correctURL := fmt.Sprintf("/api/posts/%s/%s", id, correctSlug)
-				w.Header().Set("Location", correctURL)
-				w.WriteHeader(http.StatusMovedPermanently) // 301 redirect for SEO
-				logInfo("business", "Slug redirect", map[string]interface{}{
-					"post_id":        id,
-					"incorrect_slug": slug,
-					"correct_slug":   correctSlug,
-					"redirect_url":   correctURL,
-				})
-				return
-			}
-		}
-
-		_ = json.NewEncoder(w).Encode(APIResponse{
-			Success: true,
-			Data:    post,
-		})
-	case "PUT":
-		var post Post
-		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   "Invalid request body",
-			})
-			logWarn("business", "Invalid post body (PUT)", map[string]interface{}{"error": err.Error()})
-			return
-		}
-		post.ID = id
-		post.Slug = slugify(post.Title)
-		if err := app.posts.Update(&post); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
-			logError("technical", "Post update failed", map[string]interface{}{"error": err.Error(), "post_id": id})
-			return
-		}
-		_ = json.NewEncoder(w).Encode(APIResponse{
-			Success: true,
-			Data:    post,
-		})
-		logInfo("business", "Post updated", map[string]interface{}{"post_id": id})
-	case "DELETE":
-		if err := app.posts.Delete(id); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
-			logError("technical", "Post delete failed", map[string]interface{}{"error": err.Error(), "post_id": id})
-			return
-		}
-		_ = json.NewEncoder(w).Encode(APIResponse{
-			Success: true,
-			Data:    "Post deleted successfully",
-		})
-		logInfo("business", "Post deleted", map[string]interface{}{"post_id": id})
-	}
-}
-
-// ----- infra helpers -----
-
-func envOrFile(varName, fileVarName string) (string, bool, error) {
-	if p, ok := os.LookupEnv(fileVarName); ok && p != "" {
-		if _, err := os.Stat(p); err == nil {
-			b, err := os.ReadFile(filepath.Clean(p))
-			if err != nil {
-				return "", false, err
-			}
-			return string(b), true, nil
-		}
-	}
-	if v, ok := os.LookupEnv(varName); ok {
-		return v, true, nil
-	}
-	return "", false, nil
-}
-
-func loadCAFromEnvOrFile(val string) (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-	if ok := pool.AppendCertsFromPEM([]byte(val)); !ok {
-		return nil, fmt.Errorf("invalid CA pem")
-	}
-	return pool, nil
-}
-
-func initDatabase(config DatabaseConfig) (*sql.DB, error) {
-	dsn, ok, err := envOrFile("DSN", "DSN_FILE")
-	if err != nil {
-		return nil, err
-	}
-	if !ok && config.DSN != "" {
-		dsn = config.DSN
-	}
-	if dsn == "" {
-		return nil, fmt.Errorf("DSN not configured")
-	}
-	caPEM, ok, err := envOrFile("CA", "CA_CERT_FILE")
-	if err != nil {
-		return nil, err
-	}
-	if !ok && config.CA != "" {
-		caPEM = config.CA
-	}
-	if caPEM != "" && config.Driver == "postgres" {
-		caPool, err := loadCAFromEnvOrFile(caPEM)
-		if err != nil {
-			return nil, err
-		}
-		if !strings.Contains(dsn, "sslmode") {
-			dsn += "?sslmode=require"
-		}
-		_ = (&tls.Config{RootCAs: caPool})
-	}
-	db, err := sql.Open(config.Driver, dsn)
-	if err != nil {
-		return nil, err
-	}
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
+// Helper functions
 func slugify(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")
@@ -977,6 +384,26 @@ func slugify(s string) string {
 	return result.String()
 }
 
+// Database initialization
+func initDatabase(config DatabaseConfig) (*sql.DB, error) {
+	dsn := os.Getenv("DSN")
+	if dsn == "" {
+		return nil, fmt.Errorf("DSN environment variable is required")
+	}
+
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+// Load configuration
 func loadConfig() (*Config, error) {
 	config := &Config{
 		Server: ServerConfig{Port: "8080"},
@@ -998,67 +425,416 @@ func loadConfig() (*Config, error) {
 		},
 	}
 
-	// Load database configuration from environment variables
-	if dsn := os.Getenv("DSN"); dsn != "" {
-		config.Database.DSN = dsn
-	} else {
-		return nil, fmt.Errorf("DSN environment variable is required")
-	}
-
-	if ca := os.Getenv("CA"); ca != "" {
-		config.Database.CA = ca
-	}
-
-	if driver := os.Getenv("DB_DRIVER"); driver != "" {
-		config.Database.Driver = driver
-	}
-
-	// Load other configuration from environment variables
 	if port := os.Getenv("PORT"); port != "" {
 		config.Server.Port = port
-	}
-	if apiEnabled := os.Getenv("API_ENABLED"); apiEnabled != "" {
-		config.API.Enabled = apiEnabled == "true"
-	}
-	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
-		config.API.Key = apiKey
 	}
 
 	return config, nil
 }
 
-// ----- main -----
+// Handler functions
+func (app *App) statusHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	status := map[string]interface{}{
+		"status":    "healthy",
+		"timestamp": time.Now().Format(time.RFC3339),
+		"version":   "2.0.0",
+		"api": map[string]interface{}{
+			"enabled": app.config.API.Enabled,
+		},
+	}
+
+	json.NewEncoder(w).Encode(APIResponse{
+		Success: true,
+		Data:    status,
+	})
+}
+
+func (app *App) sitesHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	switch r.Method {
+	case "GET":
+		// For now, get the default customer's sites
+		customerID := "default-customer-id" // This should come from auth
+
+		sites, err := app.sites.GetAll(customerID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    sites,
+		})
+
+	case "POST":
+		var site Site
+		if err := json.NewDecoder(r.Body).Decode(&site); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   "Invalid request body",
+			})
+			return
+		}
+
+		// Set defaults
+		if site.Status == "" {
+			site.Status = "active"
+		}
+		if site.Template == "" {
+			site.Template = "default"
+		}
+		if site.Settings == "" {
+			site.Settings = "{}"
+		}
+		if site.Slug == "" {
+			site.Slug = slugify(site.Name)
+		}
+
+		// For now, use a default customer ID
+		site.CustomerID = "default-customer-id"
+
+		if err := app.sites.Create(&site); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    site,
+		})
+	}
+}
+
+func (app *App) siteHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	switch r.Method {
+	case "GET":
+		site, err := app.sites.GetByID(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   "Site not found",
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    site,
+		})
+
+	case "PUT":
+		var site Site
+		if err := json.NewDecoder(r.Body).Decode(&site); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   "Invalid request body",
+			})
+			return
+		}
+
+		site.ID = id
+		if site.Slug == "" {
+			site.Slug = slugify(site.Name)
+		}
+
+		if err := app.sites.Update(&site); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    site,
+		})
+
+	case "DELETE":
+		if err := app.sites.Delete(id); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    "Site deleted successfully",
+		})
+	}
+}
+
+func (app *App) postsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	siteID := vars["siteId"]
+
+	switch r.Method {
+	case "GET":
+		page := 1
+		perPage := 10
+		publishedOnly := false
+
+		if p := r.URL.Query().Get("page"); p != "" {
+			if val, err := strconv.Atoi(p); err == nil {
+				page = val
+			}
+		}
+		if pp := r.URL.Query().Get("per_page"); pp != "" {
+			if val, err := strconv.Atoi(pp); err == nil {
+				perPage = val
+			}
+		}
+		if published := r.URL.Query().Get("published"); published == "true" {
+			publishedOnly = true
+		}
+
+		offset := (page - 1) * perPage
+		var posts []Post
+		var err error
+		var total int
+
+		if publishedOnly {
+			posts, err = app.posts.GetPublished(perPage, offset, siteID)
+			total, _ = app.posts.CountPublished(siteID)
+		} else {
+			posts, err = app.posts.GetAll(perPage, offset, siteID)
+			total, _ = app.posts.Count(siteID)
+		}
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		totalPages := (total + perPage - 1) / perPage
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    posts,
+			Meta: &APIMeta{
+				Page:       page,
+				PerPage:    perPage,
+				Total:      total,
+				TotalPages: totalPages,
+			},
+		})
+
+	case "POST":
+		var post Post
+		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   "Invalid request body",
+			})
+			return
+		}
+
+		post.SiteID = siteID
+		post.UserID = "default-user-id" // This should come from auth
+		if post.Status == "" {
+			post.Status = "draft"
+		}
+		if post.Slug == "" {
+			post.Slug = slugify(post.Title)
+		}
+
+		if err := app.posts.Create(&post); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    post,
+		})
+	}
+}
+
+func (app *App) postHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	id := vars["id"]
+	siteID := vars["siteId"]
+
+	switch r.Method {
+	case "GET":
+		post, err := app.posts.GetByID(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   "Post not found",
+			})
+			return
+		}
+
+		// Verify the post belongs to the specified site
+		if post.SiteID != siteID {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   "Post not found in this site",
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    post,
+		})
+
+	case "PUT":
+		var post Post
+		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   "Invalid request body",
+			})
+			return
+		}
+
+		post.ID = id
+		post.SiteID = siteID
+		if post.Slug == "" {
+			post.Slug = slugify(post.Title)
+		}
+
+		if err := app.posts.Update(&post); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    post,
+		})
+
+	case "DELETE":
+		if err := app.posts.Delete(id); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    "Post deleted successfully",
+		})
+	}
+}
+
+func (app *App) postBySlugHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	slug := vars["slug"]
+	siteID := vars["siteId"]
+
+	post, err := app.posts.GetBySlug(slug, siteID)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: false,
+			Error:   "Post not found",
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(APIResponse{
+		Success: true,
+		Data:    post,
+	})
+}
 
 func main() {
 	gob.Register(&User{})
+
 	config, err := loadConfig()
 	if err != nil {
-		logFatal("technical", "Failed to load config", map[string]interface{}{"error": err.Error()})
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
 	}
+
 	app, err := NewApp(config)
 	if err != nil {
-		logFatal("technical", "Failed to initialize app", map[string]interface{}{"error": err.Error()})
+		fmt.Printf("Failed to initialize app: %v\n", err)
+		os.Exit(1)
 	}
-	defer func() { _ = app.db.Close() }()
+	defer app.db.Close()
 
 	router := mux.NewRouter()
 
+	// API routes
 	api := router.PathPrefix("/api").Subrouter()
+
+	// CORS middleware
 	api.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			app.apiMiddleware(next.ServeHTTP)(w, r)
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	})
-	api.HandleFunc("/status", app.apiStatusHandler).Methods("GET", "OPTIONS")
-	api.HandleFunc("/login", app.loginHandler).Methods("POST", "OPTIONS")
-	api.HandleFunc("/logout", app.authMiddleware(app.logoutHandler)).Methods("POST", "OPTIONS")
-	api.HandleFunc("/posts", app.apiPostsHandler).Methods("GET", "POST", "OPTIONS")
-	api.HandleFunc("/posts/{id}/{slug}", app.apiPostHandler).Methods("GET", "OPTIONS")
-	api.HandleFunc("/posts/{id}", app.apiPostHandler).Methods("GET", "PUT", "DELETE", "OPTIONS")
 
-	logInfo("technical", "Server starting", map[string]interface{}{"port": config.Server.Port})
-	logInfo("business", "API configuration", map[string]interface{}{"enabled": config.API.Enabled, "apiKeyPresent": config.API.Key != ""})
+	// API endpoints
+	api.HandleFunc("/status", app.statusHandler).Methods("GET")
+	api.HandleFunc("/sites", app.sitesHandler).Methods("GET", "POST")
+	api.HandleFunc("/sites/{id}", app.siteHandler).Methods("GET", "PUT", "DELETE")
+	api.HandleFunc("/sites/{siteId}/posts", app.postsHandler).Methods("GET", "POST")
+	api.HandleFunc("/sites/{siteId}/posts/{id}", app.postHandler).Methods("GET", "PUT", "DELETE")
+	api.HandleFunc("/sites/{siteId}/posts/slug/{slug}", app.postBySlugHandler).Methods("GET")
+
+	fmt.Printf("Server starting on port %s\n", config.Server.Port)
 	if err := http.ListenAndServe(":"+config.Server.Port, router); err != nil {
-		logFatal("technical", "HTTP server error", map[string]interface{}{"error": err.Error()})
+		fmt.Printf("HTTP server error: %v\n", err)
+		os.Exit(1)
 	}
 }

@@ -15,18 +15,18 @@ A modern, efficient blog platform built with Go, Hotwire (Turbo + Stimulus), and
 ## 🏗️ Architecture
 
 ```
-topvitaminsupply.com/app/
-├── cmd/server/           # Main application entry point
-├── internal/             # Private application code
-│   ├── database/         # Database operations
-│   ├── handlers/         # HTTP request handlers
-│   ├── middleware/       # HTTP middleware
-│   └── templates/        # Template engine
-├── web/                  # Web assets and templates
-│   ├── static/           # CSS, JS, images
-│   └── templates/        # Liquid templates
-├── scripts/              # Build and deployment scripts
-└── migrations/           # Database migrations
+agoat-publisher/
+├── app-api/              # Go API server
+├── app-api-database-schema/ # Database schema and migrations
+├── app-vue-ui/           # Vue.js frontend application
+├── app-vue-ui-viewer/    # Vue.js viewer microfrontend
+├── unified-app/          # Unified React.js application
+├── docs/                 # Documentation
+│   ├── adrs/            # Architecture Decision Records
+│   ├── requirements/    # Functional and non-functional requirements
+│   └── TESTING.md       # Testing documentation
+├── local-scripts/        # Development and deployment scripts
+└── requirements/         # Legacy requirements (moved to docs/)
 ```
 
 ## 🛠️ Technology Stack
@@ -81,6 +81,24 @@ topvitaminsupply.com/app/
 2. **Styling**: Modify Tailwind classes or add custom CSS
 3. **Hotwire Features**: Add Turbo Streams for real-time updates
 4. **API Integration**: Extend handlers to consume additional API endpoints
+
+## 📚 Documentation
+
+### Quick Links
+- [Documentation Overview](docs/README.md)
+- [Functional Requirements](docs/requirements/functional/REQUIREMENTS_SUMMARY.md)
+- [Multitenancy Requirements](docs/requirements/functional/features/multitenancy-requirements.md)
+- [Architecture Decisions](docs/adrs/README.md)
+- [Testing Documentation](docs/TESTING.md)
+
+### Requirements
+- [Content Management](docs/requirements/functional/features/content-management-requirements.md)
+- [Non-Functional Requirements](docs/requirements/non-functional/README.md)
+- [Multitenancy Non-Functional](docs/requirements/non-functional/multitenancy/README.md)
+
+### Architecture
+- [Multitenancy Database Design](docs/adrs/00001-multitenancy-database-design.md)
+- [Database Migrations](app-api-database-schema/migrations/README.md)
 
 ## 🔧 Configuration
 
@@ -263,6 +281,7 @@ For issues and questions:
 ---
 
 **Built with ❤️ using Go, Hotwire, and Liquid templates**
+
 
 
 
