@@ -8,17 +8,20 @@ import {
   Heading, 
   Text, 
   Badge, 
-  Spinner,
   Flex,
-  Container,
   Card,
-  CardHeader,
-  CardContent,
-  CardFooter,
   Button,
-  Separator
-} from './ui'
-import { ArrowLeftIcon, Pencil1Icon, PersonIcon, CalendarIcon } from '@radix-ui/react-icons'
+  Separator,
+  Grid
+} from '@radix-ui/themes'
+import { 
+  ArrowLeftIcon, 
+  Pencil1Icon, 
+  PersonIcon, 
+  CalendarIcon,
+  ClockIcon,
+  EyeOpenIcon
+} from '@radix-ui/react-icons'
 
 interface PostsListProps {
   apiUrl?: string
@@ -135,57 +138,77 @@ const PostsList: React.FC<PostsListProps> = ({
 
   if (loading) {
     return (
-      <Container>
-        <Flex justify="center" align="center" style={{ minHeight: '200px' }}>
-          <Spinner size="3" />
-          <Text size="3" ml="3">Loading posts...</Text>
-        </Flex>
-      </Container>
+      <Box style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '200px' 
+      }}>
+        <Card style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+          <Flex direction="column" align="center" gap="3">
+            <Box style={{ 
+              width: '40px', 
+              height: '40px', 
+              border: '3px solid var(--gray-6)', 
+              borderTop: '3px solid var(--accent-9)', 
+              borderRadius: '50%', 
+              animation: 'spin 1s linear infinite' 
+            }} />
+            <Text size="3">Loading posts...</Text>
+          </Flex>
+        </Card>
+      </Box>
     )
   }
 
   if (error) {
     return (
-      <Container>
-        <Card>
-          <CardContent>
-            <Flex direction="column" align="center" gap="3">
-              <Text color="red" size="3">Error: {error}</Text>
-              <Button onClick={fetchPosts} variant="outline">
-                Try Again
-              </Button>
-            </Flex>
-          </CardContent>
-        </Card>
-      </Container>
+      <Card>
+        <Box p="4">
+          <Flex direction="column" align="center" gap="3">
+            <Text color="red" size="3">Error: {error}</Text>
+            <Button onClick={fetchPosts} variant="outline">
+              Try Again
+            </Button>
+          </Flex>
+        </Box>
+      </Card>
     )
   }
 
   if (posts.length === 0) {
     return (
-      <Container>
-        <Card>
-          <CardContent>
-            <Flex direction="column" align="center" gap="3">
-              <Text size="3" color="gray">No posts available</Text>
-              {!isAuthenticated && (
-                <Text size="2" color="gray">Please log in to see all posts</Text>
-              )}
-            </Flex>
-          </CardContent>
-        </Card>
-      </Container>
+      <Card>
+        <Box p="6" style={{ textAlign: 'center' }}>
+          <Flex direction="column" align="center" gap="3">
+            <Box style={{ 
+              width: '64px', 
+              height: '64px', 
+              background: 'var(--gray-3)', 
+              borderRadius: 'var(--radius-6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <EyeOpenIcon width="32" height="32" color="var(--gray-8)" />
+            </Box>
+            <Text size="4" color="gray">No posts available</Text>
+            {!isAuthenticated && (
+              <Text size="2" color="gray">Please log in to see all posts</Text>
+            )}
+          </Flex>
+        </Box>
+      </Card>
     )
   }
 
   return (
-    <Container maxWidth="xl">
+    <Box>
       {showBackButton && (
         <Flex mb="4">
           <Button 
             variant="ghost" 
             onClick={onBackClick}
-
           >
             <ArrowLeftIcon />
             Back to Posts
@@ -193,76 +216,100 @@ const PostsList: React.FC<PostsListProps> = ({
         </Flex>
       )}
 
-      <Box mb="4">
-        <Heading size="6" mb="2">Latest Posts</Heading>
-        <Text color="gray" size="2">
-          Showing {posts.length} of {totalPosts} posts
-        </Text>
-      </Box>
-
-      <Flex direction="column" gap="4">
+      <Grid columns={{ initial: '1', md: '2', lg: '3' }} gap="4">
         {posts.map((post) => (
-          <div key={post.id} onClick={() => handlePostClick(post)} style={{ cursor: 'pointer' }}>
-            <Card>
-            <CardHeader>
-              <Flex justify="between" align="start">
-                <Box>
-                  <Heading size="4" mb="2">{post.title}</Heading>
-                  <Flex gap="3" align="center" mb="2">
-                    <Flex align="center" gap="1">
-                      <CalendarIcon />
-                      <Text size="2" color="gray">{formatDate(post.created_at)}</Text>
-                    </Flex>
-                    {post.author && (
-                      <Flex align="center" gap="1">
-                        <PersonIcon />
-                        <Text size="2" color="gray">{post.author}</Text>
-                      </Flex>
-                    )}
-                  </Flex>
-                </Box>
-                <Flex gap="2">
-                  {!post.published && (
-                    <Badge color="yellow">Draft</Badge>
-                  )}
+          <Card 
+            key={post.id} 
+            style={{ 
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={() => handlePostClick(post)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = 'var(--shadow-4)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'var(--shadow-2)'
+            }}
+          >
+            <Box p="4" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              {/* Header */}
+              <Box mb="3">
+                <Flex justify="between" align="start" mb="2">
+                  <Badge 
+                    variant="soft" 
+                    color={post.published ? "green" : "yellow"}
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    {post.published ? 'Published' : 'Draft'}
+                  </Badge>
                   {isAuthenticated && (
-                    <Button size="1" variant="ghost">
-                      <Pencil1Icon />
+                    <Button size="1" variant="ghost" style={{ padding: '2px' }}>
+                      <Pencil1Icon width="12" height="12" />
                     </Button>
                   )}
                 </Flex>
-              </Flex>
-            </CardHeader>
-            
-            <CardContent>
-              <div 
-                dangerouslySetInnerHTML={{ __html: getPreviewText(post.content) }}
-                style={{ 
-                  lineHeight: '1.6',
-                  color: 'var(--gray-11)'
-                }}
-              />
-            </CardContent>
-            
-            <CardFooter>
-              <Flex justify="between" align="center" style={{ width: '100%' }}>
-                <Text size="2" color="gray">
-                  {post.content.length > maxContentLength ? 'Click to read more...' : 'Full post'}
-                </Text>
-                <Badge variant="soft" color="blue">
-                  {post.content.split(' ').length} words
-                </Badge>
-              </Flex>
-            </CardFooter>
-            </Card>
-          </div>
+                <Heading size="4" mb="2" style={{ 
+                  lineHeight: '1.3',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden'
+                }}>
+                  {post.title}
+                </Heading>
+              </Box>
+
+              {/* Content Preview */}
+              <Box mb="3" style={{ flex: 1 }}>
+                <div 
+                  dangerouslySetInnerHTML={{ __html: getPreviewText(post.content) }}
+                  style={{ 
+                    lineHeight: '1.6',
+                    color: 'var(--gray-11)',
+                    fontSize: '0.875rem',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}
+                />
+              </Box>
+
+              {/* Footer */}
+              <Box>
+                <Separator mb="3" />
+                <Flex justify="between" align="center" mb="2">
+                  <Flex align="center" gap="1">
+                    <CalendarIcon width="12" height="12" />
+                    <Text size="1" color="gray">{formatDate(post.created_at)}</Text>
+                  </Flex>
+                  <Flex align="center" gap="1">
+                    <ClockIcon width="12" height="12" />
+                    <Text size="1" color="gray">{post.content.split(' ').length} words</Text>
+                  </Flex>
+                </Flex>
+                {post.author && (
+                  <Flex align="center" gap="1">
+                    <PersonIcon width="12" height="12" />
+                    <Text size="1" color="gray">{post.author}</Text>
+                  </Flex>
+                )}
+              </Box>
+            </Box>
+          </Card>
         ))}
-      </Flex>
+      </Grid>
 
       {totalPages > 1 && (
         <Box mt="6">
           <Separator mb="4" />
-          <Flex justify="center" gap="2">
+          <Flex justify="center" gap="3" align="center">
             <Button 
               variant="outline" 
               disabled={currentPage === 1}
@@ -270,7 +317,11 @@ const PostsList: React.FC<PostsListProps> = ({
             >
               Previous
             </Button>
-            <Text size="2" style={{ display: 'flex', alignItems: 'center' }}>
+            <Text size="2" style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              padding: '0 var(--space-3)'
+            }}>
               Page {currentPage} of {totalPages}
             </Text>
             <Button 
@@ -283,7 +334,7 @@ const PostsList: React.FC<PostsListProps> = ({
           </Flex>
         </Box>
       )}
-    </Container>
+    </Box>
   )
 }
 

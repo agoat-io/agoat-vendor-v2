@@ -86,3 +86,4 @@ reactjs-public-viewer/*.log
 # Test files
 puppeteer-check*.png
 federation-test-screenshot.png
+test-screenshots/
