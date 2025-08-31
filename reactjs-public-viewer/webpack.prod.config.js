@@ -8,7 +8,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'federated-dist'),
     filename: '[name].[contenthash].js',
-    publicPath: 'http://localhost:3001/',
+    publicPath: 'auto',
     clean: true,
   },
   
@@ -64,18 +64,21 @@ module.exports = {
         axios: { 
           singleton: true,
           requiredVersion: '^1.11.0',
-          eager: true
+          eager: true,
+          strictVersion: true
         },
         marked: { 
           singleton: true,
           requiredVersion: '^16.2.0',
-          eager: true
+          eager: true,
+          strictVersion: true
         }
       }
     }),
     
     new HtmlWebpackPlugin({
       template: './public/index.html',
+      filename: 'index.html',
     }),
   ],
 };

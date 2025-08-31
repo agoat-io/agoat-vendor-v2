@@ -18,8 +18,6 @@ export {
   Avatar,
   Dialog,
   DropdownMenu,
-  Toast,
-  Label,
   TextField,
   TextArea,
   Select,
@@ -29,21 +27,18 @@ export {
   Slider,
   Progress,
   Tabs,
-  Accordion,
   AlertDialog,
   ContextMenu,
   HoverCard,
-  Menubar,
-  NavigationMenu,
   Popover,
   ScrollArea,
-  Sheet,
   Table,
   Tooltip,
 } from '@radix-ui/themes';
 
 // Export design system configuration
 export { default as designSystem } from '../../config/design-system';
+export type { ThemeConfiguration } from '../../config/design-system';
 export { 
   DESIGN_TOKENS, 
   COMPONENT_TOKENS, 
@@ -51,7 +46,6 @@ export {
   PRECONFIGURED_THEMES,
   CUSTOM_THEMES,
   themeRegistry,
-  ThemeConfiguration,
   spacing, 
   responsive 
 } from '../../config/design-system';

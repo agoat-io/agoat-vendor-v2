@@ -6,3 +6,7 @@ then do what is necessary jumpging though different apps.
 You can figure out what apps need to work together and what you need to tests
 lokning at script start-full-stack-react.sh
 
+when testing requests to app set time limit to 30s else you will freeze ThemeProvider
+try to implemente metrics in golang to trace what takes time
+
+you must always confirm if something works using pupetter when it is http call and review of browser console error not just curl. And check browser console errors to trobleshoot and fix dependncies fom bottom to top. 

@@ -9,7 +9,6 @@ import {
 import { 
   GearIcon, 
   MixIcon, 
-  PaletteIcon, 
   EyeOpenIcon,
   SunIcon,
   MoonIcon,
@@ -130,7 +129,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ children
           size="2"
           onClick={() => setActiveTab('themes')}
         >
-          <PaletteIcon />
+          <MixIcon />
           Themes
         </Button>
         <Button

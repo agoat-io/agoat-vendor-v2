@@ -9,6 +9,8 @@ interface ContainerProps {
   fluid?: boolean;
   centered?: boolean;
   className?: string;
+  size?: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+  style?: React.CSSProperties;
 }
 
 export const Container: React.FC<ContainerProps> = ({
@@ -18,6 +20,8 @@ export const Container: React.FC<ContainerProps> = ({
   fluid = false,
   centered = true,
   className,
+  size,
+  style,
 }) => {
   const getPaddingValue = () => {
     if (fluid) return '0';
@@ -39,6 +43,7 @@ export const Container: React.FC<ContainerProps> = ({
         padding: getPaddingValue(),
         width: '100%',
         boxSizing: 'border-box',
+        ...style,
       }}
       className={className}
     >

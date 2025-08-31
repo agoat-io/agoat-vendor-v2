@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
-  VIEWER_URL: process.env.NEXT_PUBLIC_VIEWER_URL || 'http://localhost:3001',
+  BASE_URL: '/api',
+  VIEWER_URL: 'http://localhost:3001',
   ENDPOINTS: {
     STATUS: '/status',
     LOGIN: '/login',

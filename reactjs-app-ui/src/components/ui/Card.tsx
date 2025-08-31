@@ -40,7 +40,6 @@ export const Card: React.FC<CardProps> = ({
       variant={variant}
       style={{
         width: fullWidth ? '100%' : 'auto',
-        padding: getPaddingValue(),
         cursor: interactive ? 'pointer' : 'default',
         transition: interactive ? 'all 0.2s ease-in-out' : 'none',
         ...COMPONENT_TOKENS.card,

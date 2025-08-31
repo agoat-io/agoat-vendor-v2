@@ -36,7 +36,7 @@ async function fetchFederationConfig(): Promise<FederationConfig> {
     }
     federationConfig = await response.json();
     console.log('Federation config loaded successfully:', federationConfig);
-    return federationConfig;
+    return federationConfig!;
   } catch (error) {
     console.error('Error fetching federation config:', error);
     // Return a default config to prevent crashes
@@ -45,7 +45,7 @@ async function fetchFederationConfig(): Promise<FederationConfig> {
       timeout: 5000,
       retryAttempts: 1,
       retryDelay: 1000
-    };
+    } as FederationConfig;
   }
 }
 
@@ -111,11 +111,19 @@ async function initSharing(): Promise<void> {
       console.log('__webpack_init_sharing__ found, calling it');
       await (window as any).__webpack_init_sharing__('default');
       console.log('Webpack sharing initialized successfully');
+      
+      // Verify share scopes were created
+      if ((window as any).__webpack_share_scopes__) {
+        console.log('Share scopes available:', Object.keys((window as any).__webpack_share_scopes__));
+      } else {
+        console.warn('Share scopes not created after initialization');
+      }
     } else {
       console.warn('__webpack_init_sharing__ not found');
     }
   } catch (error) {
     console.error('Error initializing webpack sharing:', error);
+    throw error;
   }
 }
 
@@ -161,14 +169,48 @@ async function loadRemoteModule(
     if (container.init) {
       try {
         console.log('Initializing container');
-        // Check if __webpack_share_scopes__ exists
+        
+        // Ensure sharing is initialized first
+        await initSharing();
+        
+        // Get the share scope
         const shareScope = (window as any).__webpack_share_scopes__?.default || {};
-        console.log('Share scope:', shareScope);
-        await container.init(shareScope);
-        console.log('Container initialized successfully');
+        console.log('Share scope keys:', Object.keys(shareScope));
+        console.log('React in share scope:', !!shareScope.react);
+        console.log('ReactDOM in share scope:', !!shareScope['react-dom']);
+
+        // Debug: Check if React is available globally
+        console.log('React available globally:', typeof (window as any).React);
+        console.log('ReactDOM available globally:', typeof (window as any).ReactDOM);
+
+        // Debug: Check what's in the share scope
+        if (shareScope.react) {
+          console.log('React share scope details:', {
+            version: shareScope.react.version,
+            loaded: shareScope.react.loaded,
+            from: shareScope.react.from
+          });
+        } else {
+          console.log('React not found in share scope');
+        }
+        
+        // Only initialize if not already initialized
+        if (!container.__initialized) {
+          await container.init(shareScope);
+          container.__initialized = true;
+          console.log('Container initialized successfully with share scope');
+        } else {
+          console.log('Container already initialized, skipping initialization');
+        }
       } catch (initError) {
         console.error('Error initializing container:', initError);
-        // Continue anyway, the container might still work
+        // If it's already initialized, that's okay
+        if (initError instanceof Error && initError.message && initError.message.includes('already been initialized')) {
+          console.log('Container was already initialized, continuing...');
+          container.__initialized = true;
+        } else {
+          throw initError; // Don't continue if container init fails for other reasons
+        }
       }
     } else {
       console.log('Container has no init method, skipping initialization');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 interface Post {
   id: string
@@ -62,7 +63,7 @@ const PostsList: React.FC<PostsListProps> = ({
     }
     
     // Convert markdown to HTML for preview
-    return marked.parse(text) as string
+    return DOMPurify.sanitize(marked.parse(text) as string)
   }
 
   const fetchPosts = useCallback(async () => {

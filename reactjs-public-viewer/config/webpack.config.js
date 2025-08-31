@@ -220,9 +220,7 @@ module.exports = function (webpackEnv) {
       // webpack uses `publicPath` to determine where the app is being served from.
       // It requires a trailing slash, or the file assets will get an incorrect path.
       // For Module Federation, we need to use the specific URL where the federated modules are served.
-      publicPath: isEnvDevelopment 
-        ? 'http://localhost:3001/'
-        : paths.publicUrlOrPath,
+      publicPath: 'auto',
       // Point sourcemap entries to original disk location (format as URL on Windows)
       devtoolModuleFilenameTemplate: isEnvProduction
         ? info =>
@@ -588,17 +586,26 @@ module.exports = function (webpackEnv) {
             eager: false,
             strictVersion: false
           },
-          axios: { 
+          'react/jsx-runtime': {
             singleton: true,
+            requiredVersion: '^18.3.1',
+            eager: false,
+            strictVersion: false
+          },
+          axios: { 
+            singleton: true, 
             requiredVersion: '^1.11.0',
-            eager: false
+            eager: true,
+            strictVersion: true
           },
           marked: { 
             singleton: true,
             requiredVersion: '^16.2.0',
-            eager: false
+            eager: true,
+            strictVersion: true
           }
-        }
+        },
+        shareScope: 'default'
       }),
       
       // Generates an `index.html` file with the <script> injected.

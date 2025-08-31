@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
-import { marked } from 'marked'
-import axios from 'axios'
-import PostsList from './PostsList'
-import FederatedComponent from '../src/components/FederatedComponent'
-import { buildApiUrl, API_CONFIG } from '../src/config/api'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { marked } from 'marked';
+import axios from 'axios';
+import PostsList from './PostsList';
+import FederatedComponent from '../src/components/FederatedComponent';
+import { buildApiUrl, API_CONFIG } from '../src/config/api';
 import { 
   Box, 
   Heading, 
@@ -18,9 +18,9 @@ import {
   CardContent,
   CardFooter,
   Button
-} from '../src/components/ui'
-import { ArrowLeftIcon, Pencil1Icon, PersonIcon } from '@radix-ui/react-icons'
-import { useTheme } from '../src/components/ThemeProvider'
+} from '../src/components/ui';
+import { ArrowLeftIcon, Pencil1Icon, PersonIcon } from '@radix-ui/react-icons';
+import { useTheme } from '../src/components/ThemeProvider';
 
 interface Post {
   id: string
@@ -35,8 +35,9 @@ interface Post {
 }
 
 const BlogListView: React.FC = () => {
-  const router = useRouter()
-  const { appearance } = useTheme()
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { appearance } = useTheme();
   
   // State
   const [currentPage, setCurrentPage] = useState(1)
@@ -101,8 +102,8 @@ const BlogListView: React.FC = () => {
     setCurrentPost(post)
     setShowingPost(true)
     
-    // Update URL without navigation
-    router.push(`/post/${post.slug}`, undefined, { shallow: true })
+    // Update URL
+    navigate(`/post/${post.slug}`)
     
     // Update page title
     document.title = `${post.title} - AGoat Blog`
@@ -114,7 +115,7 @@ const BlogListView: React.FC = () => {
     setError(null)
     
     // Update URL back to list
-    router.push('/', undefined, { shallow: true })
+    navigate('/')
     
     // Reset page title
     document.title = 'AGoat Blog'
@@ -141,14 +142,16 @@ const BlogListView: React.FC = () => {
 
   // Handle direct post access via URL
   useEffect(() => {
-    const { slug } = router.query
+    const pathname = location.pathname;
+    const postMatch = pathname.match(/^\/post\/(.+)$/);
     
-    if (slug && typeof slug === 'string' && !showingPost) {
+    if (postMatch && !showingPost) {
+      const slug = postMatch[1];
       // Find post by slug in the current posts list
       // This is a simplified approach - in a real app you'd fetch the specific post
-      console.log('Direct post access detected:', slug)
+      console.log('Direct post access detected:', slug);
     }
-  }, [router.query, showingPost])
+  }, [location.pathname, showingPost]);
 
   // Show loading state
   if (loading) {

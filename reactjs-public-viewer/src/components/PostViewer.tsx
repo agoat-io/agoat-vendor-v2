@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 interface Post {
   id: string
@@ -61,7 +62,7 @@ const PostViewer: React.FC<PostViewerProps> = ({
     }
     
     // Convert markdown to HTML
-    return marked.parse(content) as string
+    return DOMPurify.sanitize(marked.parse(content) as string)
   }
 
   const shouldShowLoginPrompt = () => {
