@@ -7,8 +7,7 @@ import {
   Card,
   Badge,
   Separator,
-  IconButton,
-  Tooltip
+  IconButton
 } from '@radix-ui/themes'
 import { 
   FontBoldIcon, 
@@ -29,8 +28,8 @@ import {
   EyeOpenIcon,
   EyeNoneIcon
 } from '@radix-ui/react-icons'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
+// import { marked } from 'marked'
+// import DOMPurify from 'dompurify'
 
 interface MediumEditorProps {
   initialContent?: string
@@ -321,7 +320,8 @@ const MediumEditor: React.FC<MediumEditorProps> = ({
   const renderPreview = () => {
     if (!state.showPreview) return null
     
-    const htmlContent = DOMPurify.sanitize(marked.parse(state.content) as string)
+    // const htmlContent = DOMPurify.sanitize(marked.parse(state.content) as string)
+    const htmlContent = state.content.replace(/\n/g, '<br>')
     
     return (
       <Box className="preview-content" style={{ 
@@ -390,65 +390,45 @@ const MediumEditor: React.FC<MediumEditorProps> = ({
 
           {/* Formatting Toolbar */}
           <Flex gap="1" wrap="wrap">
-            <Tooltip content="Bold (Ctrl+B)">
-              <IconButton size="1" variant="ghost" onClick={() => formatText('bold')}>
-                <FontBoldIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Italic (Ctrl+I)">
-              <IconButton size="1" variant="ghost" onClick={() => formatText('italic')}>
-                <FontItalicIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Underline">
-              <IconButton size="1" variant="ghost" onClick={() => formatText('underline')}>
-                <UnderlineIcon />
-              </IconButton>
-            </Tooltip>
+            <IconButton size="1" variant="ghost" onClick={() => formatText('bold')}>
+              <FontBoldIcon />
+            </IconButton>
+            <IconButton size="1" variant="ghost" onClick={() => formatText('italic')}>
+              <FontItalicIcon />
+            </IconButton>
+            <IconButton size="1" variant="ghost" onClick={() => formatText('underline')}>
+              <UnderlineIcon />
+            </IconButton>
             
             <Separator orientation="vertical" />
             
-            <Tooltip content="Heading 1">
-              <IconButton size="1" variant="ghost" onClick={() => insertBlock('h1')}>
-                <HeadingIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Quote">
-              <IconButton size="1" variant="ghost" onClick={() => formatText('quote')}>
-                <QuoteIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Code">
-              <IconButton size="1" variant="ghost" onClick={() => formatText('code')}>
-                <CodeIcon />
-              </IconButton>
-            </Tooltip>
+            <IconButton size="1" variant="ghost" onClick={() => insertBlock('h1')}>
+              <HeadingIcon />
+            </IconButton>
+            <IconButton size="1" variant="ghost" onClick={() => formatText('quote')}>
+              <QuoteIcon />
+            </IconButton>
+            <IconButton size="1" variant="ghost" onClick={() => formatText('code')}>
+              <CodeIcon />
+            </IconButton>
             
             <Separator orientation="vertical" />
             
-            <Tooltip content="Bullet List">
-              <IconButton size="1" variant="ghost" onClick={() => insertBlock('ul')}>
-                <ListBulletIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Numbered List">
-              <IconButton size="1" variant="ghost" onClick={() => insertBlock('ol')}>
-                <ListBulletIcon />
-              </IconButton>
-            </Tooltip>
+            <IconButton size="1" variant="ghost" onClick={() => insertBlock('ul')}>
+              <ListBulletIcon />
+            </IconButton>
+            <IconButton size="1" variant="ghost" onClick={() => insertBlock('ol')}>
+              <ListBulletIcon />
+            </IconButton>
             
             <Separator orientation="vertical" />
             
-            <Tooltip content="Link (Ctrl+K)">
-              <IconButton size="1" variant="ghost" onClick={() => formatText('link')}>
-                <Link1Icon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Image">
-              <IconButton size="1" variant="ghost" onClick={() => insertBlock('image')}>
-                <ImageIcon />
-              </IconButton>
-            </Tooltip>
+            <IconButton size="1" variant="ghost" onClick={() => formatText('link')}>
+              <Link1Icon />
+            </IconButton>
+            <IconButton size="1" variant="ghost" onClick={() => insertBlock('image')}>
+              <ImageIcon />
+            </IconButton>
           </Flex>
         </Box>
       </Card>

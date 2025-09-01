@@ -9,13 +9,7 @@ import {
   Flex, 
   Button, 
   Container,
-  Badge,
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel
+  Badge
 } from '@radix-ui/themes'
 import { ArrowLeftIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
@@ -138,10 +132,6 @@ export default function EditPost() {
     }
   }
 
-  const handleEditorChange = (newContent: string, newTitle: string) => {
-    setHasUnsavedChanges(true)
-  }
-
   const handleBackClick = () => {
     if (hasUnsavedChanges) {
       setShowUnsavedDialog(true)
@@ -231,32 +221,23 @@ export default function EditPost() {
         className="edit-post-editor"
       />
 
-      {/* Unsaved Changes Dialog */}
-      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
-        <AlertDialogContent>
-          <AlertDialogTitle>
-            <Flex gap="2" align="center">
-              <ExclamationTriangleIcon color="orange" />
-              Unsaved Changes
-            </Flex>
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
-          </AlertDialogDescription>
-          <Flex gap="3" mt="4" justify="end">
-            <AlertDialogCancel>
-              <Button variant="soft" color="gray">
+      {/* Simple unsaved changes warning */}
+      {showUnsavedDialog && (
+        <Card style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
+          <Box p="4">
+            <Text size="3" weight="medium" mb="3">Unsaved Changes</Text>
+            <Text size="2" color="gray" mb="4">You have unsaved changes. Are you sure you want to leave?</Text>
+            <Flex gap="2" justify="end">
+              <Button variant="soft" color="gray" onClick={() => setShowUnsavedDialog(false)}>
                 Continue Editing
               </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction>
               <Button color="red" onClick={handleConfirmBack}>
                 Leave Without Saving
               </Button>
-            </AlertDialogAction>
-          </Flex>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Flex>
+          </Box>
+        </Card>
+      )}
     </Container>
   )
 }
