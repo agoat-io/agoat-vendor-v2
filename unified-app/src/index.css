@@ -1,6 +1,184 @@
+@import '@radix-ui/themes/styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Medium Editor Styles */
+.medium-editor {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.medium-editor input[type="text"] {
+  font-family: inherit;
+}
+
+.medium-editor [contenteditable] {
+  font-family: inherit;
+  caret-color: var(--accent-9);
+}
+
+.medium-editor [contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: var(--gray-8);
+  pointer-events: none;
+  position: absolute;
+}
+
+.medium-editor [contenteditable]:focus {
+  outline: none;
+}
+
+/* Editor toolbar hover effects */
+.medium-editor .rt-IconButton:hover {
+  background-color: var(--gray-3);
+  border-radius: var(--radius-2);
+}
+
+/* Preview content styling */
+.medium-editor .preview-content {
+  font-family: inherit;
+}
+
+.medium-editor .preview-content h1,
+.medium-editor .preview-content h2,
+.medium-editor .preview-content h3 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.medium-editor .preview-content h1 {
+  font-size: 2em;
+}
+
+.medium-editor .preview-content h2 {
+  font-size: 1.5em;
+}
+
+.medium-editor .preview-content h3 {
+  font-size: 1.25em;
+}
+
+.medium-editor .preview-content p {
+  margin-bottom: 1em;
+  line-height: 1.7;
+}
+
+.medium-editor .preview-content ul,
+.medium-editor .preview-content ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+
+.medium-editor .preview-content li {
+  margin-bottom: 0.5em;
+}
+
+.medium-editor .preview-content blockquote {
+  border-left: 4px solid var(--accent-6);
+  padding-left: 1em;
+  margin: 1em 0;
+  font-style: italic;
+  color: var(--gray-11);
+}
+
+.medium-editor .preview-content code {
+  background-color: var(--gray-3);
+  padding: 0.2em 0.4em;
+  border-radius: var(--radius-1);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9em;
+}
+
+.medium-editor .preview-content pre {
+  background-color: var(--gray-2);
+  padding: 1em;
+  border-radius: var(--radius-2);
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.medium-editor .preview-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.medium-editor .preview-content a {
+  color: var(--accent-9);
+  text-decoration: underline;
+}
+
+.medium-editor .preview-content a:hover {
+  color: var(--accent-10);
+}
+
+.medium-editor .preview-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-2);
+  margin: 1em 0;
+}
+
+/* Editor focus states */
+.medium-editor .rt-Card:focus-within {
+  box-shadow: 0 0 0 2px var(--accent-6);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .medium-editor .rt-Flex {
+    flex-wrap: wrap;
+  }
+  
+  .medium-editor .rt-IconButton {
+    padding: var(--space-2);
+  }
+  
+  .medium-editor .preview-content h1 {
+    font-size: 1.75em;
+  }
+  
+  .medium-editor .preview-content h2 {
+    font-size: 1.375em;
+  }
+  
+  .medium-editor .preview-content h3 {
+    font-size: 1.125em;
+  }
+}
+
+/* Animation for save status */
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.medium-editor .rt-Badge {
+  animation: fadeInOut 2s ease-in-out;
+}
+
+/* Custom scrollbar for editor */
+.medium-editor [contenteditable]::-webkit-scrollbar {
+  width: 8px;
+}
+
+.medium-editor [contenteditable]::-webkit-scrollbar-track {
+  background: var(--gray-2);
+  border-radius: var(--radius-1);
+}
+
+.medium-editor [contenteditable]::-webkit-scrollbar-thumb {
+  background: var(--gray-6);
+  border-radius: var(--radius-1);
+}
+
+.medium-editor [contenteditable]::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-7);
+}
 
 @layer base {
   :root {

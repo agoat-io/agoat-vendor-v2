@@ -11,6 +11,7 @@ import PostDetail from './pages/PostDetail'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './components/ThemeProvider'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import EditPost from './pages/EditPost'
 
 function Header() {
   const location = useLocation()
@@ -125,6 +126,7 @@ function AppContent() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/new-post" element={<NewPost />} />
             <Route path="/post/:id" element={<PostDetail />} />
+            <Route path="/edit-post/:id" element={<EditPost />} />
           </Routes>
         </Container>
       </Box>

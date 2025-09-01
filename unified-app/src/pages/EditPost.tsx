@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { 
   Box, 
@@ -17,20 +17,20 @@ import {
   AlertDialogAction,
   AlertDialogCancel
 } from '@radix-ui/themes'
-import { ArrowLeftIcon, PlusIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
+import { ArrowLeftIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
 import { useAuth } from '../contexts/AuthContext'
 import MediumEditor from '../components/MediumEditor'
+import { Post } from '../types'
 
-export default function NewPost() {
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [published, setPublished] = useState(false)
-  const [loading, setLoading] = useState(false)
+export default function EditPost() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const [post, setPost] = useState<Post | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const navigate = useNavigate()
   const { user, isAuthenticated } = useAuth()
 
   // Redirect if not authenticated or not authorized
@@ -46,6 +46,37 @@ export default function NewPost() {
     }
   }, [isAuthenticated, user, navigate])
 
+  // Fetch post data
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (!id) {
+        setError('No post ID provided')
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError('')
+
+        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)))
+        
+        if (response.data && response.data.data) {
+          setPost(response.data.data)
+        } else {
+          setError('Post not found')
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to load post')
+        console.error('Error fetching post:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPost()
+  }, [id])
+
   // Warn before leaving with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -60,14 +91,17 @@ export default function NewPost() {
   }, [hasUnsavedChanges])
 
   const handleSave = async (content: string, title: string, isDraft: boolean) => {
+    if (!id) throw new Error('No post ID')
+
     try {
-      const response = await axios.post(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID)), {
+      const response = await axios.put(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)), {
         title,
         content,
         published: !isDraft
       })
 
       if (response.data && response.data.data) {
+        setPost(response.data.data)
         setHasUnsavedChanges(false)
         return response.data.data
       } else {
@@ -80,17 +114,20 @@ export default function NewPost() {
   }
 
   const handlePublish = async (content: string, title: string) => {
+    if (!id) throw new Error('No post ID')
+
     try {
-      const response = await axios.post(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID)), {
+      const response = await axios.put(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)), {
         title,
         content,
         published: true
       })
 
       if (response.data && response.data.data) {
+        setPost(response.data.data)
         setHasUnsavedChanges(false)
         // Navigate to the published post
-        navigate(`/post/${response.data.data.id}`)
+        navigate(`/post/${id}`)
         return response.data.data
       } else {
         throw new Error('Failed to publish post')
@@ -102,8 +139,6 @@ export default function NewPost() {
   }
 
   const handleEditorChange = (newContent: string, newTitle: string) => {
-    setContent(newContent)
-    setTitle(newTitle)
     setHasUnsavedChanges(true)
   }
 
@@ -125,6 +160,33 @@ export default function NewPost() {
     return null // Will redirect
   }
 
+  if (loading) {
+    return (
+      <Container>
+        <Flex justify="center" align="center" style={{ minHeight: '200px' }}>
+          <Text size="3">Loading post...</Text>
+        </Flex>
+      </Container>
+    )
+  }
+
+  if (error || !post) {
+    return (
+      <Container>
+        <Card>
+          <Box p="4">
+            <Flex direction="column" align="center" gap="3">
+              <Text size="4" color="red">Error: {error || 'Post not found'}</Text>
+              <Button onClick={() => navigate('/dashboard')} variant="outline">
+                Back to Dashboard
+              </Button>
+            </Flex>
+          </Box>
+        </Card>
+      </Container>
+    )
+  }
+
   return (
     <Container>
       <Box mb="6">
@@ -142,22 +204,31 @@ export default function NewPost() {
               Unsaved Changes
             </Badge>
           )}
+          {post.published ? (
+            <Badge color="green" variant="soft">
+              Published
+            </Badge>
+          ) : (
+            <Badge color="orange" variant="soft">
+              Draft
+            </Badge>
+          )}
         </Flex>
-        <Heading size="6" mb="2">Create New Post</Heading>
+        <Heading size="6" mb="2">Edit Post</Heading>
         <Text size="3" color="gray">
-          Write and publish your next great article with our Medium-style editor
+          Edit your post with our Medium-style editor
         </Text>
       </Box>
 
       <MediumEditor
-        initialContent={content}
-        initialTitle={title}
+        initialContent={post.content}
+        initialTitle={post.title}
         onSave={handleSave}
         onPublish={handlePublish}
         autoSaveInterval={30000} // 30 seconds
         placeholder="Tell your story... Start writing here..."
         titlePlaceholder="Enter your post title..."
-        className="new-post-editor"
+        className="edit-post-editor"
       />
 
       {/* Unsaved Changes Dialog */}

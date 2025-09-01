@@ -91,9 +91,8 @@ const PostDetail: React.FC = () => {
   }
 
   const handleEditClick = () => {
-    // For now, just navigate back to dashboard
-    // In a full implementation, this would navigate to an edit page
-    navigate('/dashboard')
+    // Navigate to edit page
+    navigate(`/edit-post/${id}`)
   }
 
   if (loading) {
