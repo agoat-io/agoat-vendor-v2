@@ -1,43 +1,43 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
 import { 
   Box, 
   Heading, 
   Text, 
-  Flex,
-  Container,
-  Card,
-  CardContent,
-  Button,
-  TextField,
+  Card, 
+  Flex, 
+  Button, 
+  TextField, 
   TextArea,
-  Switch
-} from '../components/ui'
+  Switch,
+  Container
+} from '@radix-ui/themes'
+import { ArrowLeftIcon, PlusIcon } from '@radix-ui/react-icons'
+import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
+import { useAuth } from '../contexts/AuthContext'
 
-const NewPost: React.FC = () => {
-  const navigate = useNavigate()
+export default function NewPost() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [published, setPublished] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const navigate = useNavigate()
+  const { user, isAuthenticated } = useAuth()
 
-  // Check authentication status
+  // Redirect if not authenticated or not authorized
   useEffect(() => {
-    const checkAuth = async () => {
-      // Simple mock authentication check - in a real app this would call an API
-      // For now, we'll assume the user is not authenticated
-      setIsAuthenticated(false)
-      if (!isAuthenticated) {
-        navigate('/login')
-      }
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
     }
-
-    checkAuth()
-  }, [navigate])
+    
+    if (user?.role !== 'admin' && user?.role !== 'author') {
+      navigate('/')
+      return
+    }
+  }, [isAuthenticated, user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,99 +49,131 @@ const NewPost: React.FC = () => {
         title,
         content,
         published
-      }, {
-        withCredentials: true
       })
 
-      if (response.data.success) {
-        navigate('/dashboard')
+      if (response.data && response.data.data) {
+        // Navigate to the new post
+        navigate(`/post/${response.data.data.id}`)
       } else {
-        setError('Failed to create post. Please try again.')
+        setError('Failed to create post')
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create post. Please try again.')
+      setError(err.response?.data?.message || 'Failed to create post')
+      console.error('Error creating post:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  if (!isAuthenticated) {
-    return null // Will redirect to login
+  if (!isAuthenticated || (user?.role !== 'admin' && user?.role !== 'author')) {
+    return null // Will redirect
   }
 
   return (
-    <Box style={{ 
-      minHeight: '100vh', 
-      backgroundColor: 'var(--gray-1)',
-      padding: '2rem 0'
-    }}>
-      <Container maxWidth="lg">
-        <Card>
-          <CardContent>
-            <Box style={{ padding: '2rem' }}>
-              <Heading size="6" mb="3">Create New Post</Heading>
-              <Text size="3" color="gray" mb="4">
-                Write and publish your new blog post
-              </Text>
+    <Container>
+      <Box mb="6">
+        <Flex align="center" gap="3" mb="4">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/dashboard')}
+            style={{ color: 'var(--gray-11)' }}
+          >
+            <ArrowLeftIcon />
+            Back to Dashboard
+          </Button>
+        </Flex>
+        <Heading size="6" mb="2">Create New Post</Heading>
+        <Text size="3" color="gray">
+          Write and publish your next great article
+        </Text>
+      </Box>
 
-              <form onSubmit={handleSubmit}>
-                <Flex direction="column" gap="4">
-                  <TextField.Root>
-                    <TextField.Input
-                      placeholder="Post Title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      required
-                    />
-                  </TextField.Root>
-
-                  <TextArea
-                    placeholder="Write your post content here... (Markdown supported)"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    style={{ minHeight: '300px' }}
+      <Card>
+        <Box p="6">
+          <form onSubmit={handleSubmit}>
+            <Flex direction="column" gap="4">
+              <Box>
+                <Text size="2" weight="medium" mb="2" style={{ display: 'block' }}>
+                  Title
+                </Text>
+                <TextField.Root>
+                  <TextField.Input
+                    type="text"
+                    placeholder="Enter post title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     required
+                    style={{ height: '44px' }}
                   />
+                </TextField.Root>
+              </Box>
 
-                  <Flex align="center" gap="3">
-                    <Switch
-                      checked={published}
-                      onCheckedChange={setPublished}
-                    />
-                    <Text size="3">
-                      {published ? 'Publish immediately' : 'Save as draft'}
-                    </Text>
-                  </Flex>
+              <Box>
+                <Text size="2" weight="medium" mb="2" style={{ display: 'block' }}>
+                  Content
+                </Text>
+                <TextArea
+                  placeholder="Write your post content here..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  required
+                  style={{ 
+                    minHeight: '300px',
+                    resize: 'vertical'
+                  }}
+                />
+              </Box>
 
-                  {error && (
-                    <Text color="red" size="2">
-                      {error}
-                    </Text>
-                  )}
-
-                  <Flex gap="3" justify="end">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => navigate('/dashboard')}
-                      disabled={loading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      loading={loading}
-                    >
-                      {published ? 'Publish Post' : 'Save Draft'}
-                    </Button>
-                  </Flex>
+              <Box>
+                <Flex align="center" gap="3">
+                  <Switch
+                    checked={published}
+                    onCheckedChange={setPublished}
+                  />
+                  <Text size="2" weight="medium">
+                    Publish immediately
+                  </Text>
                 </Flex>
-              </form>
-            </Box>
-          </CardContent>
-        </Card>
-      </Container>
-    </Box>
+                <Text size="1" color="gray" mt="1">
+                  {published ? 'Post will be published immediately' : 'Post will be saved as a draft'}
+                </Text>
+              </Box>
+
+              {error && (
+                <Box style={{ 
+                  padding: 'var(--space-3)', 
+                  background: 'var(--red-2)', 
+                  border: '1px solid var(--red-6)',
+                  borderRadius: 'var(--radius-3)',
+                  color: 'var(--red-11)'
+                }}>
+                  <Text size="2">{error}</Text>
+                </Box>
+              )}
+
+              <Flex gap="3" mt="2">
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  style={{ height: '44px' }}
+                >
+                  <PlusIcon />
+                  {loading ? 'Creating...' : published ? 'Publish Post' : 'Save Draft'}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => navigate('/dashboard')}
+                  disabled={loading}
+                  style={{ height: '44px' }}
+                >
+                  Cancel
+                </Button>
+              </Flex>
+            </Flex>
+          </form>
+        </Box>
+      </Card>
+    </Container>
   )
 }
-
-export default NewPost

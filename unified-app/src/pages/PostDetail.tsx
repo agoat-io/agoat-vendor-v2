@@ -5,6 +5,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
+import { useAuth } from '../contexts/AuthContext'
 import { 
   Box, 
   Heading, 
@@ -25,17 +26,12 @@ const PostDetail: React.FC = () => {
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { user, isAuthenticated } = useAuth()
 
   // Check authentication status
   useEffect(() => {
-    const checkAuth = async () => {
-      // Simple mock authentication check - in a real app this would call an API
-      // For now, we'll assume the user is not authenticated
-      setIsAuthenticated(false)
-    }
-
-    checkAuth()
+    // Authentication is now handled by the AuthContext
+    // No need for local authentication checks here
   }, [])
 
   // Fetch post data

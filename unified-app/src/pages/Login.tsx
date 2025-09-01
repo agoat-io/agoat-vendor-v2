@@ -1,32 +1,39 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { buildApiUrl, API_CONFIG } from '../config/api'
 import { 
   Box, 
+  Card, 
+  CardContent,
   Heading, 
   Text, 
-  Flex,
-  Card,
-  Button,
-  TextField,
-  Separator
+  TextField, 
+  Button, 
+  Flex, 
+  Separator,
+  IconButton
 } from '@radix-ui/themes'
-import { 
-  PersonIcon, 
-  LockClosedIcon, 
-  ArrowLeftIcon,
-  EyeOpenIcon,
-  EyeNoneIcon
-} from '@radix-ui/react-icons'
+import { PersonIcon, LockClosedIcon, EyeOpenIcon, EyeNoneIcon } from '@radix-ui/react-icons'
+import { useAuth } from '../contexts/AuthContext'
 
-const Login: React.FC = () => {
-  const navigate = useNavigate()
+export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
+  const { login, isAuthenticated, user } = useAuth()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'admin' || user.role === 'author') {
+        navigate('/dashboard')
+      } else {
+        navigate('/')
+      }
+    }
+  }, [isAuthenticated, user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,12 +41,13 @@ const Login: React.FC = () => {
     setError('')
 
     try {
-      // Simple mock authentication - in a real app this would call an API
-      if (username === 'admin' && password === 'admin123') {
-        // Mock successful login
-        navigate('/dashboard')
+      const success = await login(username, password)
+      
+      if (success) {
+        // The redirect will be handled by the useEffect above
+        // based on the user's role
       } else {
-        setError('Invalid username or password. Try admin/admin123')
+        setError('Invalid username or password. Try admin/admin123, author/author123, or user/user123')
       }
     } catch (err: any) {
       setError('Login failed. Please try again.')
@@ -122,97 +130,60 @@ const Login: React.FC = () => {
                   style={{ height: '44px' }}
                 />
                 <TextField.Slot>
-                  <Button
+                  <IconButton
                     type="button"
                     variant="ghost"
-                    size="1"
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ padding: '4px' }}
+                    style={{ cursor: 'pointer' }}
                   >
-                    {showPassword ? (
-                      <EyeNoneIcon width="16" height="16" />
-                    ) : (
-                      <EyeOpenIcon width="16" height="16" />
-                    )}
-                  </Button>
+                    {showPassword ? <EyeNoneIcon width="16" height="16" /> : <EyeOpenIcon width="16" height="16" />}
+                  </IconButton>
                 </TextField.Slot>
               </TextField.Root>
             </Box>
 
             {error && (
-              <Card style={{ 
-                background: 'var(--red-3)', 
+              <Box style={{ 
+                padding: 'var(--space-3)', 
+                background: 'var(--red-2)', 
                 border: '1px solid var(--red-6)',
-                padding: 'var(--space-3)'
+                borderRadius: 'var(--radius-3)',
+                color: 'var(--red-11)'
               }}>
-                <Text size="2" color="red">
-                  {error}
-                </Text>
-              </Card>
+                <Text size="2">{error}</Text>
+              </Box>
             )}
 
             <Button 
               type="submit" 
               disabled={loading}
-              style={{ 
-                height: '44px',
-                background: 'linear-gradient(135deg, var(--accent-9) 0%, var(--accent-10) 100%)',
-                border: 'none',
-                color: 'white',
-                fontWeight: '600'
-              }}
-              className="btn-hover"
+              style={{ height: '44px', marginTop: 'var(--space-2)' }}
             >
-              {loading ? (
-                <Flex align="center" gap="2">
-                  <Box style={{ 
-                    width: '16px', 
-                    height: '16px', 
-                    border: '2px solid transparent', 
-                    borderTop: '2px solid currentColor', 
-                    borderRadius: '50%', 
-                    animation: 'spin 1s linear infinite' 
-                  }} />
-                  Signing in...
-                </Flex>
-              ) : (
-                'Sign In'
-              )}
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </Flex>
         </form>
 
         <Separator my="6" />
 
-        {/* Footer */}
-        <Box style={{ textAlign: 'center' }}>
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')}
-            style={{ color: 'var(--gray-11)' }}
-          >
-            <ArrowLeftIcon />
-            Back to Home
-          </Button>
-        </Box>
-
         {/* Demo Credentials */}
-        <Box mt="4" p="3" style={{ 
-          background: 'var(--gray-2)', 
-          borderRadius: 'var(--radius-3)',
-          border: '1px solid var(--gray-5)'
-        }}>
-          <Text size="1" color="gray" weight="medium" mb="2">
+        <Box>
+          <Text size="2" weight="medium" mb="3" style={{ display: 'block' }}>
             Demo Credentials:
           </Text>
-          <Text size="1" color="gray" style={{ fontFamily: 'monospace' }}>
-            Username: admin<br />
-            Password: password
-          </Text>
+          <Flex direction="column" gap="2">
+            <Text size="1" color="gray">
+              <strong>Admin:</strong> admin / admin123
+            </Text>
+            <Text size="1" color="gray">
+              <strong>Author:</strong> author / author123
+            </Text>
+            <Text size="1" color="gray">
+              <strong>User:</strong> user / user123
+            </Text>
+          </Flex>
         </Box>
       </Card>
     </Box>
   )
 }
-
-export default Login

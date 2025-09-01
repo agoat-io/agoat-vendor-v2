@@ -1,8 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
-import { Theme, Container, Flex, Box, Heading, Button, Separator } from '@radix-ui/themes'
+import { Theme, Container, Flex, Box, Heading, Button, Separator, Text } from '@radix-ui/themes'
 import '@radix-ui/themes/styles.css'
 import { Link, useLocation } from 'react-router-dom'
-import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon } from '@radix-ui/react-icons'
+import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon } from '@radix-ui/react-icons'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -10,9 +10,11 @@ import NewPost from './pages/NewPost'
 import PostDetail from './pages/PostDetail'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './components/ThemeProvider'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 function Header() {
   const location = useLocation()
+  const { user, isAuthenticated, logout } = useAuth()
   
   return (
     <Box style={{ 
@@ -52,25 +54,43 @@ function Header() {
                 Home
               </Button>
             </Link>
-            <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-              <Button variant={location.pathname === '/dashboard' ? 'solid' : 'ghost'} size="2">
-                <DashboardIcon />
-                Dashboard
-              </Button>
-            </Link>
-            <Link to="/new-post" style={{ textDecoration: 'none' }}>
-              <Button variant={location.pathname === '/new-post' ? 'solid' : 'ghost'} size="2">
-                <PlusIcon />
-                New Post
-              </Button>
-            </Link>
+            {isAuthenticated && (
+              <>
+                <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+                  <Button variant={location.pathname === '/dashboard' ? 'solid' : 'ghost'} size="2">
+                    <DashboardIcon />
+                    Dashboard
+                  </Button>
+                </Link>
+                {(user?.role === 'admin' || user?.role === 'author') && (
+                  <Link to="/new-post" style={{ textDecoration: 'none' }}>
+                    <Button variant={location.pathname === '/new-post' ? 'solid' : 'ghost'} size="2">
+                      <PlusIcon />
+                      New Post
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
             <Separator orientation="vertical" />
-            <Link to="/login" style={{ textDecoration: 'none' }}>
-              <Button variant={location.pathname === '/login' ? 'solid' : 'outline'} size="2">
-                <PersonIcon />
-                Login
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Flex gap="2" align="center">
+                <Text size="2" color="gray">
+                  Welcome, {user?.username} ({user?.role})
+                </Text>
+                <Button variant="outline" size="2" onClick={logout}>
+                  <ExitIcon />
+                  Logout
+                </Button>
+              </Flex>
+            ) : (
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <Button variant={location.pathname === '/login' ? 'solid' : 'outline'} size="2">
+                  <PersonIcon />
+                  Login
+                </Button>
+              </Link>
+            )}
           </Flex>
         </Flex>
       </Container>
@@ -78,27 +98,50 @@ function Header() {
   )
 }
 
+function AppContent() {
+  const { isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <Box style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <Text>Loading...</Text>
+      </Box>
+    )
+  }
+
+  return (
+    <Box style={{ minHeight: '100vh', background: 'var(--gray-1)' }}>
+      <Header />
+      <Box style={{ padding: 'var(--space-6) 0' }}>
+        <Container size="3">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/new-post" element={<NewPost />} />
+            <Route path="/post/:id" element={<PostDetail />} />
+          </Routes>
+        </Container>
+      </Box>
+    </Box>
+  )
+}
+
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <Theme>
-          <Box style={{ minHeight: '100vh', background: 'var(--gray-1)' }}>
-            <Header />
-            <Box style={{ padding: 'var(--space-6) 0' }}>
-              <Container size="3">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/new-post" element={<NewPost />} />
-                  <Route path="/post/:id" element={<PostDetail />} />
-                </Routes>
-              </Container>
-            </Box>
-          </Box>
-        </Theme>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <Theme>
+            <AppContent />
+          </Theme>
+        </ThemeProvider>
+      </AuthProvider>
     </ErrorBoundary>
   )
 }
