@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { marked } from 'marked';
-import axios from 'axios';
 import PostsList from './PostsList';
 import FederatedComponent from '../src/components/FederatedComponent';
-import { buildApiUrl, API_CONFIG } from '../src/config/api';
+import { apiService } from '../src/services/api';
+import type { Post } from '../src/types/api';
 import { 
   Box, 
   Heading, 
@@ -22,18 +22,6 @@ import {
 import { ArrowLeftIcon, Pencil1Icon, PersonIcon } from '@radix-ui/react-icons';
 import { useTheme } from '../src/components/ThemeProvider';
 
-interface Post {
-  id: string
-  title: string
-  content: string
-  slug: string
-  published: boolean
-  created_at: string
-  updated_at: string
-  user_id: string
-  author?: string
-}
-
 const BlogListView: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,8 +34,6 @@ const BlogListView: React.FC = () => {
   const [currentPost, setCurrentPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [authChecked, setAuthChecked] = useState(false)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -63,8 +49,8 @@ const BlogListView: React.FC = () => {
     
     let content = currentPost.content
     
-    // Truncate content for non-authenticated users
-    if (!isAuthenticated && content.length > 800) {
+    // Truncate content for preview
+    if (content.length > 800) {
       content = content.substring(0, 800) + '...'
     }
     
@@ -77,21 +63,19 @@ const BlogListView: React.FC = () => {
     setError(null)
     
     try {
-      const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.POST(postId)), {
-        withCredentials: true
-      })
+      const response = await apiService.getPost(postId)
       
-      if (response.data && response.data.data) {
-        setCurrentPost(response.data.data)
+      if (response.success && response.data) {
+        setCurrentPost(response.data)
         setShowingPost(true)
         
         // Update page title
-        document.title = `${response.data.data.title} - AGoat Blog`
+        document.title = `${response.data.title} - AGoat Blog`
       } else {
-        setError('Post not found')
+        setError(response.error || 'Post not found')
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load post')
+      setError(err.response?.data?.error || err.message || 'Failed to load post')
       console.error('Error fetching post:', err)
     } finally {
       setLoading(false)
@@ -120,25 +104,6 @@ const BlogListView: React.FC = () => {
     // Reset page title
     document.title = 'AGoat Blog'
   }
-
-  // Check authentication status
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH_CHECK), {
-          withCredentials: true
-        })
-        setIsAuthenticated(response.data.authenticated)
-      } catch (err) {
-        console.warn('Auth check failed:', err)
-        setIsAuthenticated(false)
-      } finally {
-        setAuthChecked(true)
-      }
-    }
-
-    checkAuth()
-  }, [])
 
   // Handle direct post access via URL
   useEffect(() => {
@@ -230,12 +195,11 @@ const BlogListView: React.FC = () => {
         <FederatedComponent
           componentName="PostsList"
           remoteName="viewer"
-          apiUrl={API_CONFIG.BASE_URL}
           showPublishedOnly={true}
           page={currentPage}
           limit={postsPerPage}
           maxContentLength={300}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={false}
           onPostClicked={handlePostClick}
           onError={(error) => {
             console.error('Federated component error:', error)

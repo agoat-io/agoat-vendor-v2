@@ -99,7 +99,7 @@ const PostsList: React.FC<PostsListProps> = ({
         params.append('published', 'true')
       }
       
-      const url = `${apiUrl}/posts?${params}`
+      const url = `${apiUrl}/sites/18c6498d-f738-4c9f-aefd-d66bec11d751/posts?${params}`
       console.log('PostsList: Making request to:', url)
       const response = await axios.get(url)
       

@@ -457,7 +457,7 @@ func (app *App) sitesHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		// For now, get the default customer's sites
-		customerID := "default-customer-id" // This should come from auth
+		customerID := "81b04b17-cb1d-4664-a158-c4f9b66a39b9" // Default customer UUID
 
 		sites, err := app.sites.GetAll(customerID)
 		if err != nil {
@@ -500,7 +500,7 @@ func (app *App) sitesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// For now, use a default customer ID
-		site.CustomerID = "default-customer-id"
+		site.CustomerID = "81b04b17-cb1d-4664-a158-c4f9b66a39b9"
 
 		if err := app.sites.Create(&site); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import { apiService } from '../src/services/api'
+import type { Post } from '../src/types/api'
 import { 
   Box, 
   Heading, 
@@ -13,20 +14,8 @@ import {
 } from '../src/components/ui'
 import { ReaderIcon, Pencil1Icon } from '@radix-ui/react-icons'
 
-interface Post {
-  id: string
-  title: string
-  content: string
-  slug: string
-  published: boolean
-  created_at: string
-  updated_at: string
-  user_id: string
-  author?: string
-}
-
 interface PostsListProps {
-  apiUrl?: string
+  siteId?: string
   showPublishedOnly?: boolean
   page?: number
   limit?: number
@@ -38,7 +27,7 @@ interface PostsListProps {
 }
 
 const PostsList: React.FC<PostsListProps> = ({
-  apiUrl = 'http://localhost:8080/api',
+  siteId,
   showPublishedOnly = true,
   page = 1,
   limit = 10,
@@ -59,28 +48,28 @@ const PostsList: React.FC<PostsListProps> = ({
         setLoading(true)
         setError(null)
         
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: limit.toString()
-        })
+        // Use the current site ID or the provided one
+        const currentSiteId = siteId || apiService.getSiteId()
         
-        if (showPublishedOnly) {
-          params.append('published', 'true')
-        }
+        const response = await apiService.getPosts(
+          currentSiteId,
+          page,
+          limit,
+          showPublishedOnly
+        )
         
-        const response = await axios.get(`${apiUrl}/posts?${params}`, {
-          withCredentials: true
-        })
-        
-        if (response.data && response.data.data) {
-          const fetchedPosts = response.data.data
-          setPosts(fetchedPosts)
-          onPostsLoaded?.(fetchedPosts)
+        if (response.success && response.data) {
+          setPosts(response.data)
+          onPostsLoaded?.(response.data)
         } else {
           setPosts([])
+          if (response.error) {
+            setError(response.error)
+            onError?.(response.error)
+          }
         }
       } catch (err: any) {
-        const errorMessage = err.response?.data?.message || 'Failed to load posts'
+        const errorMessage = err.response?.data?.error || err.message || 'Failed to load posts'
         setError(errorMessage)
         onError?.(errorMessage)
         console.error('Error fetching posts:', err)
@@ -90,7 +79,7 @@ const PostsList: React.FC<PostsListProps> = ({
     }
 
     fetchPosts()
-  }, [apiUrl, showPublishedOnly, page, limit, onPostsLoaded, onError])
+  }, [siteId, showPublishedOnly, page, limit, onPostsLoaded, onError])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -111,28 +100,27 @@ const PostsList: React.FC<PostsListProps> = ({
     setError(null)
     
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString()
-      })
+      const currentSiteId = siteId || apiService.getSiteId()
       
-      if (showPublishedOnly) {
-        params.append('published', 'true')
-      }
+      const response = await apiService.getPosts(
+        currentSiteId,
+        page,
+        limit,
+        showPublishedOnly
+      )
       
-      const response = await axios.get(`${apiUrl}/posts?${params}`, {
-        withCredentials: true
-      })
-      
-      if (response.data && response.data.data) {
-        const fetchedPosts = response.data.data
-        setPosts(fetchedPosts)
-        onPostsLoaded?.(fetchedPosts)
+      if (response.success && response.data) {
+        setPosts(response.data)
+        onPostsLoaded?.(response.data)
       } else {
         setPosts([])
+        if (response.error) {
+          setError(response.error)
+          onError?.(response.error)
+        }
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to load posts'
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to load posts'
       setError(errorMessage)
       onError?.(errorMessage)
       console.error('Error retrying posts fetch:', err)

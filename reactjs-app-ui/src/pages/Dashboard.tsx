@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import PostsList from '../../components/PostsList';
-import { buildApiUrl, API_CONFIG } from '../config/api';
+import { apiService } from '../services/api';
+import type { Post } from '../types/api';
 import { 
   Container,
   Heading, 
@@ -18,56 +18,26 @@ import {
   HomeIcon
 } from '@radix-ui/react-icons';
 
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  slug: string;
-  published: boolean;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
-  author?: string;
-}
-
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [postsPerPage] = useState(10);
 
   useEffect(() => {
-    // Check authentication status
-    const checkAuth = async () => {
+    // Check API status
+    const checkAPI = async () => {
       try {
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.STATUS), {
-          withCredentials: true
-        });
-        setIsAuthenticated(response.data.data?.authenticated || false);
+        await apiService.checkStatus();
+        setLoading(false);
       } catch (err) {
-        console.error('Auth check failed:', err);
-        setIsAuthenticated(false);
-        navigate('/login');
-      } finally {
+        console.error('API check failed:', err);
         setLoading(false);
       }
     };
 
-    checkAuth();
-  }, [navigate]);
-
-  const handleLogout = async () => {
-    try {
-      await axios.post(buildApiUrl(API_CONFIG.ENDPOINTS.LOGOUT), {}, {
-        withCredentials: true
-      });
-      setIsAuthenticated(false);
-      navigate('/');
-    } catch (err) {
-      console.error('Logout failed:', err);
-    }
-  };
+    checkAPI();
+  }, []);
 
   const handleCreatePost = () => {
     navigate('/new-post');
@@ -100,10 +70,6 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect to login
-  }
-
   return (
     <Container size="4">
       <Box py="6">
@@ -123,10 +89,6 @@ const DashboardPage: React.FC = () => {
                 <HomeIcon />
                 View Blog
               </Button>
-              <Button onClick={handleLogout} variant="outline" size="3">
-                <ExitIcon />
-                Logout
-              </Button>
             </Flex>
           </Flex>
         </Card>
@@ -137,7 +99,6 @@ const DashboardPage: React.FC = () => {
           <Text color="gray" mb="6">Click on any article to edit it</Text>
 
           <PostsList
-            apiUrl={API_CONFIG.BASE_URL}
             showPublishedOnly={false} // Show all posts (published and drafts)
             page={currentPage}
             limit={postsPerPage}
