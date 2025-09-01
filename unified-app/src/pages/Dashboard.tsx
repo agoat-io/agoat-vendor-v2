@@ -22,19 +22,12 @@ const Dashboard: React.FC = () => {
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH_CHECK), {
-          withCredentials: true
-        })
-        setIsAuthenticated(!!response.data.authenticated)
-        if (!response.data.authenticated) {
-          navigate('/login')
-        }
-      } catch (error) {
-        setIsAuthenticated(false)
+      // Simple mock authentication check - in a real app this would call an API
+      // For now, we'll assume the user is not authenticated
+      setIsAuthenticated(false)
+      setAuthChecked(true)
+      if (!isAuthenticated) {
         navigate('/login')
-      } finally {
-        setAuthChecked(true)
       }
     }
 

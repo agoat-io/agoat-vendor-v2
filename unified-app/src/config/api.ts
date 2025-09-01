@@ -7,8 +7,6 @@ export const API_CONFIG = {
     SITE_POSTS: (siteId: string) => `/sites/${siteId}/posts`,
     SITE_POST: (siteId: string, postId: string) => `/sites/${siteId}/posts/${postId}`,
     SITE_POST_BY_SLUG: (siteId: string, slug: string) => `/sites/${siteId}/posts/slug/${slug}`,
-    LOGIN: '/login',
-    LOGOUT: '/logout',
     AUTH_CHECK: '/status',
   }
 } as const

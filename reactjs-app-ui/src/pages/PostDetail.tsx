@@ -44,7 +44,6 @@ const PostDetail: React.FC = () => {
         }
       } catch (err: any) {
         setError(err.response?.data?.error || err.message || 'Failed to load post');
-        console.error('Error fetching post:', err);
       } finally {
         setLoading(false);
       }

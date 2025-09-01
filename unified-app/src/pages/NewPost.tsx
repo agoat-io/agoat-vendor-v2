@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { buildApiUrl, API_CONFIG } from '../config/api'
+import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
 import { 
   Box, 
   Heading, 
@@ -28,16 +28,10 @@ const NewPost: React.FC = () => {
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH_CHECK), {
-          withCredentials: true
-        })
-        setIsAuthenticated(!!response.data.authenticated)
-        if (!response.data.authenticated) {
-          navigate('/login')
-        }
-      } catch (error) {
-        setIsAuthenticated(false)
+      // Simple mock authentication check - in a real app this would call an API
+      // For now, we'll assume the user is not authenticated
+      setIsAuthenticated(false)
+      if (!isAuthenticated) {
         navigate('/login')
       }
     }
@@ -51,7 +45,7 @@ const NewPost: React.FC = () => {
     setError('')
 
     try {
-      const response = await axios.post(buildApiUrl(API_CONFIG.ENDPOINTS.POSTS), {
+      const response = await axios.post(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID)), {
         title,
         content,
         published

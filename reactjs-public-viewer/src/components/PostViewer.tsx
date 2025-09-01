@@ -77,7 +77,9 @@ const PostViewer: React.FC<PostViewerProps> = ({
     setError(null)
     
     try {
-      let url = `${apiUrl}/posts`
+      // Use the default site ID for now - in a real app this would be configurable
+      const siteId = '18c6498d-f738-4c9f-aefd-d66bec11d751'
+      let url = `${apiUrl}/sites/${siteId}/posts`
       
       if (postId) {
         url += `/${postId}`

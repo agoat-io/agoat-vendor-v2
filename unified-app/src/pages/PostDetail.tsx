@@ -4,7 +4,7 @@ import axios from 'axios'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Post } from '../types'
-import { buildApiUrl, API_CONFIG } from '../config/api'
+import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
 import { 
   Box, 
   Heading, 
@@ -30,14 +30,9 @@ const PostDetail: React.FC = () => {
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH_CHECK), {
-          withCredentials: true
-        })
-        setIsAuthenticated(!!response.data.authenticated)
-      } catch (error) {
-        setIsAuthenticated(false)
-      }
+      // Simple mock authentication check - in a real app this would call an API
+      // For now, we'll assume the user is not authenticated
+      setIsAuthenticated(false)
     }
 
     checkAuth()
@@ -52,7 +47,7 @@ const PostDetail: React.FC = () => {
       setError('')
 
       try {
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.POST(id)))
+        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)))
         
         if (response.data && response.data.data) {
           setPost(response.data.data)
