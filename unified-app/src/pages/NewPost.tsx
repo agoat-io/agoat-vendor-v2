@@ -14,7 +14,7 @@ import {
 import { ArrowLeftIcon, PlusIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
 import { useAuth } from '../contexts/AuthContext'
-import MediumEditor from '../components/MediumEditor'
+import WysimarkEditor from '../components/WysimarkEditor'
 
 export default function NewPost() {
   const [title, setTitle] = useState('')
@@ -143,7 +143,7 @@ export default function NewPost() {
         </Text>
       </Box>
 
-      <MediumEditor
+      <WysimarkEditor
         initialContent={content}
         initialTitle={title}
         onSave={handleSave}

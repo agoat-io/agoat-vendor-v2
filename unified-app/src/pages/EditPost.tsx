@@ -14,7 +14,7 @@ import {
 import { ArrowLeftIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
 import { useAuth } from '../contexts/AuthContext'
-import MediumEditor from '../components/MediumEditor'
+import WysimarkEditor from '../components/WysimarkEditor'
 import { Post } from '../types'
 
 export default function EditPost() {
@@ -210,7 +210,7 @@ export default function EditPost() {
         </Text>
       </Box>
 
-      <MediumEditor
+      <WysimarkEditor
         initialContent={post.content}
         initialTitle={post.title}
         onSave={handleSave}
