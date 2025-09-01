@@ -523,34 +523,55 @@
   background: white !important;
   display: flex !important;
   flex-direction: column !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
 }
 
+/* Editor area in fullscreen - takes most space */
 .wysimark-fullscreen .wysimark-editable {
-  flex: 1 !important;
-  min-height: 0 !important;
+  position: absolute !important;
+  top: var(--space-2) !important;
+  left: var(--space-2) !important;
+  right: var(--space-2) !important;
+  bottom: 60px !important; /* Leave space for footer */
+  border: 1px solid var(--gray-6) !important;
+  border-radius: var(--radius-2) !important;
+  background: white !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
+/* Editor content area */
 .wysimark-fullscreen .wysimark-editable [data-slate-editor] {
+  flex: 1 !important;
   height: 100% !important;
-  min-height: 0 !important;
+  max-height: none !important;
   overflow-y: auto !important;
-}
-
-.wysimark-fullscreen input[type="text"] {
-  font-size: var(--font-size-7) !important;
   padding: var(--space-4) !important;
+  font-size: var(--font-size-3) !important;
+  line-height: 1.6 !important;
 }
 
-/* Fullscreen overlay to prevent background interaction */
+/* Footer in fullscreen - compact */
+.wysimark-fullscreen .wysimark-footer {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding: var(--space-2) !important;
+  background: var(--gray-1) !important;
+  border-top: 1px solid var(--gray-6) !important;
+  border-radius: 0 !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  z-index: 10 !important;
+}
+
+/* Remove the gray overlay */
 .wysimark-fullscreen::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.1);
-  z-index: -1;
+  display: none !important;
 }
 
 /* Fullscreen animations */
@@ -560,6 +581,17 @@
 
 .wysimark-fullscreen {
   animation: fullscreen-enter 0.3s ease-out;
+}
+
+/* Ensure fullscreen takes precedence over any body/html styles */
+body.wysimark-fullscreen-active {
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html.wysimark-fullscreen-active {
+  overflow: hidden !important;
 }
 
 @keyframes fullscreen-enter {
