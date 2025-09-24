@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import apiClient from '../config/axios'
 import { 
   Box, 
   Heading, 
@@ -53,7 +53,7 @@ export default function EditPost() {
         setLoading(true)
         setError('')
 
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)))
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id))
         
         if (response.data && response.data.data) {
           setPost(response.data.data)
@@ -88,7 +88,7 @@ export default function EditPost() {
     if (!id) throw new Error('No post ID')
 
     try {
-      const response = await axios.put(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)), {
+      const response = await apiClient.put(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id), {
         title,
         content,
         published: !isDraft
@@ -111,7 +111,7 @@ export default function EditPost() {
     if (!id) throw new Error('No post ID')
 
     try {
-      const response = await axios.put(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)), {
+      const response = await apiClient.put(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id), {
         title,
         content,
         published: true

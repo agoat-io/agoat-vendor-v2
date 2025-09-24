@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import apiClient from '../config/axios'
 import { 
   Box, 
   Heading, 
@@ -46,9 +46,9 @@ export default function Dashboard() {
         })
 
         // Don't filter by published status for dashboard - show all posts
-        const url = `${buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID))}?${params}`
+        const url = `${API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID)}?${params}`
         console.log('Dashboard: Making request to:', url)
-        const response = await axios.get(url)
+        const response = await apiClient.get(url)
         
         if (response.data && response.data.data) {
           setPosts(response.data.data)

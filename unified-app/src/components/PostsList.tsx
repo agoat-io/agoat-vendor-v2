@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
+import apiClient from '../config/axios'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Post } from '../types'
@@ -99,9 +99,9 @@ const PostsList: React.FC<PostsListProps> = ({
         params.append('published', 'true')
       }
       
-      const url = `${apiUrl}/sites/18c6498d-f738-4c9f-aefd-d66bec11d751/posts?${params}`
+      const url = `/sites/18c6498d-f738-4c9f-aefd-d66bec11d751/posts?${params}`
       console.log('PostsList: Making request to:', url)
-      const response = await axios.get(url)
+      const response = await apiClient.get(url)
       
       if (response.data && response.data.data) {
         setPosts(response.data.data)

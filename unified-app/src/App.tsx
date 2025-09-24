@@ -12,6 +12,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './components/ThemeProvider'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import EditPost from './pages/EditPost'
+import GlobalErrorToast from './components/GlobalErrorToast'
 
 function Header() {
   const location = useLocation()
@@ -141,6 +142,7 @@ function App() {
         <ThemeProvider>
           <Theme>
             <AppContent />
+            <GlobalErrorToast />
           </Theme>
         </ThemeProvider>
       </AuthProvider>

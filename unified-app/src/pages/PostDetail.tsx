@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import apiClient from '../config/axios'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Post } from '../types'
@@ -43,7 +43,7 @@ const PostDetail: React.FC = () => {
       setError('')
 
       try {
-        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)))
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id))
         
         if (response.data && response.data.data) {
           setPost(response.data.data)

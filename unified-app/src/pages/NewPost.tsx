@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import apiClient from '../config/axios'
+import logger from '../utils/logger'
 import { 
   Box, 
   Heading, 
@@ -54,8 +55,15 @@ export default function NewPost() {
   }, [hasUnsavedChanges])
 
   const handleSave = async (content: string, title: string, isDraft: boolean) => {
+    logger.info('NewPost', 'save', 'Attempting to save post', {
+      title,
+      isDraft,
+      contentLength: content.length,
+      hasUnsavedChanges: hasUnsavedChanges
+    })
+
     try {
-      const response = await axios.post(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID)), {
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID), {
         title,
         content,
         published: !isDraft
@@ -63,19 +71,45 @@ export default function NewPost() {
 
       if (response.data && response.data.data) {
         setHasUnsavedChanges(false)
+        
+        logger.info('NewPost', 'save', 'Post saved successfully', {
+          postId: response.data.data.id,
+          title,
+          isDraft,
+          published: !isDraft
+        })
+        
         return response.data.data
       } else {
+        logger.warning('NewPost', 'save', 'Save response missing data', {
+          response: response.data
+        })
         throw new Error('Failed to save post')
       }
     } catch (err: any) {
-      console.error('Error saving post:', err)
-      throw new Error(err.response?.data?.message || 'Failed to save post')
+      const errorMessage = err.response?.data?.message || 'Failed to save post'
+      
+      logger.error('NewPost', 'save', 'Failed to save post', {
+        title,
+        isDraft,
+        error: errorMessage,
+        responseStatus: err.response?.status,
+        responseData: err.response?.data
+      })
+      
+      throw new Error(errorMessage)
     }
   }
 
   const handlePublish = async (content: string, title: string) => {
+    logger.info('NewPost', 'publish', 'Attempting to publish post', {
+      title,
+      contentLength: content.length,
+      hasUnsavedChanges: hasUnsavedChanges
+    })
+
     try {
-      const response = await axios.post(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID)), {
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID), {
         title,
         content,
         published: true
@@ -83,15 +117,33 @@ export default function NewPost() {
 
       if (response.data && response.data.data) {
         setHasUnsavedChanges(false)
+        
+        logger.info('NewPost', 'publish', 'Post published successfully', {
+          postId: response.data.data.id,
+          title,
+          published: true
+        })
+        
         // Navigate to the published post
         navigate(`/post/${response.data.data.id}`)
         return response.data.data
       } else {
+        logger.warning('NewPost', 'publish', 'Publish response missing data', {
+          response: response.data
+        })
         throw new Error('Failed to publish post')
       }
     } catch (err: any) {
-      console.error('Error publishing post:', err)
-      throw new Error(err.response?.data?.message || 'Failed to publish post')
+      const errorMessage = err.response?.data?.message || 'Failed to publish post'
+      
+      logger.error('NewPost', 'publish', 'Failed to publish post', {
+        title,
+        error: errorMessage,
+        responseStatus: err.response?.status,
+        responseData: err.response?.data
+      })
+      
+      throw new Error(errorMessage)
     }
   }
 

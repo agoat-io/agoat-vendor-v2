@@ -5,16 +5,105 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 )
+
+// Log levels
+const (
+	DEBUG   = "DEBUG"
+	INFO    = "INFO"
+	WARNING = "WARNING"
+	ERROR   = "ERROR"
+)
+
+// Structured logger
+type Logger struct {
+	level string
+}
+
+func (l *Logger) log(level, component, action, message string, fields map[string]interface{}) {
+	if l.shouldLog(level) {
+		// Generate unique GUID for each log entry
+		logID := uuid.New().String()
+
+		logEntry := map[string]interface{}{
+			"log_id":    logID,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"level":     level,
+			"component": component,
+			"action":    action,
+			"message":   message,
+		}
+
+		// Add custom fields
+		for k, v := range fields {
+			logEntry[k] = v
+		}
+
+		// Convert to JSON for structured logging
+		if jsonData, err := json.Marshal(logEntry); err == nil {
+			log.Printf("%s", string(jsonData))
+		} else {
+			// Fallback to simple logging if JSON fails
+			log.Printf("[%s] %s: %s - %s (LogID: %s)", level, component, action, message, logID)
+		}
+	}
+}
+
+func (l *Logger) shouldLog(level string) bool {
+	levels := map[string]int{
+		DEBUG:   0,
+		INFO:    1,
+		WARNING: 2,
+		ERROR:   3,
+	}
+
+	requestedLevel := levels[level]
+	currentLevel := levels[l.level]
+
+	return requestedLevel >= currentLevel
+}
+
+func (l *Logger) Debug(component, action, message string, fields map[string]interface{}) {
+	l.log(DEBUG, component, action, message, fields)
+}
+
+func (l *Logger) Info(component, action, message string, fields map[string]interface{}) {
+	l.log(INFO, component, action, message, fields)
+}
+
+func (l *Logger) Warning(component, action, message string, fields map[string]interface{}) {
+	l.log(WARNING, component, action, message, fields)
+}
+
+func (l *Logger) Error(component, action, message string, fields map[string]interface{}) {
+	l.log(ERROR, component, action, message, fields)
+}
+
+// Business and technical error types
+type BusinessError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details,omitempty"`
+	ErrorID string `json:"error_id"`
+}
+
+type TechnicalError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details,omitempty"`
+	ErrorID string `json:"error_id"`
+}
 
 // Updated structs for multitenancy
 type User struct {
@@ -117,10 +206,11 @@ type LoginResponse struct {
 }
 
 type APIResponse struct {
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
-	Meta    *APIMeta    `json:"meta,omitempty"`
+	Success bool          `json:"success"`
+	Data    interface{}   `json:"data,omitempty"`
+	Error   interface{}   `json:"error,omitempty"`
+	Errors  []interface{} `json:"errors,omitempty"`
+	Meta    *APIMeta      `json:"meta,omitempty"`
 }
 
 type APIMeta struct {
@@ -351,6 +441,7 @@ type App struct {
 	posts    PostRepository
 	sites    SiteRepository
 	sessions *sessions.CookieStore
+	logger   *Logger
 }
 
 func NewApp(config *Config) (*App, error) {
@@ -359,18 +450,43 @@ func NewApp(config *Config) (*App, error) {
 		return nil, err
 	}
 
+	// Get log level from environment, default to INFO
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "INFO"
+	}
+
 	app := &App{
 		config:   config,
 		db:       db,
 		posts:    &SQLPostRepository{db: db},
 		sites:    &SQLSiteRepository{db: db},
 		sessions: sessions.NewCookieStore([]byte(config.Session.Secret)),
+		logger:   &Logger{level: logLevel},
 	}
 
 	return app, nil
 }
 
 // Helper functions
+func generateErrorResponse(errorType interface{}, errorID string) APIResponse {
+	return APIResponse{
+		Success: false,
+		Error:   errorType,
+		Errors:  []interface{}{errorType},
+	}
+}
+
+// validate post status against DB CHECK constraint
+func isValidPostStatus(status string) bool {
+	switch status {
+	case "draft", "published", "archived", "deleted":
+		return true
+	default:
+		return false
+	}
+}
+
 func slugify(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")
@@ -436,6 +552,10 @@ func loadConfig() (*Config, error) {
 func (app *App) statusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	app.logger.Info("status", "check", "Health check requested", map[string]interface{}{
+		"global_ip": r.RemoteAddr,
+	})
+
 	status := map[string]interface{}{
 		"status":    "healthy",
 		"timestamp": time.Now().Format(time.RFC3339),
@@ -444,6 +564,12 @@ func (app *App) statusHandler(w http.ResponseWriter, r *http.Request) {
 			"enabled": app.config.API.Enabled,
 		},
 	}
+
+	app.logger.Info("status", "check", "Health check completed", map[string]interface{}{
+		"context": map[string]interface{}{
+			"status": "healthy",
+		},
+	})
 
 	json.NewEncoder(w).Encode(APIResponse{
 		Success: true,
@@ -613,6 +739,15 @@ func (app *App) postsHandler(w http.ResponseWriter, r *http.Request) {
 			publishedOnly = true
 		}
 
+		app.logger.Info("posts", "list", "Fetching posts", map[string]interface{}{
+			"context": map[string]interface{}{
+				"site_id":        siteID,
+				"page":           page,
+				"per_page":       perPage,
+				"published_only": publishedOnly,
+			},
+		})
+
 		offset := (page - 1) * perPage
 		var posts []Post
 		var err error
@@ -627,13 +762,35 @@ func (app *App) postsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   err.Error(),
+			errorID := uuid.New().String()
+			app.logger.Error("posts", "list", "Failed to fetch posts", map[string]interface{}{
+				"context": map[string]interface{}{
+					"site_id":  siteID,
+					"page":     page,
+					"per_page": perPage,
+					"error":    err.Error(),
+					"error_id": errorID,
+				},
 			})
+
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(generateErrorResponse(TechnicalError{
+				Code:    "DATABASE_ERROR",
+				Message: "Failed to fetch posts",
+				Details: "A technical error occurred while retrieving posts",
+				ErrorID: errorID,
+			}, errorID))
 			return
 		}
+
+		app.logger.Info("posts", "list", "Posts fetched successfully", map[string]interface{}{
+			"context": map[string]interface{}{
+				"site_id": siteID,
+				"count":   len(posts),
+				"page":    page,
+				"total":   total,
+			},
+		})
 
 		totalPages := (total + perPage - 1) / perPage
 		json.NewEncoder(w).Encode(APIResponse{
@@ -650,16 +807,59 @@ func (app *App) postsHandler(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		var post Post
 		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   "Invalid request body",
+			errorID := uuid.New().String()
+			app.logger.Error("posts", "create", "Failed to decode request body", map[string]interface{}{
+				"context": map[string]interface{}{
+					"site_id":  siteID,
+					"error":    err.Error(),
+					"error_id": errorID,
+				},
 			})
+
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(generateErrorResponse(BusinessError{
+				Code:    "INVALID_REQUEST",
+				Message: "Invalid request body",
+				Details: "The request body could not be parsed",
+				ErrorID: errorID,
+			}, errorID))
 			return
 		}
 
 		post.SiteID = siteID
-		post.UserID = "default-user-id" // This should come from auth
+
+		// Read user ID from authentication header
+		userID := r.Header.Get("X-User-ID")
+		if userID == "" {
+			errorID := uuid.New().String()
+			app.logger.Warning("posts", "create", "Missing user ID in request", map[string]interface{}{
+				"context": map[string]interface{}{
+					"site_id":  siteID,
+					"headers":  r.Header,
+					"error_id": errorID,
+				},
+			})
+
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(generateErrorResponse(BusinessError{
+				Code:    "AUTHENTICATION_REQUIRED",
+				Message: "User ID required",
+				Details: "Please provide X-User-ID header for authentication",
+				ErrorID: errorID,
+			}, errorID))
+			return
+		}
+
+		app.logger.Info("posts", "create", "Attempting to create post", map[string]interface{}{
+			"context": map[string]interface{}{
+				"site_id": siteID,
+				"user_id": userID,
+				"title":   post.Title,
+				"status":  post.Status,
+			},
+		})
+
+		post.UserID = userID
 		if post.Status == "" {
 			post.Status = "draft"
 		}
@@ -668,13 +868,36 @@ func (app *App) postsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := app.posts.Create(&post); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   err.Error(),
+			errorID := uuid.New().String()
+			app.logger.Error("posts", "create", "Failed to create post in database", map[string]interface{}{
+				"context": map[string]interface{}{
+					"site_id":  siteID,
+					"user_id":  userID,
+					"title":    post.Title,
+					"error":    err.Error(),
+					"error_id": errorID,
+				},
 			})
+
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(generateErrorResponse(TechnicalError{
+				Code:    "DATABASE_ERROR",
+				Message: "Failed to create post",
+				Details: "A technical error occurred while saving the post",
+				ErrorID: errorID,
+			}, errorID))
 			return
 		}
+
+		app.logger.Info("posts", "create", "Post created successfully", map[string]interface{}{
+			"context": map[string]interface{}{
+				"site_id": siteID,
+				"user_id": userID,
+				"post_id": post.ID,
+				"title":   post.Title,
+				"status":  post.Status,
+			},
+		})
 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(APIResponse{
@@ -720,11 +943,22 @@ func (app *App) postHandler(w http.ResponseWriter, r *http.Request) {
 	case "PUT":
 		var post Post
 		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   "Invalid request body",
+			errorID := uuid.New().String()
+			app.logger.Error("posts", "update", "Failed to decode request body", map[string]interface{}{
+				"context": map[string]interface{}{
+					"post_id":  id,
+					"site_id":  siteID,
+					"error":    err.Error(),
+					"error_id": errorID,
+				},
 			})
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(generateErrorResponse(BusinessError{
+				Code:    "INVALID_REQUEST",
+				Message: "Invalid request body",
+				Details: "The request body could not be parsed",
+				ErrorID: errorID,
+			}, errorID))
 			return
 		}
 
@@ -734,12 +968,50 @@ func (app *App) postHandler(w http.ResponseWriter, r *http.Request) {
 			post.Slug = slugify(post.Title)
 		}
 
-		if err := app.posts.Update(&post); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(APIResponse{
-				Success: false,
-				Error:   err.Error(),
+		// Default and validate status to satisfy DB CHECK constraint
+		if post.Status == "" {
+			post.Status = "draft"
+		}
+		if !isValidPostStatus(post.Status) {
+			errorID := uuid.New().String()
+			app.logger.Warning("posts", "update", "Invalid status provided", map[string]interface{}{
+				"context": map[string]interface{}{
+					"post_id":  id,
+					"site_id":  siteID,
+					"status":   post.Status,
+					"error_id": errorID,
+				},
 			})
+
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(generateErrorResponse(BusinessError{
+				Code:    "INVALID_STATUS",
+				Message: "Invalid post status",
+				Details: "Status must be one of: draft, published, archived, deleted",
+				ErrorID: errorID,
+			}, errorID))
+			return
+		}
+
+		if err := app.posts.Update(&post); err != nil {
+			errorID := uuid.New().String()
+			app.logger.Error("posts", "update", "Failed to update post in database", map[string]interface{}{
+				"context": map[string]interface{}{
+					"post_id":   id,
+					"site_id":   siteID,
+					"status":    post.Status,
+					"published": post.Published,
+					"error":     err.Error(),
+					"error_id":  errorID,
+				},
+			})
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(generateErrorResponse(TechnicalError{
+				Code:    "DATABASE_ERROR",
+				Message: "Failed to update post",
+				Details: "A technical error occurred while updating the post",
+				ErrorID: errorID,
+			}, errorID))
 			return
 		}
 
@@ -773,18 +1045,124 @@ func (app *App) postBySlugHandler(w http.ResponseWriter, r *http.Request) {
 
 	post, err := app.posts.GetBySlug(slug, siteID)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(APIResponse{
-			Success: false,
-			Error:   "Post not found",
+		errorID := uuid.New().String()
+		app.logger.Warning("posts", "get_by_slug", "Post not found", map[string]interface{}{
+			"context": map[string]interface{}{
+				"slug":     slug,
+				"site_id":  siteID,
+				"error_id": errorID,
+			},
 		})
+
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(generateErrorResponse(BusinessError{
+			Code:    "POST_NOT_FOUND",
+			Message: "Post not found",
+			Details: "The requested post could not be found",
+			ErrorID: errorID,
+		}, errorID))
 		return
 	}
+
+	app.logger.Info("posts", "get_by_slug", "Post retrieved successfully", map[string]interface{}{
+		"context": map[string]interface{}{
+			"slug":    slug,
+			"site_id": siteID,
+			"post_id": post.ID,
+		},
+	})
 
 	json.NewEncoder(w).Encode(APIResponse{
 		Success: true,
 		Data:    post,
 	})
+}
+
+func (app *App) loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		app.logger.Warning("auth", "login", "Invalid HTTP method", map[string]interface{}{
+			"method": r.Method,
+			"ip":     r.RemoteAddr,
+		})
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var loginData struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
+		errorID := uuid.New().String()
+		app.logger.Error("auth", "login", "Failed to decode login request", map[string]interface{}{
+			"global_ip": r.RemoteAddr,
+			"context": map[string]interface{}{
+				"error":    err.Error(),
+				"error_id": errorID,
+			},
+		})
+
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(generateErrorResponse(BusinessError{
+			Code:    "INVALID_REQUEST",
+			Message: "Invalid request body",
+			Details: "The login request could not be parsed",
+			ErrorID: errorID,
+		}, errorID))
+		return
+	}
+
+	app.logger.Info("auth", "login", "Login attempt", map[string]interface{}{
+		"global_ip": r.RemoteAddr,
+		"context": map[string]interface{}{
+			"username": loginData.Username,
+		},
+	})
+
+	// Simple authentication logic (replace with proper auth)
+	if loginData.Username == "admin" && loginData.Password == "admin123" {
+		session, _ := app.sessions.Get(r, "session-name")
+		session.Values["authenticated"] = true
+		session.Values["username"] = loginData.Username
+		session.Save(r, w)
+
+		app.logger.Info("auth", "login", "Login successful", map[string]interface{}{
+			"global_ip": r.RemoteAddr,
+			"context": map[string]interface{}{
+				"username": loginData.Username,
+				"role":     "admin",
+			},
+		})
+
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data: map[string]interface{}{
+				"message": "Login successful",
+				"user": map[string]interface{}{
+					"username": loginData.Username,
+					"role":     "admin",
+				},
+			},
+		})
+	} else {
+		errorID := uuid.New().String()
+		app.logger.Warning("auth", "login", "Invalid credentials", map[string]interface{}{
+			"global_ip": r.RemoteAddr,
+			"context": map[string]interface{}{
+				"username": loginData.Username,
+				"error_id": errorID,
+			},
+		})
+
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(generateErrorResponse(BusinessError{
+			Code:    "INVALID_CREDENTIALS",
+			Message: "Invalid credentials",
+			Details: "The username or password is incorrect",
+			ErrorID: errorID,
+		}, errorID))
+	}
 }
 
 func main() {
@@ -803,6 +1181,15 @@ func main() {
 	}
 	defer app.db.Close()
 
+	// Log startup information
+	app.logger.Info("main", "startup", "Server starting", map[string]interface{}{
+		"context": map[string]interface{}{
+			"port":        config.Server.Port,
+			"log_level":   app.logger.level,
+			"api_enabled": config.API.Enabled,
+		},
+	})
+
 	router := mux.NewRouter()
 
 	// API routes
@@ -813,12 +1200,22 @@ func main() {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-ID, X-User-Role")
 
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
+
+			// Log all incoming requests
+			app.logger.Info("http", "request", "Incoming request", map[string]interface{}{
+				"global_ip": r.RemoteAddr,
+				"context": map[string]interface{}{
+					"method":     r.Method,
+					"path":       r.URL.Path,
+					"user_agent": r.UserAgent(),
+				},
+			})
 
 			next.ServeHTTP(w, r)
 		})
@@ -826,14 +1223,26 @@ func main() {
 
 	// API endpoints
 	api.HandleFunc("/status", app.statusHandler).Methods("GET")
+	api.HandleFunc("/login", app.loginHandler).Methods("POST")
 	api.HandleFunc("/sites", app.sitesHandler).Methods("GET", "POST")
 	api.HandleFunc("/sites/{id}", app.siteHandler).Methods("GET", "PUT", "DELETE")
 	api.HandleFunc("/sites/{siteId}/posts", app.postsHandler).Methods("GET", "POST")
 	api.HandleFunc("/sites/{siteId}/posts/{id}", app.postHandler).Methods("GET", "PUT", "DELETE")
 	api.HandleFunc("/sites/{siteId}/posts/slug/{slug}", app.postBySlugHandler).Methods("GET")
 
+	app.logger.Info("main", "startup", "Server ready to accept connections", map[string]interface{}{
+		"context": map[string]interface{}{
+			"port": config.Server.Port,
+		},
+	})
+
 	fmt.Printf("Server starting on port %s\n", config.Server.Port)
 	if err := http.ListenAndServe(":"+config.Server.Port, router); err != nil {
+		app.logger.Error("main", "startup", "HTTP server error", map[string]interface{}{
+			"context": map[string]interface{}{
+				"error": err.Error(),
+			},
+		})
 		fmt.Printf("HTTP server error: %v\n", err)
 		os.Exit(1)
 	}

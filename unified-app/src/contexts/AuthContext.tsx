@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import logger from '../utils/logger'
 
 interface User {
   id: string
@@ -40,9 +41,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const userData = JSON.parse(savedUser)
           setUser(userData)
+          
+          logger.info('AuthContext', 'session_check', 'Existing session found', {
+            username: userData.username,
+            role: userData.role,
+            timestamp: new Date().toISOString()
+          })
         } catch (error) {
+          logger.error('AuthContext', 'session_check', 'Failed to parse saved user data', {
+            error: error instanceof Error ? error.message : String(error),
+            timestamp: new Date().toISOString()
+          })
           localStorage.removeItem('auth_user')
         }
+      } else {
+        logger.info('AuthContext', 'session_check', 'No existing session found', {
+          timestamp: new Date().toISOString()
+        })
       }
       setIsLoading(false)
     }
@@ -84,6 +99,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const logout = () => {
+    if (user) {
+      logger.info('AuthContext', 'logout', 'User logged out', {
+        username: user.username,
+        role: user.role,
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     setUser(null)
     localStorage.removeItem('auth_user')
   }
