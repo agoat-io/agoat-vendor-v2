@@ -13,7 +13,7 @@ import {
 } from '@radix-ui/themes'
 import { ArrowLeftIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
-import { useAuth } from '../contexts/AuthContext'
+import { useAzureAuth } from '../contexts/AzureAuthContext'
 import WysimarkEditor from '../components/WysimarkEditor'
 import { Post } from '../types'
 
@@ -25,7 +25,7 @@ export default function EditPost() {
   const [error, setError] = useState('')
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated } = useAzureAuth()
 
   // Redirect if not authenticated or not authorized
   useEffect(() => {

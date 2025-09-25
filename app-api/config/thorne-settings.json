@@ -1,0 +1,37 @@
+{
+  "settings": {
+    "site_name": "Professional Health Supplements",
+    "practitioner_name": "Dr. Sarah Johnson",
+    "practitioner_credentials": "MD, Integrative Medicine",
+    "contact_email": "info@professionalhealthsupplements.com",
+    "phone": "(555) 123-4567",
+    "address": {
+      "street": "123 Health Plaza",
+      "city": "Miami",
+      "state": "FL",
+      "zip": "33101"
+    },
+    "business_hours": {
+      "monday": "9:00 AM - 5:00 PM",
+      "tuesday": "9:00 AM - 5:00 PM",
+      "wednesday": "9:00 AM - 5:00 PM",
+      "thursday": "9:00 AM - 5:00 PM",
+      "friday": "9:00 AM - 5:00 PM",
+      "saturday": "10:00 AM - 2:00 PM",
+      "sunday": "Closed"
+    },
+    "compliance": {
+      "medical_disclaimer": "This content is for educational purposes only and not intended to diagnose, treat, cure, or prevent any disease. Please consult with your healthcare provider before starting any supplement regimen.",
+      "authorized_seller_notice": "As an Authorized Seller of Thorne, I provide practitioner-only access to professional-grade supplements. Purchases are either fulfilled directly by me as your practitioner, or through Thorne's Patient Express/Web Elite systems. I may receive compensation for these purchases.",
+      "satisfaction_guarantee": "All Thorne products come with a 60-day satisfaction guarantee. If you're not completely satisfied with your purchase, you can return it for a full refund, replacement, or store credit.",
+      "return_policy": "Products must be returned in original, sealed bottles. Please contact your practitioner for return instructions."
+    },
+    "features": {
+      "enable_direct_fulfillment": true,
+      "enable_thorne_express": true,
+      "require_patient_approval": true,
+      "show_wholesale_pricing": false,
+      "enable_order_tracking": true
+    }
+  }
+}

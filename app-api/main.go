@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"agoat.io/agoat-publisher/handlers"
+	"agoat.io/agoat-publisher/services"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -436,12 +438,15 @@ func (r *SQLSiteRepository) Delete(id string) error {
 
 // Main app structure
 type App struct {
-	config   *Config
-	db       *sql.DB
-	posts    PostRepository
-	sites    SiteRepository
-	sessions *sessions.CookieStore
-	logger   *Logger
+	config            *Config
+	db                *sql.DB
+	posts             PostRepository
+	sites             SiteRepository
+	sessions          *sessions.CookieStore
+	logger            *Logger
+	thorneService     *services.ThorneService
+	thorneHandlers    *handlers.ThorneHandlers
+	azureAuthHandlers *handlers.AzureAuthHandlers
 }
 
 func NewApp(config *Config) (*App, error) {
@@ -456,13 +461,23 @@ func NewApp(config *Config) (*App, error) {
 		logLevel = "INFO"
 	}
 
+	// Initialize Thorne service
+	thorneService := services.NewThorneService("./config")
+	thorneHandlers := handlers.NewThorneHandlers(thorneService)
+
+	// Initialize Azure authentication handlers
+	azureAuthHandlers := handlers.NewAzureAuthHandlers(db)
+
 	app := &App{
-		config:   config,
-		db:       db,
-		posts:    &SQLPostRepository{db: db},
-		sites:    &SQLSiteRepository{db: db},
-		sessions: sessions.NewCookieStore([]byte(config.Session.Secret)),
-		logger:   &Logger{level: logLevel},
+		config:            config,
+		db:                db,
+		posts:             &SQLPostRepository{db: db},
+		sites:             &SQLSiteRepository{db: db},
+		sessions:          sessions.NewCookieStore([]byte(config.Session.Secret)),
+		logger:            &Logger{level: logLevel},
+		thorneService:     thorneService,
+		thorneHandlers:    thorneHandlers,
+		azureAuthHandlers: azureAuthHandlers,
 	}
 
 	return app, nil
@@ -1229,6 +1244,28 @@ func main() {
 	api.HandleFunc("/sites/{siteId}/posts", app.postsHandler).Methods("GET", "POST")
 	api.HandleFunc("/sites/{siteId}/posts/{id}", app.postHandler).Methods("GET", "PUT", "DELETE")
 	api.HandleFunc("/sites/{siteId}/posts/slug/{slug}", app.postBySlugHandler).Methods("GET")
+
+	// Thorne API endpoints
+	api.HandleFunc("/thorne/products", app.thorneHandlers.GetProducts).Methods("GET")
+	api.HandleFunc("/thorne/products/{id}", app.thorneHandlers.GetProduct).Methods("GET")
+	api.HandleFunc("/thorne/categories", app.thorneHandlers.GetCategories).Methods("GET")
+	api.HandleFunc("/thorne/categories/{id}", app.thorneHandlers.GetCategory).Methods("GET")
+	api.HandleFunc("/thorne/products/category/{id}", app.thorneHandlers.GetProductsByCategory).Methods("GET")
+	api.HandleFunc("/thorne/patients", app.thorneHandlers.GetPatients).Methods("GET")
+	api.HandleFunc("/thorne/patients/{id}", app.thorneHandlers.GetPatient).Methods("GET")
+	api.HandleFunc("/thorne/register", app.thorneHandlers.RegisterPatient).Methods("POST")
+	api.HandleFunc("/thorne/orders", app.thorneHandlers.GetOrders).Methods("GET")
+	api.HandleFunc("/thorne/orders/patient/{id}", app.thorneHandlers.GetOrdersByPatient).Methods("GET")
+	api.HandleFunc("/thorne/orders", app.thorneHandlers.CreateOrder).Methods("POST")
+	api.HandleFunc("/thorne/settings", app.thorneHandlers.GetSettings).Methods("GET")
+	api.HandleFunc("/thorne/search", app.thorneHandlers.SearchProducts).Methods("GET")
+	api.HandleFunc("/thorne/stats", app.thorneHandlers.GetProductStats).Methods("GET")
+
+	// Azure Authentication API endpoints
+	api.HandleFunc("/auth/azure-user", app.azureAuthHandlers.CreateOrUpdateUser).Methods("POST")
+	api.HandleFunc("/auth/verify-token", app.azureAuthHandlers.VerifyToken).Methods("POST")
+	api.HandleFunc("/auth/user/{id}", app.azureAuthHandlers.GetUserInfo).Methods("GET")
+	api.HandleFunc("/auth/azure-config", app.azureAuthHandlers.GetAzureConfig).Methods("GET")
 
 	app.logger.Info("main", "startup", "Server ready to accept connections", map[string]interface{}{
 		"context": map[string]interface{}{

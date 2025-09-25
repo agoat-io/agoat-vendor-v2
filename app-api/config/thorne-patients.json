@@ -1,0 +1,31 @@
+{
+  "patients": [
+    {
+      "id": "patient-001",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "health_goals": "Immune support and energy optimization",
+      "approved": true,
+      "registration_date": "2024-01-15T10:30:00Z",
+      "last_login": "2024-01-20T14:22:00Z"
+    },
+    {
+      "id": "patient-002",
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "health_goals": "Recovery and sports performance",
+      "approved": true,
+      "registration_date": "2024-01-10T09:15:00Z",
+      "last_login": "2024-01-19T16:45:00Z"
+    },
+    {
+      "id": "patient-003",
+      "name": "Bob Johnson",
+      "email": "bob.johnson@example.com",
+      "health_goals": "Cognitive health and memory support",
+      "approved": false,
+      "registration_date": "2024-01-18T11:20:00Z",
+      "last_login": null
+    }
+  ]
+}

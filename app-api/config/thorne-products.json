@@ -1,0 +1,126 @@
+{
+  "products": [
+    {
+      "id": "1",
+      "name": "Basic Nutrients 2/Day",
+      "description": "Comprehensive multivitamin with essential nutrients for daily health support",
+      "category": "immune",
+      "image_url": "/images/basic-nutrients.jpg",
+      "wholesale_price": 25.00,
+      "retail_price": 35.00,
+      "sku": "THN001",
+      "in_stock": true,
+      "benefits": [
+        "Essential vitamins and minerals",
+        "Antioxidant support",
+        "Immune system support",
+        "Energy metabolism"
+      ],
+      "ingredients": [
+        "Vitamin A", "Vitamin C", "Vitamin D3", "Vitamin E", "B-Complex vitamins",
+        "Calcium", "Magnesium", "Zinc", "Selenium"
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Vitamin D/K2 Liquid",
+      "description": "High-potency vitamin D3 with K2 for bone health and immune support",
+      "category": "immune",
+      "image_url": "/images/vitamin-d-k2.jpg",
+      "wholesale_price": 18.00,
+      "retail_price": 28.00,
+      "sku": "THN002",
+      "in_stock": true,
+      "benefits": [
+        "Bone health support",
+        "Immune system function",
+        "Calcium absorption",
+        "Cardiovascular health"
+      ],
+      "ingredients": [
+        "Vitamin D3 (Cholecalciferol)", "Vitamin K2 (MK-7)", "Medium Chain Triglycerides"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Omega-3 with CoQ10",
+      "description": "Premium fish oil with CoQ10 for heart health and energy",
+      "category": "energy",
+      "image_url": "/images/omega-3.jpg",
+      "wholesale_price": 32.00,
+      "retail_price": 45.00,
+      "sku": "THN003",
+      "in_stock": true,
+      "benefits": [
+        "Heart health support",
+        "Energy production",
+        "Anti-inflammatory properties",
+        "Cognitive function"
+      ],
+      "ingredients": [
+        "EPA (Eicosapentaenoic Acid)", "DHA (Docosahexaenoic Acid)", "CoQ10", "Natural Lemon Flavor"
+      ]
+    },
+    {
+      "id": "4",
+      "name": "Magnesium Bisglycinate",
+      "description": "Highly absorbable magnesium for muscle relaxation and sleep support",
+      "category": "recovery",
+      "image_url": "/images/magnesium.jpg",
+      "wholesale_price": 22.00,
+      "retail_price": 32.00,
+      "sku": "THN004",
+      "in_stock": true,
+      "benefits": [
+        "Muscle relaxation",
+        "Sleep quality",
+        "Stress management",
+        "Bone health"
+      ],
+      "ingredients": [
+        "Magnesium Bisglycinate Chelate", "Microcrystalline Cellulose", "Vegetable Capsule"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Phosphatidylserine",
+      "description": "Brain health supplement for memory and cognitive function",
+      "category": "cognitive",
+      "image_url": "/images/phosphatidylserine.jpg",
+      "wholesale_price": 28.00,
+      "retail_price": 42.00,
+      "sku": "THN005",
+      "in_stock": true,
+      "benefits": [
+        "Memory support",
+        "Cognitive function",
+        "Stress response",
+        "Focus and concentration"
+      ],
+      "ingredients": [
+        "Phosphatidylserine (from Sunflower Lecithin)", "Microcrystalline Cellulose", "Vegetable Capsule"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Probiotic-5",
+      "description": "Five-strain probiotic for digestive and immune health",
+      "category": "digestive",
+      "image_url": "/images/probiotic.jpg",
+      "wholesale_price": 24.00,
+      "retail_price": 36.00,
+      "sku": "THN006",
+      "in_stock": true,
+      "benefits": [
+        "Digestive health",
+        "Immune system support",
+        "Gut microbiome balance",
+        "Nutrient absorption"
+      ],
+      "ingredients": [
+        "Lactobacillus acidophilus", "Bifidobacterium bifidum", "Lactobacillus casei",
+        "Lactobacillus rhamnosus", "Bifidobacterium longum", "Prebiotic Fiber"
+      ]
+    }
+  ]
+}

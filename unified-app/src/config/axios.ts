@@ -4,7 +4,7 @@ import eventBus from '../utils/eventBus'
 
 // Create axios instance with base configuration
 const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: '',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

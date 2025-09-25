@@ -1,0 +1,82 @@
+{
+  "categories": [
+    {
+      "id": "immune",
+      "name": "Immune Support",
+      "description": "Strengthen your body's natural defense system with science-backed supplements",
+      "icon": "shield",
+      "benefits": [
+        "Enhanced immune function",
+        "Antioxidant support",
+        "Seasonal wellness",
+        "Inflammation support"
+      ],
+      "color": "blue"
+    },
+    {
+      "id": "energy",
+      "name": "Energy & Vitality",
+      "description": "Boost your energy levels and combat fatigue naturally",
+      "icon": "zap",
+      "benefits": [
+        "Increased energy",
+        "Reduced fatigue",
+        "Better stamina",
+        "Metabolic support"
+      ],
+      "color": "yellow"
+    },
+    {
+      "id": "recovery",
+      "name": "Recovery & Performance",
+      "description": "Support your body's recovery and optimize athletic performance",
+      "icon": "heart",
+      "benefits": [
+        "Faster recovery",
+        "Muscle support",
+        "Joint health",
+        "Exercise performance"
+      ],
+      "color": "red"
+    },
+    {
+      "id": "cognitive",
+      "name": "Cognitive Health",
+      "description": "Support brain function, memory, and mental clarity",
+      "icon": "star",
+      "benefits": [
+        "Memory support",
+        "Mental clarity",
+        "Focus enhancement",
+        "Neuroprotection"
+      ],
+      "color": "purple"
+    },
+    {
+      "id": "sports",
+      "name": "Sports Performance",
+      "description": "Enhance athletic performance and recovery",
+      "icon": "star",
+      "benefits": [
+        "Performance optimization",
+        "Recovery acceleration",
+        "Endurance support",
+        "Strength building"
+      ],
+      "color": "green"
+    },
+    {
+      "id": "digestive",
+      "name": "Digestive Health",
+      "description": "Support digestive function and gut health",
+      "icon": "heart",
+      "benefits": [
+        "Digestive comfort",
+        "Gut microbiome balance",
+        "Nutrient absorption",
+        "Digestive enzyme support"
+      ],
+      "color": "orange"
+    }
+  ]
+}

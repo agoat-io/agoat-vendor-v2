@@ -14,13 +14,13 @@ import {
 import { CalendarIcon, PersonIcon, ArrowRightIcon, PlusIcon } from '@radix-ui/react-icons'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
-import { useAuth } from '../contexts/AuthContext'
+import { useAzureAuth } from '../contexts/AzureAuthContext'
 
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated } = useAzureAuth()
 
   // Fetch posts
   useEffect(() => {
@@ -35,13 +35,11 @@ export default function Home() {
           published: 'true'
         })
 
-        const url = `${API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID)}?${params}`
-        console.log('Home: Making request to:', url)
+        const url = `${buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POSTS(DEFAULT_SITE_ID))}?${params}`
         const response = await apiClient.get(url)
         
         if (response.data && response.data.data) {
           setPosts(response.data.data)
-          console.log('Home: Loaded posts:', response.data.data.length)
         } else {
           setPosts([])
         }
@@ -101,15 +99,72 @@ export default function Home() {
   return (
     <Container>
       <Box mb="6">
-        <Heading size="8" mb="2">Welcome to AGoat Blog</Heading>
+        <Heading size="8" mb="2">Welcome to topvitaminsupplies.com</Heading>
         <Text size="4" color="gray" mb="4">
-          Discover the latest insights and stories from our community
+          Professional-grade supplements and practitioner resources
         </Text>
+        
+        {/* Practitioner Access CTA */}
+        <Card mb="4" style={{ background: 'var(--green-2)' }}>
+          <Box p="4">
+            <Flex justify="between" align="center">
+              <Box>
+                <Heading size="4" mb="1">Practitioner Special Prices</Heading>
+                <Text size="3" color="gray">
+                  Log in or create account for access to exclusive practitioner pricing on Thorne supplements, including NSF Certified for Sport products with best practices
+                </Text>
+              </Box>
+              {!isAuthenticated ? (
+                <Link to="/login" style={{ textDecoration: 'none' }}>
+                  <Button size="3" style={{ 
+                    background: 'var(--green-9)', 
+                    color: 'white',
+                    padding: '12px 24px',
+                    minWidth: '160px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Create Account
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/thorne/education" style={{ textDecoration: 'none' }}>
+                  <Button size="3" style={{ background: 'var(--green-9)', color: 'white' }}>
+                    Access Practitioner Pricing
+                  </Button>
+                </Link>
+              )}
+            </Flex>
+          </Box>
+        </Card>
+        
+        {/* Thorne Supplements Info */}
+        <Card mb="4" style={{ background: 'var(--blue-2)' }}>
+          <Box p="4">
+            <Flex justify="between" align="center">
+              <Box>
+                <Heading size="4" mb="1">Quality Thorne Supplements</Heading>
+                <Text size="3" color="gray">
+                  Learn more about the quality of Thorne supplements
+                </Text>
+              </Box>
+              <Link to="/thorne/education" style={{ textDecoration: 'none' }}>
+                <Button size="3">
+                  Learn More
+                </Button>
+              </Link>
+            </Flex>
+          </Box>
+        </Card>
         {isAuthenticated && (
-          <Flex gap="3" mb="4">
-            <Text size="3" color="gray">
-              Welcome back, {user?.username}! ({user?.role})
-            </Text>
+          <Flex gap="3" mb="4" justify="between" align="center">
+            <Box>
+              <Text size="3" color="gray">
+                Welcome back, {user?.username}! ({user?.role})
+              </Text>
+              <Text size="2" color="green" style={{ fontWeight: '500' }}>
+                ✓ Access to practitioner special pricing enabled
+              </Text>
+            </Box>
             {(user?.role === 'admin' || user?.role === 'author') && (
               <Link to="/new-post" style={{ textDecoration: 'none' }}>
                 <Button>

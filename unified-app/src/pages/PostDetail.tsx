@@ -5,7 +5,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
-import { useAuth } from '../contexts/AuthContext'
+import { useAzureAuth } from '../contexts/AzureAuthContext'
 import { 
   Box, 
   Heading, 
@@ -26,11 +26,11 @@ const PostDetail: React.FC = () => {
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated } = useAzureAuth()
 
   // Check authentication status
   useEffect(() => {
-    // Authentication is now handled by the AuthContext
+    // Authentication is now handled by the AzureAuthContext
     // No need for local authentication checks here
   }, [])
 
@@ -43,18 +43,18 @@ const PostDetail: React.FC = () => {
       setError('')
 
       try {
-        const response = await apiClient.get(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id))
+        const url = buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id))
+        const response = await apiClient.get(url)
         
         if (response.data && response.data.data) {
           setPost(response.data.data)
           // Update page title
-          document.title = `${response.data.data.title} - AGoat Blog`
+          document.title = `${response.data.data.title} - topvitaminsupplies.com`
         } else {
           setError('Post not found')
         }
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to load post')
-        console.error('Error fetching post:', err)
       } finally {
         setLoading(false)
       }
@@ -134,7 +134,7 @@ const PostDetail: React.FC = () => {
         <Container>
           <Flex justify="between" align="center">
             <Box>
-              <Heading size="6" color="blue">AGoat Blog</Heading>
+              <Heading size="6" color="blue">topvitaminsupplies.com</Heading>
               <Text size="2" color="gray">Unified Publishing Platform</Text>
             </Box>
             <Flex gap="3" align="center">

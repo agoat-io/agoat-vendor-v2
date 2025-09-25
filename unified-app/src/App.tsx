@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { Theme, Container, Flex, Box, Heading, Button, Separator, Text } from '@radix-ui/themes'
 import '@radix-ui/themes/styles.css'
 import { Link, useLocation } from 'react-router-dom'
-import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon } from '@radix-ui/react-icons'
+import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon } from '@radix-ui/react-icons'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -10,13 +10,20 @@ import NewPost from './pages/NewPost'
 import PostDetail from './pages/PostDetail'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './components/ThemeProvider'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AzureAuthProvider, useAzureAuth } from './contexts/AzureAuthContext'
 import EditPost from './pages/EditPost'
 import GlobalErrorToast from './components/GlobalErrorToast'
+import ThorneEducation from './pages/ThorneEducation'
+import ThorneCategory from './pages/ThorneCategory'
+import ThorneRegistration from './pages/ThorneRegistration'
+import ThornePatientPortal from './pages/ThornePatientPortal'
+import ThorneCompliance from './pages/ThorneCompliance'
+import AuthCallback from './pages/AuthCallback'
+import AuthLogout from './pages/AuthLogout'
 
 function Header() {
   const location = useLocation()
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, logout } = useAzureAuth()
   
   return (
     <Box style={{ 
@@ -44,7 +51,7 @@ function Header() {
                 A
               </Box>
               <Heading size="5" style={{ color: 'var(--gray-12)' }}>
-                AGoat Blog
+                topvitaminsupplies.com
               </Heading>
             </Flex>
           </Link>
@@ -54,6 +61,12 @@ function Header() {
               <Button variant={location.pathname === '/' ? 'solid' : 'ghost'} size="2">
                 <HomeIcon />
                 Home
+              </Button>
+            </Link>
+            <Link to="/thorne/education" style={{ textDecoration: 'none' }}>
+              <Button variant={location.pathname.startsWith('/thorne') ? 'solid' : 'ghost'} size="2">
+                <HeartIcon />
+                Thorne Supplements
               </Button>
             </Link>
             {isAuthenticated && (
@@ -101,7 +114,7 @@ function Header() {
 }
 
 function AppContent() {
-  const { isLoading } = useAuth()
+  const { isLoading } = useAzureAuth()
 
   if (isLoading) {
     return (
@@ -128,6 +141,17 @@ function AppContent() {
             <Route path="/new-post" element={<NewPost />} />
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/edit-post/:id" element={<EditPost />} />
+            
+            {/* Thorne Reseller Routes */}
+            <Route path="/thorne/education" element={<ThorneEducation />} />
+            <Route path="/thorne/category/:categoryId" element={<ThorneCategory />} />
+            <Route path="/thorne/register" element={<ThorneRegistration />} />
+            <Route path="/thorne/portal" element={<ThornePatientPortal />} />
+            <Route path="/thorne/compliance" element={<ThorneCompliance />} />
+            
+            {/* Authentication Routes */}
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/logout" element={<AuthLogout />} />
           </Routes>
         </Container>
       </Box>
@@ -138,14 +162,14 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
+      <AzureAuthProvider>
         <ThemeProvider>
           <Theme>
             <AppContent />
             <GlobalErrorToast />
           </Theme>
         </ThemeProvider>
-      </AuthProvider>
+      </AzureAuthProvider>
     </ErrorBoundary>
   )
 }

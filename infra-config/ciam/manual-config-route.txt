@@ -1,0 +1,467 @@
+# Manual Azure Entra ID CIAM Configuration
+
+## 🎯 **Overview**
+This document provides step-by-step instructions for manually configuring Azure Entra ID CIAM without using the automated script.
+
+## 📋 **Prerequisites**
+- Azure account with Entra ID access
+- Global Administrator or Application Administrator role
+- DNS control for custom domains
+- SSL certificate for CIAM domains
+- Azure Entra ID External Identities enabled (see Step 0 below)
+
+## 🔧 **Manual Configuration Steps**
+
+### **0. Enable Azure Entra ID External Identities**
+
+#### **Step 0.1: Check if External Identities is Available**
+1. Go to [Azure Portal](https://portal.azure.com)
+2. Navigate to **Azure Active Directory**
+3. Look for **External Identities** in the left menu
+4. If you don't see **External Identities**, you may need to enable it
+
+#### **Step 0.2: Enable External Identities (if not available)**
+1. Go to **Azure Active Directory** > **Overview**
+2. Look for **External Identities** section
+3. Click **Get started** or **Enable External Identities**
+4. Follow the setup wizard to enable External Identities
+
+#### **Step 0.3: Verify External Identities Access**
+1. Navigate to **Azure Active Directory** > **External Identities**
+2. You should see options for:
+   - **User flows**
+   - **Identity providers**
+   - **User attributes**
+   - **Custom branding**
+
+#### **Step 0.4: Check External Identities License**
+- External Identities requires an Azure AD Premium P1 or P2 license
+- If you don't have a license, you can use the free tier with limitations
+- For production use, consider upgrading to Premium
+
+### **1. Create Azure Entra ID App Registration**
+
+#### **Step 1.1: Navigate to App Registrations**
+1. Go to [Azure Portal](https://portal.azure.com)
+2. Navigate to **Azure Active Directory** > **App registrations**
+3. Click **New registration**
+
+#### **Step 1.2: Configure App Registration**
+```
+Name: Top Vitamin Supplies
+Supported account types: Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)
+Redirect URI: Web
+URL: https://auth01.local.topvitaminsupply.com/callback
+```
+
+#### **Step 1.3: Add Additional Redirect URIs**
+After creation, add these redirect URIs:
+```
+https://auth01.local.topvitaminsupply.com/callback
+https://auth01.dev.topvitaminsupply.com/callback
+https://auth01.topvitaminsupplies.com/callback
+http://local.topvitaminsupply.com:3000/auth/callback
+https://staging.topvitaminsupplies.com/auth/callback
+https://topvitaminsupplies.com/auth/callback
+```
+
+#### **Step 1.4: Add Logout URLs**
+In **Authentication** > **Front-channel logout URL**:
+```
+https://auth01.local.topvitaminsupply.com/logout
+https://auth01.dev.topvitaminsupply.com/logout
+https://auth01.topvitaminsupplies.com/logout
+```
+
+### **2. Configure API Permissions**
+
+#### **Step 2.1: Add Microsoft Graph Permissions**
+1. Go to **API permissions**
+2. Click **Add a permission**
+3. Select **Microsoft Graph**
+4. Choose **Delegated permissions**
+5. Add these permissions:
+   - `User.Read`
+   - `email`
+   - `profile`
+
+#### **Step 2.2: Grant Admin Consent**
+1. Click **Grant admin consent for [Your Organization]**
+2. Confirm the consent
+
+### **3. Configure External Identities**
+
+#### **Step 3.1: Navigate to External Identities**
+1. Go to **Azure Active Directory** > **External Identities**
+2. If you don't see this option, refer to Step 0 above to enable External Identities
+
+#### **Step 3.2: Create User Flow**
+1. Click **User flows**
+2. Click **New user flow**
+3. Select **Sign up and sign in** template
+4. Configure the user flow:
+   - **Name**: `TopVitaminSupplies-SignUpSignIn`
+   - **Identity providers**: 
+     - Microsoft (enabled by default)
+     - Google (optional - see Step 3.4)
+   - **User attributes**: 
+     - Email Address (required)
+     - Given Name (optional)
+     - Surname (optional)
+   - **Application claims**: 
+     - Email Address
+     - Given Name
+     - Surname
+     - User's Object ID
+5. Click **Create**
+
+#### **Step 3.3: Configure Microsoft Identity Provider**
+1. In **External Identities** > **Identity providers**
+2. Click on **Microsoft**
+3. Verify it's enabled
+4. Configure settings:
+   - **Allow users to sign in with their Microsoft account**: Yes
+   - **Allow users to sign in with their work or school account**: Yes
+
+#### **Step 3.4: Configure Google Identity Provider (Optional)**
+1. In **External Identities** > **Identity providers**
+2. Click **New Google provider**
+3. You'll need to create a Google OAuth application first:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing
+   - Enable Google+ API
+   - Create OAuth 2.0 credentials
+   - Add authorized redirect URIs:
+     - `https://your-tenant.b2clogin.com/your-tenant.onmicrosoft.com/oauth2/authresp`
+4. Enter the Google OAuth credentials:
+   - **Client ID**: [From Google Cloud Console]
+   - **Client secret**: [From Google Cloud Console]
+5. Click **Save**
+
+#### **Step 3.5: Test External Identities**
+1. Go to **External Identities** > **User flows**
+2. Click on your created user flow
+3. Click **Run user flow**
+4. Test with different account types:
+   - Microsoft personal account
+   - Work/school account
+   - Google account (if configured)
+
+### **4. Configure App Registration Manifest**
+
+#### **Step 4.1: Update Manifest**
+1. Go to **App registrations** > **Your App** > **Manifest**
+2. Update the manifest with these settings:
+
+```json
+{
+  "id": "your-app-id",
+  "appId": "your-client-id",
+  "displayName": "Top Vitamin Supplies",
+  "signInAudience": "AzureADandPersonalMicrosoftAccount",
+  "web": {
+    "redirectUris": [
+      "https://auth01.local.topvitaminsupply.com/callback",
+      "https://auth01.dev.topvitaminsupply.com/callback",
+      "https://auth01.topvitaminsupplies.com/callback",
+      "http://local.topvitaminsupply.com:3000/auth/callback",
+      "https://staging.topvitaminsupplies.com/auth/callback",
+      "https://topvitaminsupplies.com/auth/callback"
+    ],
+    "logoutUrl": "https://auth01.local.topvitaminsupply.com/logout",
+    "implicitGrantSettings": {
+      "enableIdTokenIssuance": true,
+      "enableAccessTokenIssuance": false
+    }
+  },
+  "spa": {
+    "redirectUris": [
+      "http://local.topvitaminsupply.com:3000/auth/callback",
+      "https://staging.topvitaminsupplies.com/auth/callback",
+      "https://topvitaminsupplies.com/auth/callback"
+    ]
+  },
+  "requiredResourceAccess": [
+    {
+      "resourceAppId": "00000003-0000-0000-c000-000000000000",
+      "resourceAccess": [
+        {
+          "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+          "type": "Scope"
+        },
+        {
+          "id": "37f7f235-527c-4136-accd-4a02d197296e",
+          "type": "Scope"
+        },
+        {
+          "id": "64a6cdd6-aab1-4aaf-94b8-3cc8405e90d0",
+          "type": "Scope"
+        }
+      ]
+    }
+  ],
+  "optionalClaims": {
+    "idToken": [
+      {
+        "name": "email",
+        "source": "user",
+        "essential": true
+      },
+      {
+        "name": "given_name",
+        "source": "user",
+        "essential": false
+      },
+      {
+        "name": "family_name",
+        "source": "user",
+        "essential": false
+      },
+      {
+        "name": "preferred_username",
+        "source": "user",
+        "essential": false
+      }
+    ]
+  }
+}
+```
+
+### **5. Create Client Secret**
+
+#### **Step 5.1: Generate Client Secret**
+1. Go to **Certificates & secrets**
+2. Click **New client secret**
+3. Description: "CIAM Client Secret"
+4. Expires: 24 months
+5. Click **Add**
+6. **Copy the secret value immediately** (it won't be shown again)
+
+### **6. Configure DNS**
+
+#### **Step 6.1: Local Development DNS**
+Add to `/etc/hosts`:
+```
+127.0.0.1 local.topvitaminsupply.com
+127.0.0.1 auth01.local.topvitaminsupply.com
+```
+
+#### **Step 6.2: Staging DNS**
+Configure CNAME records:
+```
+auth01.dev.topvitaminsupply.com -> your-staging-server-ip
+```
+
+#### **Step 6.3: Production DNS**
+Configure CNAME records:
+```
+auth01.topvitaminsupplies.com -> your-production-server-ip
+```
+
+### **7. Deploy CIAM Hosted UI**
+
+#### **Step 7.1: Local Development**
+1. Set up reverse proxy (nginx/apache) for `auth01.local.topvitaminsupply.com`
+2. Configure SSL certificate (Let's Encrypt or self-signed)
+3. Deploy CIAM hosted UI application
+4. Configure routes:
+   - `/login` - Login page
+   - `/register` - Registration page
+   - `/callback` - OAuth callback handler
+   - `/logout` - Logout handler
+
+#### **Step 7.2: Staging Environment**
+1. Deploy to staging server
+2. Configure SSL certificate
+3. Set up monitoring and logging
+4. Test authentication flow
+
+#### **Step 7.3: Production Environment**
+1. Deploy to production server
+2. Configure SSL certificate
+3. Set up monitoring, logging, and backup
+4. Configure load balancing if needed
+
+### **8. Configure Environment Variables**
+
+#### **Step 8.1: Frontend Environment (.env)**
+```bash
+VITE_ENVIRONMENT=local
+VITE_AZURE_CLIENT_ID=your-client-id-here
+VITE_AZURE_TENANT_ID=your-tenant-id-here
+VITE_AZURE_AUTHORITY_URL=https://login.microsoftonline.com/common/v2.0
+VITE_LOCAL_DOMAIN=local.topvitaminsupply.com
+VITE_LOCAL_PORT=3000
+```
+
+#### **Step 8.2: Backend Environment**
+```bash
+AZURE_TENANT_ID=your-tenant-id-here
+AZURE_CLIENT_ID=your-client-id-here
+AZURE_CLIENT_SECRET=your-client-secret-here
+```
+
+### **9. Test Configuration**
+
+#### **Step 9.1: Local Testing**
+1. Start the application
+2. Navigate to `http://localhost:3000/login`
+3. Click "Sign in with Microsoft (CIAM)"
+4. Verify redirect to `https://auth01.local.topvitaminsupply.com/login`
+5. Test authentication with different account types
+6. Verify callback handling
+7. Test logout flow
+
+#### **Step 9.2: Staging Testing**
+1. Deploy to staging
+2. Test with staging CIAM domain
+3. Verify all redirect URIs work
+4. Test with real users
+
+#### **Step 9.3: Production Testing**
+1. Deploy to production
+2. Test with production CIAM domain
+3. Verify SSL certificates
+4. Test with real users
+5. Monitor authentication metrics
+
+### **10. Security Configuration**
+
+#### **Step 10.1: Token Validation**
+1. Implement JWT token validation in backend
+2. Configure token refresh handling
+3. Set up token expiration policies
+
+#### **Step 10.2: CORS Configuration**
+1. Configure CORS for CIAM domains
+2. Allow requests from application domains
+3. Restrict to necessary HTTP methods
+
+#### **Step 10.3: Rate Limiting**
+1. Implement rate limiting for authentication endpoints
+2. Configure DDoS protection
+3. Set up monitoring for suspicious activity
+
+## 🔍 **Verification Steps**
+
+### **Check App Registration**
+- [ ] App registration created successfully
+- [ ] Redirect URIs configured correctly
+- [ ] Logout URLs configured
+- [ ] API permissions granted
+- [ ] Client secret created
+
+### **Check External Identities**
+- [ ] External identities enabled
+- [ ] Microsoft provider configured
+- [ ] Google provider configured (if needed)
+- [ ] User flows created
+
+### **Check DNS Configuration**
+- [ ] Local DNS entries added to /etc/hosts
+- [ ] Staging DNS CNAME records configured
+- [ ] Production DNS CNAME records configured
+
+### **Check CIAM Deployment**
+- [ ] CIAM hosted UI deployed
+- [ ] SSL certificates configured
+- [ ] Routes working correctly
+- [ ] Authentication flow functional
+
+### **Check Application Integration**
+- [ ] Environment variables configured
+- [ ] Frontend redirects to CIAM
+- [ ] Backend handles callbacks
+- [ ] Logout flow works
+
+## 🚨 **Troubleshooting**
+
+### **Common Issues**
+
+#### **Redirect URI Mismatch**
+- **Error**: "AADSTS50011: The reply URL specified in the request does not match the reply URLs configured for the application"
+- **Solution**: Verify redirect URIs in Azure app registration match exactly
+
+#### **External Identities Not Available**
+- **Error**: Cannot find "External Identities" in Azure AD menu
+- **Solution**: 
+  1. Check if you have Azure AD Premium license
+  2. Go to Azure AD > Overview > External Identities section
+  3. Click "Get started" to enable External Identities
+  4. Contact your Azure administrator if you don't have permissions
+
+#### **External Identity Not Working**
+- **Error**: Cannot sign in with Gmail/Microsoft personal account
+- **Solution**: 
+  1. Verify External Identities is enabled
+  2. Check user flow configuration
+  3. Ensure identity providers are properly configured
+  4. Verify app registration has correct sign-in audience
+
+#### **Google Identity Provider Issues**
+- **Error**: Google sign-in fails or redirects incorrectly
+- **Solution**:
+  1. Verify Google OAuth credentials are correct
+  2. Check Google Cloud Console redirect URIs
+  3. Ensure Google+ API is enabled
+  4. Verify the redirect URI format matches Azure requirements
+
+#### **SSL Certificate Issues**
+- **Error**: "NET::ERR_CERT_AUTHORITY_INVALID"
+- **Solution**: Configure proper SSL certificate for CIAM domain
+
+#### **DNS Resolution Issues**
+- **Error**: Cannot resolve CIAM domain
+- **Solution**: Check DNS configuration and /etc/hosts entries
+
+### **Debug Steps**
+1. Check Azure AD sign-in logs
+2. Verify network connectivity to CIAM domains
+3. Test with different browsers and devices
+4. Review application logs for authentication errors
+5. Use browser developer tools to inspect network requests
+
+## 📞 **Support Resources**
+
+### **Azure Documentation**
+- [Azure Entra ID External Identities](https://docs.microsoft.com/en-us/azure/active-directory/external-identities/)
+- [OIDC Configuration](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc)
+- [App Registration Guide](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app)
+
+### **Application Documentation**
+- [CIAM Implementation Guide](../HOSTED_UI_IMPLEMENTATION.md)
+- [External Identities Implementation](../EXTERNAL_IDENTITIES_IMPLEMENTATION.md)
+
+### **Community Support**
+- [Azure AD Community](https://techcommunity.microsoft.com/t5/azure-active-directory/ct-p/AzureAD)
+- [Stack Overflow - Azure AD](https://stackoverflow.com/questions/tagged/azure-active-directory)
+
+## ✅ **Completion Checklist**
+
+- [ ] Azure app registration created and configured
+- [ ] External identities enabled and configured
+- [ ] DNS configured for all environments
+- [ ] CIAM hosted UI deployed and accessible
+- [ ] SSL certificates configured
+- [ ] Environment variables set
+- [ ] Local development testing completed
+- [ ] Staging environment testing completed
+- [ ] Production environment testing completed
+- [ ] Security configuration implemented
+- [ ] Monitoring and logging configured
+- [ ] Documentation updated
+- [ ] Team trained on new authentication flow
+
+## 🎉 **Success Criteria**
+
+The manual configuration is complete when:
+1. Users can authenticate using Gmail, Microsoft personal, and work/school accounts
+2. Authentication redirects to CIAM hosted UI
+3. Callback handling works correctly
+4. Logout flow functions properly
+5. All environments (local, staging, production) are working
+6. Security measures are in place
+7. Monitoring is configured and working
+8. No authentication errors in logs
+9. All redirect URIs are working
+10. External identities are functional

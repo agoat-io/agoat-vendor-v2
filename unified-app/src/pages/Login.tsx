@@ -1,145 +1,103 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Box, 
   Card, 
-  CardContent,
   Heading, 
   Text, 
-  TextField, 
   Button, 
   Flex, 
-  Separator,
-  IconButton
+  Container,
+  Separator
 } from '@radix-ui/themes'
-import { PersonIcon, LockClosedIcon, EyeOpenIcon, EyeNoneIcon } from '@radix-ui/react-icons'
-import { useAuth } from '../contexts/AuthContext'
+import { PersonIcon, LockClosedIcon } from '@radix-ui/react-icons'
+import { useAzureAuth } from '../contexts/AzureAuthContext'
+import { getCiamConfig } from '../config/azureAuth'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const navigate = useNavigate()
-  const { login, isAuthenticated, user } = useAuth()
+  const { login, isAuthenticated, user, isLoading, error } = useAzureAuth()
+  const [showCiamInfo, setShowCiamInfo] = useState(false)
+  const ciamConfig = getCiamConfig()
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'admin' || user.role === 'author') {
-        navigate('/dashboard')
-      } else {
-        navigate('/')
-      }
+      navigate('/dashboard')
     }
   }, [isAuthenticated, user, navigate])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
+  const handleAzureLogin = async () => {
     try {
-      const success = await login(username, password)
-      
-      if (success) {
-        // The redirect will be handled by the useEffect above
-        // based on the user's role
-      } else {
-        setError('Invalid username or password. Try admin/admin123, author/author123, or user/user123')
-      }
-    } catch (err: any) {
-      setError('Login failed. Please try again.')
-    } finally {
-      setLoading(false)
+      await login()
+    } catch (err) {
+      console.error('Azure login error:', err)
     }
   }
 
+  const handleCiamLogin = () => {
+    // Redirect to CIAM hosted login
+    window.location.href = ciamConfig.loginUrl
+  }
+
+  const handleCiamRegister = () => {
+    // Redirect to CIAM hosted registration
+    window.location.href = ciamConfig.registerUrl
+  }
+
+  const handleCiamInfo = () => {
+    setShowCiamInfo(true)
+  }
+
+  const handleCiamInfoClose = () => {
+    setShowCiamInfo(false)
+  }
+
   return (
-    <Box style={{ 
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '60vh'
-    }}>
-      <Card style={{ 
-        width: '100%', 
-        maxWidth: '400px',
-        padding: 'var(--space-6)',
-        boxShadow: 'var(--shadow-4)'
+    <Container>
+      <Box style={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh'
       }}>
-        {/* Header */}
-        <Box style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-          <Box style={{ 
-            width: '64px', 
-            height: '64px', 
-            background: 'linear-gradient(135deg, var(--accent-9) 0%, var(--accent-10) 100%)',
-            borderRadius: 'var(--radius-6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto var(--space-4)'
-          }}>
-            <PersonIcon width="32" height="32" color="white" />
+        <Card style={{ 
+          width: '100%', 
+          maxWidth: '400px',
+          padding: 'var(--space-6)',
+          boxShadow: 'var(--shadow-4)'
+        }}>
+          {/* Header */}
+          <Box style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+            <Box style={{ 
+              width: '64px', 
+              height: '64px', 
+              background: 'linear-gradient(135deg, var(--blue-9) 0%, var(--blue-10) 100%)',
+              borderRadius: 'var(--radius-6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto var(--space-4)'
+            }}>
+              <PersonIcon width="32" height="32" color="white" />
+            </Box>
+            <Heading size="6" mb="2">Welcome Back</Heading>
+            <Text size="3" color="gray">
+              Sign in to your topvitaminsupplies.com account
+            </Text>
           </Box>
-          <Heading size="6" mb="2">Welcome Back</Heading>
-          <Text size="3" color="gray">
-            Sign in to your AGoat Blog account
-          </Text>
-        </Box>
 
-        <Separator mb="6" />
+          <Separator mb="6" />
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit}>
+          {/* Azure Entra ID Login */}
           <Flex direction="column" gap="4">
             <Box>
-              <Text size="2" weight="medium" mb="2" style={{ display: 'block' }}>
-                Username
+              <Text size="3" weight="medium" mb="3" style={{ display: 'block', textAlign: 'center' }}>
+                Sign in with Microsoft
               </Text>
-              <TextField.Root>
-                <TextField.Slot>
-                  <PersonIcon width="16" height="16" />
-                </TextField.Slot>
-                <TextField.Input
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  style={{ height: '44px' }}
-                />
-              </TextField.Root>
-            </Box>
-
-            <Box>
-              <Text size="2" weight="medium" mb="2" style={{ display: 'block' }}>
-                Password
+              <Text size="2" color="gray" mb="4" style={{ textAlign: 'center' }}>
+                Use your work or school account to access the platform
               </Text>
-              <TextField.Root>
-                <TextField.Slot>
-                  <LockClosedIcon width="16" height="16" />
-                </TextField.Slot>
-                <TextField.Input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  style={{ height: '44px' }}
-                />
-                <TextField.Slot>
-                  <IconButton
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {showPassword ? <EyeNoneIcon width="16" height="16" /> : <EyeOpenIcon width="16" height="16" />}
-                  </IconButton>
-                </TextField.Slot>
-              </TextField.Root>
             </Box>
 
             {error && (
@@ -154,36 +112,149 @@ export default function Login() {
               </Box>
             )}
 
-            <Button 
-              type="submit" 
-              disabled={loading}
-              style={{ height: '44px', marginTop: 'var(--space-2)' }}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
+            <Flex direction="column" gap="3">
+              <Button 
+                onClick={handleCiamLogin}
+                disabled={isLoading}
+                size="3"
+                style={{ 
+                  height: '48px', 
+                  background: 'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)',
+                  border: 'none',
+                  color: 'white',
+                  fontWeight: '600'
+                }}
+              >
+                {isLoading ? 'Redirecting...' : 'Sign in with Microsoft (CIAM)'}
+              </Button>
+              
+              <Button 
+                onClick={handleCiamRegister}
+                disabled={isLoading}
+                size="3"
+                variant="outline"
+                style={{ 
+                  height: '48px', 
+                  border: '2px solid var(--green-6)',
+                  color: 'var(--green-11)',
+                  fontWeight: '600'
+                }}
+              >
+                Create Account (CIAM)
+              </Button>
+              
+              <Button 
+                onClick={handleCiamInfo}
+                disabled={isLoading}
+                size="2"
+                variant="ghost"
+                style={{ 
+                  height: '36px', 
+                  color: 'var(--gray-11)',
+                  fontWeight: '500'
+                }}
+              >
+                CIAM Configuration Info
+              </Button>
+            </Flex>
           </Flex>
-        </form>
 
-        <Separator my="6" />
+          <Separator my="6" />
 
-        {/* Demo Credentials */}
-        <Box>
-          <Text size="2" weight="medium" mb="3" style={{ display: 'block' }}>
-            Demo Credentials:
-          </Text>
-          <Flex direction="column" gap="2">
-            <Text size="1" color="gray">
-              <strong>Admin:</strong> admin / admin123
+          {/* Information */}
+          <Box>
+            <Text size="2" weight="medium" mb="3" style={{ display: 'block' }}>
+              About CIAM Authentication:
             </Text>
-            <Text size="1" color="gray">
-              <strong>Author:</strong> author / author123
+            <Flex direction="column" gap="2">
+              <Text size="1" color="gray">
+                • Secure hosted authentication
+              </Text>
+              <Text size="1" color="gray">
+                • Gmail, Microsoft personal, and work accounts
+              </Text>
+              <Text size="1" color="gray">
+                • Multi-factor authentication (MFA)
+              </Text>
+              <Text size="1" color="gray">
+                • No passwords stored locally
+              </Text>
+              <Text size="1" color="gray">
+                • Hosted at: {ciamConfig.domain}
+              </Text>
+            </Flex>
+          </Box>
+
+          {/* Development Note */}
+          <Box mt="4" style={{
+            padding: 'var(--space-3)',
+            background: 'var(--blue-2)',
+            border: '1px solid var(--blue-6)',
+            borderRadius: 'var(--radius-3)'
+          }}>
+            <Text size="1" color="blue">
+              <strong>CIAM Mode:</strong> This application uses Azure Entra ID CIAM for authentication. 
+              Authentication is handled at {ciamConfig.domain}.
             </Text>
-            <Text size="1" color="gray">
-              <strong>User:</strong> user / user123
-            </Text>
-          </Flex>
+          </Box>
+        </Card>
+      </Box>
+
+      {/* CIAM Info Popup */}
+      {showCiamInfo && (
+        <Box style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <Card style={{
+            maxWidth: '600px',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            padding: 'var(--space-6)'
+          }}>
+            <Flex direction="column" gap="4">
+              <Heading size="4">CIAM Configuration</Heading>
+              
+              <Box>
+                <Text size="2" weight="bold" mb="2">Environment: Local</Text>
+                <Text size="1" color="gray">CIAM Domain: {ciamConfig.domain}</Text>
+              </Box>
+              
+              <Box>
+                <Text size="2" weight="bold" mb="2">URLs:</Text>
+                <Flex direction="column" gap="1">
+                  <Text size="1">Login: {ciamConfig.loginUrl}</Text>
+                  <Text size="1">Register: {ciamConfig.registerUrl}</Text>
+                  <Text size="1">Callback: {ciamConfig.callbackUrl}</Text>
+                  <Text size="1">Logout: {ciamConfig.logoutUrl}</Text>
+                </Flex>
+              </Box>
+              
+              <Box>
+                <Text size="2" weight="bold" mb="2">Setup Required:</Text>
+                <Flex direction="column" gap="1">
+                  <Text size="1">1. Configure Azure Entra ID CIAM</Text>
+                  <Text size="1">2. Set up DNS for {ciamConfig.domain}</Text>
+                  <Text size="1">3. Deploy CIAM hosted UI</Text>
+                  <Text size="1">4. Configure redirect URIs</Text>
+                </Flex>
+              </Box>
+              
+              <Button onClick={handleCiamInfoClose} variant="soft">
+                Close
+              </Button>
+            </Flex>
+          </Card>
         </Box>
-      </Card>
-    </Box>
+      )}
+    </Container>
   )
 }
