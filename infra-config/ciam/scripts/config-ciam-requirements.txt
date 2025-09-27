@@ -1,0 +1,30 @@
+create a script to configure the ciam requirements
+do deep research to confirm you have the latest azure updates
+it should be idempotent and should be able to run multiple times without errors
+
+use azure entra id external identities
+set top level domain for everything topvitaminsupply.com
+choose subdomain names for all user stories
+support account creating, login, password reset and profile editing
+create everything needed except subscription and tenant, which should 
+be variables to reference to it
+
+support silent refresh
+require full redirect to login page support oidc
+callback urls should be 
+https://local.topvitaminsupply.com/auth/callback
+or https://dev.topvitaminsupply.com/auth/callback
+logout urls should be
+ https://local.topvitaminsupply.com/auth/logout
+or https://dev.topvitaminsupply.com/auth/logout
+
+
+support google and microsoft personal accounts
+support social accounts
+support work/school accounts
+support other external identity providers
+support all account types
+support all environments
+support all languages
+support all currencies
+create script file in the same folder as this file

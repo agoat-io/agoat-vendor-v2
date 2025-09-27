@@ -3,59 +3,218 @@
 ## 🎯 **Overview**
 This document provides step-by-step instructions for manually configuring Azure Entra ID CIAM without using the automated script.
 
+### **What is CIAM?**
+Customer Identity and Access Management (CIAM) is a specialized identity solution that enables:
+- **External user authentication** (customers, partners, public users)
+- **Social login providers** (Google, Microsoft, Facebook)
+- **Multi-tenant authentication** (users from any organization)
+- **Custom branding** and user experience
+- **Scalable user management** (millions of users)
+
+### **Why Manual Configuration?**
+Manual configuration provides:
+- **Full control** over every setting
+- **Understanding** of each configuration option
+- **Troubleshooting capability** when issues arise
+- **Customization** beyond automated script capabilities
+- **Learning** the underlying Azure AD concepts
+
 ## 📋 **Prerequisites**
-- Azure account with Entra ID access
-- Global Administrator or Application Administrator role
-- DNS control for custom domains
-- SSL certificate for CIAM domains
-- Azure Entra ID External Identities enabled (see Step 0 below)
+
+### **Azure Account Requirements**
+- **Azure account with Entra ID access**: Active Azure subscription with Entra ID service
+- **Global Administrator or Application Administrator role**: Required permissions to:
+  - Create and configure app registrations
+  - Enable External Identities feature
+  - Grant admin consent for API permissions
+  - Configure identity providers and user flows
+  - Manage tenant-level settings
+
+### **Infrastructure Requirements**
+- **DNS control for custom domains**: Ability to configure DNS records for CIAM domains
+- **SSL certificate for CIAM domains**: Required for secure HTTPS communication
+- **Azure Entra ID External Identities enabled**: Feature that allows external users to authenticate
+
+### **Technical Knowledge Requirements**
+- Basic understanding of OAuth 2.0 and OpenID Connect
+- Familiarity with Azure Portal navigation
+- Understanding of DNS configuration
+- Knowledge of SSL certificate management
 
 ## 🔧 **Manual Configuration Steps**
 
 ### **0. Enable Azure Entra ID External Identities**
 
+#### **Purpose of External Identities**
+External Identities enables your application to authenticate users who are **not part of your organization**:
+- **Customer authentication**: Users who don't have accounts in your Azure AD tenant
+- **Social login**: Integration with Google, Facebook, LinkedIn, etc.
+- **Multi-tenant access**: Users from other organizations
+- **Public user registration**: Self-service account creation
+
+#### **Use Cases for External Identities**
+- **E-commerce platforms**: Customers can sign up with Gmail/Google accounts
+- **SaaS applications**: Users from different companies can access your service
+- **Public websites**: Anyone can create an account using social providers
+- **Partner portals**: External partners can access your systems
+- **Mobile apps**: Users can sign in with their preferred social account
+
 #### **Step 0.1: Check if External Identities is Available**
 1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to **Azure Active Directory**
-3. Look for **External Identities** in the left menu
+2. Navigate to **Azure Active Directory**:
+   - Click the **hamburger menu** (☰) in the top-left corner
+   - Click **Azure Active Directory** from the left navigation
+3. Look for **External Identities** in the left menu:
+   - **Blade**: Azure Active Directory
+   - **Section**: Left navigation menu
+   - **Item**: External Identities
+   - If you don't see it, it may not be enabled
 4. If you don't see **External Identities**, you may need to enable it
 
+**Why this step is important:**
+- External Identities is not enabled by default in all Azure AD tenants
+- Some tenants may have it disabled due to security policies
+- You need proper licensing to access this feature
+
 #### **Step 0.2: Enable External Identities (if not available)**
-1. Go to **Azure Active Directory** > **Overview**
-2. Look for **External Identities** section
-3. Click **Get started** or **Enable External Identities**
+1. Go to **Azure Active Directory** > **Overview**:
+   - Click the **hamburger menu** (☰) in the top-left corner
+   - Click **Azure Active Directory** from the left navigation
+   - Click **Overview** in the left menu (should be selected by default)
+2. Look for **External Identities** section:
+   - **Blade**: Azure Active Directory
+   - **Section**: Overview page main content area
+   - **Location**: Scroll down to find the **External Identities** section
+   - It should be in the main content area, not the left navigation
+3. Click **Get started** or **Enable External Identities**:
+   - **Blade**: Azure Active Directory > Overview
+   - **Section**: External Identities section
+   - **Item**: **Get started** or **Enable External Identities** button
+   - This will be in the External Identities section on the Overview page
 4. Follow the setup wizard to enable External Identities
 
+**What the setup wizard does:**
+- Configures tenant settings for external user access
+- Sets up basic user flows for sign-up and sign-in
+- Configures default identity providers (Microsoft, Google)
+- Establishes user attribute mappings
+- Sets up application claims configuration
+
 #### **Step 0.3: Verify External Identities Access**
-1. Navigate to **Azure Active Directory** > **External Identities**
+1. Navigate to **Azure Active Directory** > **External Identities**:
+   - Click the **hamburger menu** (☰) in the top-left corner
+   - Click **Azure Active Directory** from the left navigation
+   - Click **External Identities** in the left navigation menu
 2. You should see options for:
-   - **User flows**
-   - **Identity providers**
-   - **User attributes**
-   - **Custom branding**
+   - **Blade**: Azure Active Directory > External Identities
+   - **Section**: Left navigation menu
+   - **Items**:
+     - **User flows**: Define authentication and registration flows
+     - **Identity providers**: Configure social login providers
+     - **User attributes**: Map user data from external providers
+     - **Custom branding**: Customize the login experience
+
+**Purpose of each component:**
+- **User flows**: Control the authentication experience (sign-up, sign-in, password reset)
+- **Identity providers**: Enable Google, Facebook, Microsoft personal accounts
+- **User attributes**: Define what user information to collect and store
+- **Custom branding**: Match the login UI to your brand
 
 #### **Step 0.4: Check External Identities License**
 - External Identities requires an Azure AD Premium P1 or P2 license
 - If you don't have a license, you can use the free tier with limitations
 - For production use, consider upgrading to Premium
 
+**License comparison:**
+- **Free tier**: 50,000 external users/month, basic features
+- **Premium P1**: Unlimited external users, advanced features, custom branding
+- **Premium P2**: All P1 features + risk-based conditional access, identity protection
+
 ### **1. Create Azure Entra ID App Registration**
+
+#### **Purpose of App Registration**
+App registration creates an identity for your application in Azure AD, enabling:
+- **Authentication**: Users can sign in to your application
+- **Authorization**: Your app can access Microsoft Graph and other APIs
+- **Token management**: Azure AD issues and validates tokens
+- **Security**: Defines what your app can and cannot do
+
+#### **Use Cases for App Registration**
+- **Web applications**: Full redirect authentication flows
+- **Mobile apps**: Native authentication with Azure AD
+- **API services**: Backend services that need to call Microsoft APIs
+- **Single-page applications**: JavaScript-based authentication
+- **Multi-tenant SaaS**: Applications used by multiple organizations
 
 #### **Step 1.1: Navigate to App Registrations**
 1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to **Azure Active Directory** > **App registrations**
-3. Click **New registration**
+2. Navigate to **Azure Active Directory** > **App registrations**:
+   - Click the **hamburger menu** (☰) in the top-left corner
+   - Click **Azure Active Directory** from the left navigation
+   - Click **App registrations** in the left navigation menu
+3. Click **New registration**:
+   - **Blade**: Azure Active Directory > App registrations
+   - **Section**: Top toolbar
+   - **Item**: **+ New registration** button
+
+**Why App Registrations are needed:**
+- Azure AD needs to know about your application
+- Establishes trust relationship between your app and Azure AD
+- Defines authentication and authorization boundaries
+- Enables token-based security
 
 #### **Step 1.2: Configure App Registration**
 ```
 Name: Top Vitamin Supplies
-Supported account types: Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)
+Supported account types: Accounts in any organizational directory 
+(Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)
 Redirect URI: Web
 URL: https://auth01.local.topvitaminsupply.com/callback
 ```
 
+**Detailed explanation of each setting:**
+
+**Name: "Top Vitamin Supplies"**
+- **Purpose**: Identifies your application in Azure AD
+- **Used in**: User consent screens, admin portals, audit logs
+- **Best practice**: Use a descriptive name that matches your application
+
+**Supported Account Types: "AzureADandPersonalMicrosoftAccount"**
+- **Purpose**: Defines who can authenticate with your application
+- **Options**:
+  - **Single tenant**: Only users in your organization
+  - **Multitenant**: Users from any Azure AD organization
+  - **Personal Microsoft accounts**: Hotmail, Outlook.com, Xbox Live accounts
+  - **Combined**: Both organizational and personal accounts
+- **Your choice**: Combined approach for maximum user accessibility
+
+**Redirect URI: Web**
+- **Purpose**: Defines how authentication will work
+- **Web**: Full page redirects to Azure's hosted login UI
+- **SPA**: JavaScript-based authentication with popups/iframes
+- **Mobile**: Native mobile app authentication
+- **Your choice**: Web for full redirect to CIAM hosted UI
+
+**URL: "https://auth01.local.topvitaminsupply.com/callback"**
+- **Purpose**: Where Azure redirects users after authentication
+- **Format**: Must be HTTPS (except for localhost development)
+- **Domain**: Your CIAM domain that handles authentication callbacks
+
 #### **Step 1.3: Add Additional Redirect URIs**
 After creation, add these redirect URIs:
+1. Navigate to your app registration:
+   - **Blade**: Azure Active Directory > App registrations
+   - **Section**: App registrations list
+   - **Item**: Click on your app name (e.g., "Top Vitamin Supplies")
+2. Go to **Authentication**:
+   - **Blade**: [Your App Name] > Authentication
+   - **Section**: Left navigation menu
+   - **Item**: Authentication
+3. Add redirect URIs:
+   - **Blade**: [Your App Name] > Authentication
+   - **Section**: Redirect URIs
+   - **Item**: **+ Add URI** button
+   - Add each URI one by one
 ```
 https://auth01.local.topvitaminsupply.com/callback
 https://auth01.dev.topvitaminsupply.com/callback
@@ -65,40 +224,196 @@ https://staging.topvitaminsupplies.com/auth/callback
 https://topvitaminsupplies.com/auth/callback
 ```
 
+**Purpose of multiple redirect URIs:**
+- **Multi-environment support**: Different URLs for local, staging, production
+- **CIAM domains**: Where Azure redirects after authentication
+- **App domains**: Where your application handles the callback
+- **Protocol differences**: HTTP for local development, HTTPS for production
+- **Port differences**: 3000 for local development, 443 for production
+
+**Security considerations:**
+- Only add URIs you control
+- Use HTTPS in production
+- Regularly review and remove unused URIs
+- Consider using wildcard domains for development
+
 #### **Step 1.4: Add Logout URLs**
 In **Authentication** > **Front-channel logout URL**:
+1. Navigate to your app registration:
+   - **Blade**: Azure Active Directory > App registrations
+   - **Section**: App registrations list
+   - **Item**: Click on your app name (e.g., "Top Vitamin Supplies")
+2. Go to **Authentication**:
+   - **Blade**: [Your App Name] > Authentication
+   - **Section**: Left navigation menu
+   - **Item**: Authentication
+3. Add logout URLs:
+   - **Blade**: [Your App Name] > Authentication
+   - **Section**: Front-channel logout URL
+   - **Item**: **+ Add URI** button
+   - Scroll down to find this section
 ```
 https://auth01.local.topvitaminsupply.com/logout
 https://auth01.dev.topvitaminsupply.com/logout
 https://auth01.topvitaminsupplies.com/logout
 ```
 
+**Purpose of logout URLs:**
+- **Single sign-out**: When user logs out, they're logged out of all applications
+- **Security**: Ensures complete session termination
+- **User experience**: Provides clear logout confirmation
+- **Compliance**: Required for certain security standards
+
+**Front-channel vs Back-channel logout:**
+- **Front-channel**: User's browser is redirected to logout URL
+- **Back-channel**: Server-to-server communication for logout
+- **Your choice**: Front-channel for user-visible logout process
+
 ### **2. Configure API Permissions**
 
+#### **Purpose of API Permissions**
+API permissions define what your application can access:
+- **User data**: Read user profile information
+- **Microsoft Graph**: Access to Microsoft 365 services
+- **Third-party APIs**: Access to external services
+- **Security**: Principle of least privilege access
+
+#### **Use Cases for API Permissions**
+- **User profile access**: Display user name, email, photo
+- **Calendar integration**: Access user's calendar data
+- **File access**: Read/write files in OneDrive
+- **Email integration**: Send emails on behalf of user
+- **Team collaboration**: Access Teams and SharePoint data
+
 #### **Step 2.1: Add Microsoft Graph Permissions**
-1. Go to **API permissions**
-2. Click **Add a permission**
-3. Select **Microsoft Graph**
-4. Choose **Delegated permissions**
+1. Go to **API permissions**:
+   - **Blade**: [Your App Name] > API permissions
+   - **Section**: Left navigation menu
+   - **Item**: API permissions
+2. Click **Add a permission**:
+   - **Blade**: [Your App Name] > API permissions
+   - **Section**: Top toolbar
+   - **Item**: **+ Add a permission** button
+3. Select **Microsoft Graph**:
+   - **Blade**: Request API permissions dialog
+   - **Section**: API list
+   - **Item**: Microsoft Graph
+4. Choose **Delegated permissions**:
+   - **Blade**: Request API permissions dialog
+   - **Section**: Permission types
+   - **Item**: Delegated permissions tab (not Application permissions)
 5. Add these permissions:
-   - `User.Read`
-   - `email`
-   - `profile`
+   - **Blade**: Request API permissions dialog
+   - **Section**: Permission list
+   - **Items**: Check boxes for:
+     - `User.Read`
+     - `email`
+     - `profile`
+   - Click **Add permissions** button
+
+**Detailed explanation of each permission:**
+
+**User.Read**
+- **Purpose**: Read the signed-in user's profile
+- **Access level**: Basic user information
+- **Data returned**: User ID, display name, email, photo
+- **Use case**: Display user information in your application
+- **Security**: Low risk, read-only access
+
+**email**
+- **Purpose**: Read the user's email address
+- **Access level**: Email address only
+- **Data returned**: Primary email address
+- **Use case**: User identification and communication
+- **Security**: Low risk, read-only access
+
+**profile**
+- **Purpose**: Read the user's basic profile
+- **Access level**: Basic profile information
+- **Data returned**: Name, email, photo, locale
+- **Use case**: Personalization and user experience
+- **Security**: Low risk, read-only access
+
+**Permission Types Explained:**
+- **Delegated permissions**: App acts on behalf of the signed-in user
+- **Application permissions**: App acts on its own behalf (requires admin consent)
+- **Your choice**: Delegated permissions for user-specific data access
 
 #### **Step 2.2: Grant Admin Consent**
-1. Click **Grant admin consent for [Your Organization]**
-2. Confirm the consent
+1. Click **Grant admin consent for [Your Organization]**:
+   - **Blade**: [Your App Name] > API permissions
+   - **Section**: Top of permissions list
+   - **Item**: **Grant admin consent for [Your Organization]** button
+   - You must be a Global Administrator or Application Administrator to see this button
+2. Confirm the consent:
+   - **Blade**: Confirmation dialog
+   - **Section**: Confirmation message
+   - **Item**: **Yes** button
+   - You should see a green checkmark next to each permission after granting consent
+
+**Purpose of Admin Consent:**
+- **Security**: Ensures administrators approve API access
+- **Compliance**: Required for certain permissions
+- **Audit**: Creates audit trail of permission grants
+- **Control**: Prevents unauthorized API access
+
+**When Admin Consent is Required:**
+- **Application permissions**: Always required
+- **High-privilege delegated permissions**: Required for sensitive operations
+- **Organization-wide access**: Required for tenant-wide permissions
+- **Your case**: Required for Microsoft Graph access
+
+**Consent Types:**
+- **User consent**: Individual users grant permission
+- **Admin consent**: Administrator grants permission for all users
+- **Your choice**: Admin consent for organization-wide access
 
 ### **3. Configure External Identities**
 
+#### **Purpose of External Identities Configuration**
+External Identities configuration enables:
+- **Social login providers**: Google, Facebook, LinkedIn, etc.
+- **User flows**: Define the authentication experience
+- **User attributes**: Control what information is collected
+- **Application claims**: Define what data is returned to your app
+
+#### **Use Cases for External Identities**
+- **Customer onboarding**: Easy sign-up with social accounts
+- **Reduced friction**: Users don't need to create new passwords
+- **Trust and familiarity**: Users prefer using existing accounts
+- **Data collection**: Gather user information for personalization
+- **Multi-provider support**: Support multiple authentication methods
+
 #### **Step 3.1: Navigate to External Identities**
-1. Go to **Azure Active Directory** > **External Identities**
+1. Go to **Azure Active Directory** > **External Identities**:
+   - Click the **hamburger menu** (☰) in the top-left corner
+   - Click **Azure Active Directory** from the left navigation
+   - Click **External Identities** in the left navigation menu
 2. If you don't see this option, refer to Step 0 above to enable External Identities
+   - **Blade**: Azure Active Directory
+   - **Section**: Left navigation menu
+   - **Item**: External Identities
+
+**Why External Identities is needed:**
+- Enables social login providers
+- Provides user flow management
+- Controls user attribute collection
+- Manages application claims
 
 #### **Step 3.2: Create User Flow**
-1. Click **User flows**
-2. Click **New user flow**
-3. Select **Sign up and sign in** template
+1. Click **User flows**:
+   - **Blade**: Azure Active Directory > External Identities
+   - **Section**: Left navigation menu
+   - **Item**: User flows
+2. Click **New user flow**:
+   - **Blade**: Azure Active Directory > External Identities > User flows
+   - **Section**: Top toolbar
+   - **Item**: **+ New user flow** button
+3. Select **Sign up and sign in** template:
+   - **Blade**: Create user flow dialog
+   - **Section**: Template selection
+   - **Item**: **Sign up and sign in** template
+   - Click **Create**
 4. Configure the user flow:
    - **Name**: `TopVitaminSupplies-SignUpSignIn`
    - **Identity providers**: 
@@ -115,17 +430,83 @@ https://auth01.topvitaminsupplies.com/logout
      - User's Object ID
 5. Click **Create**
 
+**Purpose of User Flows:**
+- **Authentication experience**: Define how users sign up and sign in
+- **User journey**: Control the steps users go through
+- **Data collection**: Specify what information to collect
+- **Branding**: Customize the look and feel
+
+**User Flow Templates Explained:**
+- **Sign up and sign in**: Combined flow for new and existing users
+- **Sign in only**: For existing users only
+- **Sign up only**: For new user registration
+- **Password reset**: For password recovery
+- **Profile editing**: For user profile updates
+
+**Identity Providers Configuration:**
+- **Microsoft**: Personal and work/school accounts
+- **Google**: Gmail and Google Workspace accounts
+- **Facebook**: Facebook accounts
+- **LinkedIn**: LinkedIn accounts
+- **Custom**: Your own identity provider
+
+**User Attributes Explained:**
+- **Email Address**: Required for user identification
+- **Given Name**: User's first name
+- **Surname**: User's last name
+- **Display Name**: How the user appears in your app
+- **Job Title**: User's professional title
+- **Company**: User's organization
+
+**Application Claims Explained:**
+- **Email Address**: Returned to your application
+- **Given Name**: User's first name
+- **Surname**: User's last name
+- **User's Object ID**: Unique identifier for the user
+- **Display Name**: User's display name
+- **Job Title**: User's professional title
+
 #### **Step 3.3: Configure Microsoft Identity Provider**
-1. In **External Identities** > **Identity providers**
-2. Click on **Microsoft**
-3. Verify it's enabled
+1. In **External Identities** > **Identity providers**:
+   - **Blade**: Azure Active Directory > External Identities
+   - **Section**: Left navigation menu
+   - **Item**: Identity providers
+2. Click on **Microsoft**:
+   - **Blade**: Azure Active Directory > External Identities > Identity providers
+   - **Section**: Identity providers list
+   - **Item**: Microsoft
+3. Verify it's enabled:
+   - **Blade**: Microsoft identity provider configuration
+   - **Section**: Settings
+   - **Item**: **Enabled** toggle (should be set to **Yes**)
 4. Configure settings:
-   - **Allow users to sign in with their Microsoft account**: Yes
-   - **Allow users to sign in with their work or school account**: Yes
+   - **Blade**: Microsoft identity provider configuration
+   - **Section**: Settings
+   - **Items**:
+     - **Allow users to sign in with their Microsoft account**: Yes
+     - **Allow users to sign in with their work or school account**: Yes
+   - Click **Save** to apply changes
+
+**Purpose of Microsoft Identity Provider:**
+- **Personal accounts**: Hotmail, Outlook.com, Xbox Live accounts
+- **Work/school accounts**: Azure AD organizational accounts
+- **Trusted provider**: Microsoft is a trusted identity provider
+- **Wide adoption**: Most users have Microsoft accounts
+
+**Configuration Options:**
+- **Microsoft account**: Personal Microsoft accounts
+- **Work/school account**: Organizational Azure AD accounts
+- **Both**: Maximum user accessibility
 
 #### **Step 3.4: Configure Google Identity Provider (Optional)**
-1. In **External Identities** > **Identity providers**
-2. Click **New Google provider**
+1. In **External Identities** > **Identity providers**:
+   - **Blade**: Azure Active Directory > External Identities
+   - **Section**: Left navigation menu
+   - **Item**: Identity providers
+2. Click **New Google provider**:
+   - **Blade**: Azure Active Directory > External Identities > Identity providers
+   - **Section**: Top toolbar
+   - **Item**: **+ New Google provider** button
 3. You'll need to create a Google OAuth application first:
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create a new project or select existing
@@ -138,20 +519,117 @@ https://auth01.topvitaminsupplies.com/logout
    - **Client secret**: [From Google Cloud Console]
 5. Click **Save**
 
+**Purpose of Google Identity Provider:**
+- **Gmail accounts**: Users with Gmail addresses
+- **Google Workspace**: Business Google accounts
+- **Popular choice**: Many users prefer Google authentication
+- **Additional reach**: Access to users who don't have Microsoft accounts
+
+**Google OAuth Setup Requirements:**
+- **Google Cloud Console**: Create OAuth 2.0 credentials
+- **Authorized redirect URIs**: Must match Azure's callback URL
+- **API enablement**: Enable Google+ API
+- **Client credentials**: Client ID and secret from Google
+
 #### **Step 3.5: Test External Identities**
-1. Go to **External Identities** > **User flows**
-2. Click on your created user flow
-3. Click **Run user flow**
+1. Go to **External Identities** > **User flows**:
+   - **Blade**: Azure Active Directory > External Identities
+   - **Section**: Left navigation menu
+   - **Item**: User flows
+2. Click on your created user flow:
+   - **Blade**: Azure Active Directory > External Identities > User flows
+   - **Section**: User flows list
+   - **Item**: Click on your user flow name (e.g., "TopVitaminSupplies-SignUpSignIn")
+3. Click **Run user flow**:
+   - **Blade**: [Your User Flow Name] > Overview
+   - **Section**: Top toolbar
+   - **Item**: **Run user flow** button
+   - **Alternative locations** if not found:
+     - Look for **Test** button in the top toolbar
+     - Check the **Overview** tab for a **Run** button
+     - Look for **Execute** or **Preview** buttons
 4. Test with different account types:
    - Microsoft personal account
    - Work/school account
    - Google account (if configured)
 
+**Purpose of Testing:**
+- **Verify configuration**: Ensure everything works correctly
+- **User experience**: Test the authentication flow
+- **Error handling**: Identify and fix issues
+- **Multi-provider**: Test all configured identity providers
+
+**Troubleshooting: "Run user flow" Not Found**
+
+If you cannot find the "Run user flow" button, try these locations:
+
+1. **Check the Overview tab**:
+   - **Blade**: [Your User Flow Name] > Overview
+   - **Section**: Main content area
+   - **Look for**: "Run user flow" button or link
+
+2. **Check the top toolbar**:
+   - **Blade**: [Your User Flow Name] > [Any tab]
+   - **Section**: Top toolbar/command bar
+   - **Look for**: "Run", "Test", "Execute", or "Preview" buttons
+
+3. **Check the left navigation**:
+   - **Blade**: [Your User Flow Name]
+   - **Section**: Left navigation menu
+   - **Look for**: "Test" or "Run" options
+
+4. **Alternative method - Direct URL**:
+   - Copy your user flow name
+   - Navigate to: `https://portal.azure.com/#view/Microsoft_AAD_B2CAdmin/TenantManagementMenuBlade/~/UserFlows`
+   - Click on your user flow
+   - Look for the "Run user flow" option
+
+5. **Check user flow status**:
+   - Ensure the user flow is **Enabled** (not Draft)
+   - Check that identity providers are properly configured
+   - Verify the user flow has been saved successfully
+
+6. **Browser refresh**:
+   - Refresh the Azure Portal page
+   - Clear browser cache if needed
+   - Try a different browser
+
+7. **Permissions check**:
+   - Ensure you have **Global Administrator** or **Application Administrator** role
+   - Verify you can see the user flow in the list
+   - Check if the user flow is in a different tenant
+
 ### **4. Configure App Registration Manifest**
 
+#### **Purpose of App Registration Manifest**
+The manifest is a JSON configuration file that defines:
+- **Application settings**: Client ID, display name, supported account types
+- **Authentication configuration**: Redirect URIs, logout URLs, token settings
+- **API permissions**: What your app can access
+- **Claims configuration**: What user information is returned
+- **Security settings**: Token lifetimes, access restrictions
+
+#### **Use Cases for Manifest Configuration**
+- **Advanced settings**: Configure options not available in the UI
+- **Bulk configuration**: Update multiple settings at once
+- **Automation**: Programmatically configure app settings
+- **Version control**: Track configuration changes
+- **Troubleshooting**: Debug configuration issues
+
 #### **Step 4.1: Update Manifest**
-1. Go to **App registrations** > **Your App** > **Manifest**
+1. Go to **App registrations** > **Your App** > **Manifest**:
+   - **Blade**: Azure Active Directory > App registrations
+   - **Section**: App registrations list
+   - **Item**: Click on your app name (e.g., "Top Vitamin Supplies")
+   - **Blade**: [Your App Name] > Manifest
+   - **Section**: Left navigation menu
+   - **Item**: Manifest
 2. Update the manifest with these settings:
+   - **Blade**: [Your App Name] > Manifest
+   - **Section**: Top toolbar
+   - **Item**: **Edit** button
+   - Replace the JSON content with the settings below
+   - Click **Save** to apply changes
 
 ```json
 {
@@ -227,17 +705,96 @@ https://auth01.topvitaminsupplies.com/logout
 }
 ```
 
+**Detailed explanation of manifest settings:**
+
+**Basic Application Settings:**
+- **id**: Unique identifier for your app registration
+- **appId**: Client ID used in authentication requests
+- **displayName**: Name shown in consent screens and admin portals
+- **signInAudience**: Who can authenticate with your app
+
+**Web Configuration:**
+- **redirectUris**: URLs where Azure redirects after authentication
+- **logoutUrl**: URL where users are redirected after logout
+- **implicitGrantSettings**: Token issuance configuration
+
+**SPA Configuration:**
+- **redirectUris**: URLs for single-page application callbacks
+- **Purpose**: Supports both web and SPA authentication patterns
+
+**API Permissions (requiredResourceAccess):**
+- **resourceAppId**: "00000003-0000-0000-c000-000000000000" = Microsoft Graph
+- **resourceAccess**: Specific permissions your app needs
+- **Scope IDs**:
+  - "e1fe6dd8-ba31-4d61-89e7-88639da4683d" = User.Read
+  - "37f7f235-527c-4136-accd-4a02d197296e" = email
+  - "64a6cdd6-aab1-4aaf-94b8-3cc8405e90d0" = profile
+
+**Optional Claims:**
+- **idToken**: Claims included in ID tokens
+- **email**: User's email address (essential = required)
+- **given_name**: User's first name
+- **family_name**: User's last name
+- **preferred_username**: User's preferred username
+
 ### **5. Create Client Secret**
 
+#### **Purpose of Client Secret**
+Client secrets provide:
+- **Server-side authentication**: Backend services can authenticate with Azure AD
+- **API access**: Access Microsoft Graph and other APIs on behalf of users
+- **Token exchange**: Exchange authorization codes for access tokens
+- **Security**: Proves your application's identity to Azure AD
+
+#### **Use Cases for Client Secret**
+- **Backend API calls**: Server-to-server communication with Microsoft Graph
+- **Token validation**: Verify tokens received from Azure AD
+- **User synchronization**: Sync user data between Azure AD and your database
+- **Administrative operations**: Perform operations that require elevated privileges
+
 #### **Step 5.1: Generate Client Secret**
-1. Go to **Certificates & secrets**
-2. Click **New client secret**
+1. Go to **Certificates & secrets**:
+   - **Blade**: [Your App Name] > Certificates & secrets
+   - **Section**: Left navigation menu
+   - **Item**: Certificates & secrets
+2. Click **New client secret**:
+   - **Blade**: [Your App Name] > Certificates & secrets
+   - **Section**: Client secrets
+   - **Item**: **+ New client secret** button
 3. Description: "CIAM Client Secret"
 4. Expires: 24 months
 5. Click **Add**
-6. **Copy the secret value immediately** (it won't be shown again)
+6. **Copy the secret value immediately** (it won't be shown again):
+   - **Blade**: [Your App Name] > Certificates & secrets
+   - **Section**: Client secrets list
+   - **Item**: **Copy** button next to the secret value
+   - Store it securely (Azure Key Vault, secure configuration, etc.)
+
+**Purpose of each setting:**
+- **Description**: Helps identify the secret's purpose
+- **Expires**: Security best practice to rotate secrets regularly
+- **24 months**: Balance between security and operational overhead
+
+**Security considerations:**
+- **Store securely**: Use Azure Key Vault or secure configuration management
+- **Rotate regularly**: Create new secrets before expiration
+- **Monitor usage**: Track where and how secrets are used
+- **Access control**: Limit who can view and use secrets
 
 ### **6. Configure DNS**
+
+#### **Purpose of DNS Configuration**
+DNS configuration enables:
+- **Custom domains**: Use your own domain names for authentication
+- **SSL certificates**: Secure HTTPS communication
+- **User experience**: Professional-looking authentication URLs
+- **Multi-environment support**: Different domains for different environments
+
+#### **Use Cases for DNS Configuration**
+- **Professional branding**: Users see your domain, not Azure's
+- **SSL certificates**: Enable HTTPS for secure communication
+- **Environment separation**: Different domains for dev, staging, production
+- **User trust**: Users recognize and trust your domain
 
 #### **Step 6.1: Local Development DNS**
 Add to `/etc/hosts`:
@@ -246,11 +803,33 @@ Add to `/etc/hosts`:
 127.0.0.1 auth01.local.topvitaminsupply.com
 ```
 
+**Purpose of local DNS:**
+- **Development testing**: Test authentication without external DNS
+- **SSL certificates**: Enable HTTPS for local development
+- **Domain consistency**: Use same domain structure across environments
+- **CIAM testing**: Test CIAM hosted UI locally
+
+**How /etc/hosts works:**
+- **Local resolution**: Bypasses external DNS for specified domains
+- **Development only**: Only affects your local machine
+- **Temporary**: Changes are lost on system restart
+
 #### **Step 6.2: Staging DNS**
 Configure CNAME records:
 ```
 auth01.dev.topvitaminsupply.com -> your-staging-server-ip
 ```
+
+**Purpose of staging DNS:**
+- **Testing environment**: Test authentication before production
+- **Team collaboration**: Multiple developers can test
+- **Integration testing**: Test with real DNS resolution
+- **SSL validation**: Test SSL certificate configuration
+
+**CNAME record explanation:**
+- **CNAME**: Canonical Name record
+- **Purpose**: Points one domain to another
+- **Flexibility**: Easy to change target without updating multiple records
 
 #### **Step 6.3: Production DNS**
 Configure CNAME records:
@@ -258,7 +837,33 @@ Configure CNAME records:
 auth01.topvitaminsupplies.com -> your-production-server-ip
 ```
 
+**Purpose of production DNS:**
+- **Live environment**: Real users authenticate through this domain
+- **SSL certificates**: Production SSL certificates
+- **Monitoring**: Track authentication metrics
+- **User experience**: Professional authentication experience
+
+**Production considerations:**
+- **High availability**: Ensure DNS is reliable
+- **Performance**: Use fast DNS providers
+- **Monitoring**: Track DNS resolution times
+- **Backup**: Have fallback DNS configurations
+
 ### **7. Deploy CIAM Hosted UI**
+
+#### **Purpose of CIAM Hosted UI**
+CIAM Hosted UI provides:
+- **Custom authentication experience**: Branded login and registration pages
+- **User management**: Handle user sign-up, sign-in, and profile management
+- **OAuth callbacks**: Process authentication responses from Azure AD
+- **Session management**: Handle user sessions and logout
+
+#### **Use Cases for CIAM Hosted UI**
+- **Branded experience**: Match your application's look and feel
+- **User onboarding**: Guide new users through registration
+- **Password management**: Handle password reset and change
+- **Profile management**: Allow users to update their information
+- **Multi-provider support**: Support multiple authentication methods
 
 #### **Step 7.1: Local Development**
 1. Set up reverse proxy (nginx/apache) for `auth01.local.topvitaminsupply.com`
@@ -270,11 +875,35 @@ auth01.topvitaminsupplies.com -> your-production-server-ip
    - `/callback` - OAuth callback handler
    - `/logout` - Logout handler
 
+**Purpose of each component:**
+- **Reverse proxy**: Routes requests to the correct application
+- **SSL certificate**: Enables HTTPS for secure communication
+- **CIAM application**: Handles authentication logic
+- **Routes**: Define the authentication flow
+
+**Route explanations:**
+- **/login**: Displays login form and redirects to Azure AD
+- **/register**: Displays registration form and redirects to Azure AD
+- **/callback**: Handles OAuth callback from Azure AD
+- **/logout**: Handles user logout and session cleanup
+
 #### **Step 7.2: Staging Environment**
 1. Deploy to staging server
 2. Configure SSL certificate
 3. Set up monitoring and logging
 4. Test authentication flow
+
+**Purpose of staging environment:**
+- **Testing**: Test authentication before production
+- **Integration**: Test with real Azure AD configuration
+- **Performance**: Test under realistic conditions
+- **Team collaboration**: Multiple developers can test
+
+**Staging considerations:**
+- **SSL certificates**: Use staging certificates or Let's Encrypt
+- **Monitoring**: Set up basic monitoring and alerting
+- **Logging**: Configure detailed logging for debugging
+- **Testing**: Comprehensive authentication flow testing
 
 #### **Step 7.3: Production Environment**
 1. Deploy to production server
@@ -282,7 +911,34 @@ auth01.topvitaminsupplies.com -> your-production-server-ip
 3. Set up monitoring, logging, and backup
 4. Configure load balancing if needed
 
+**Purpose of production environment:**
+- **Live service**: Real users authenticate through this environment
+- **High availability**: Ensure service is always available
+- **Performance**: Optimize for production load
+- **Security**: Implement production-grade security measures
+
+**Production considerations:**
+- **SSL certificates**: Use production-grade certificates
+- **Monitoring**: Comprehensive monitoring and alerting
+- **Logging**: Detailed logging for security and debugging
+- **Backup**: Regular backups of configuration and data
+- **Load balancing**: Handle high traffic volumes
+- **Security**: Implement security best practices
+
 ### **8. Configure Environment Variables**
+
+#### **Purpose of Environment Variables**
+Environment variables provide:
+- **Configuration management**: Separate configuration from code
+- **Environment-specific settings**: Different values for different environments
+- **Security**: Keep sensitive information out of code
+- **Flexibility**: Easy to change settings without code changes
+
+#### **Use Cases for Environment Variables**
+- **Multi-environment deployment**: Different settings for dev, staging, production
+- **Secret management**: Store sensitive information securely
+- **Configuration flexibility**: Easy to update settings
+- **Security**: Prevent hardcoded secrets in source code
 
 #### **Step 8.1: Frontend Environment (.env)**
 ```bash
@@ -294,6 +950,19 @@ VITE_LOCAL_DOMAIN=local.topvitaminsupply.com
 VITE_LOCAL_PORT=3000
 ```
 
+**Purpose of each frontend variable:**
+- **VITE_ENVIRONMENT**: Identifies the current environment (local, staging, production)
+- **VITE_AZURE_CLIENT_ID**: Your app's client ID from Azure AD
+- **VITE_AZURE_TENANT_ID**: Your Azure AD tenant ID
+- **VITE_AZURE_AUTHORITY_URL**: Azure AD authority URL for authentication
+- **VITE_LOCAL_DOMAIN**: Local development domain
+- **VITE_LOCAL_PORT**: Local development port
+
+**VITE_ prefix explanation:**
+- **Vite requirement**: Vite only exposes environment variables with VITE_ prefix
+- **Security**: Prevents accidental exposure of sensitive variables
+- **Build-time**: Variables are embedded at build time
+
 #### **Step 8.2: Backend Environment**
 ```bash
 AZURE_TENANT_ID=your-tenant-id-here
@@ -301,7 +970,33 @@ AZURE_CLIENT_ID=your-client-id-here
 AZURE_CLIENT_SECRET=your-client-secret-here
 ```
 
+**Purpose of each backend variable:**
+- **AZURE_TENANT_ID**: Your Azure AD tenant ID
+- **AZURE_CLIENT_ID**: Your app's client ID from Azure AD
+- **AZURE_CLIENT_SECRET**: Your app's client secret (keep secure!)
+
+**Backend security considerations:**
+- **Client secret**: Never expose in frontend code
+- **Secure storage**: Use Azure Key Vault or secure configuration
+- **Access control**: Limit who can view these variables
+- **Rotation**: Regularly rotate client secrets
+
 ### **9. Test Configuration**
+
+#### **Purpose of Testing**
+Testing ensures:
+- **Functionality**: Authentication works correctly
+- **Security**: No security vulnerabilities
+- **User experience**: Smooth authentication flow
+- **Integration**: All components work together
+- **Performance**: Authentication is fast and reliable
+
+#### **Use Cases for Testing**
+- **Development validation**: Ensure code changes work correctly
+- **Integration testing**: Test with real Azure AD
+- **User acceptance**: Verify user experience
+- **Security validation**: Ensure no security issues
+- **Performance testing**: Verify authentication speed
 
 #### **Step 9.1: Local Testing**
 1. Start the application
@@ -312,11 +1007,36 @@ AZURE_CLIENT_SECRET=your-client-secret-here
 6. Verify callback handling
 7. Test logout flow
 
+**Purpose of each test step:**
+- **Application startup**: Verify the app starts correctly
+- **Login page**: Verify login page loads and displays correctly
+- **CIAM redirect**: Verify redirect to CIAM hosted UI
+- **Authentication**: Test with different account types
+- **Callback handling**: Verify OAuth callback processing
+- **Logout flow**: Verify logout works correctly
+
+**Account types to test:**
+- **Microsoft personal**: Hotmail, Outlook.com accounts
+- **Work/school**: Azure AD organizational accounts
+- **Google**: Gmail accounts (if configured)
+
 #### **Step 9.2: Staging Testing**
 1. Deploy to staging
 2. Test with staging CIAM domain
 3. Verify all redirect URIs work
 4. Test with real users
+
+**Purpose of staging testing:**
+- **Environment validation**: Test in realistic environment
+- **Integration testing**: Test with real Azure AD
+- **User testing**: Get feedback from real users
+- **Performance testing**: Test under realistic conditions
+
+**Staging test scenarios:**
+- **Happy path**: Normal authentication flow
+- **Error handling**: Invalid credentials, network issues
+- **Edge cases**: Special characters, long usernames
+- **Performance**: Authentication speed and reliability
 
 #### **Step 9.3: Production Testing**
 1. Deploy to production
@@ -325,22 +1045,83 @@ AZURE_CLIENT_SECRET=your-client-secret-here
 4. Test with real users
 5. Monitor authentication metrics
 
+**Purpose of production testing:**
+- **Live validation**: Test with real users
+- **Security validation**: Ensure production security
+- **Performance monitoring**: Track authentication metrics
+- **User experience**: Verify production user experience
+
+**Production monitoring:**
+- **Authentication success rate**: Track successful logins
+- **Error rates**: Monitor authentication failures
+- **Performance metrics**: Track authentication speed
+- **User feedback**: Collect user experience feedback
+
 ### **10. Security Configuration**
+
+#### **Purpose of Security Configuration**
+Security configuration ensures:
+- **Token security**: Validate and secure authentication tokens
+- **CORS protection**: Control cross-origin requests
+- **Rate limiting**: Prevent abuse and attacks
+- **Monitoring**: Track security events and threats
+
+#### **Use Cases for Security Configuration**
+- **Token validation**: Ensure tokens are valid and not tampered with
+- **CORS protection**: Prevent unauthorized cross-origin requests
+- **Rate limiting**: Prevent brute force attacks
+- **Monitoring**: Detect and respond to security threats
 
 #### **Step 10.1: Token Validation**
 1. Implement JWT token validation in backend
 2. Configure token refresh handling
 3. Set up token expiration policies
 
+**Purpose of token validation:**
+- **Security**: Ensure tokens are valid and not tampered with
+- **Authentication**: Verify user identity
+- **Authorization**: Check user permissions
+- **Session management**: Handle token expiration and refresh
+
+**Token validation steps:**
+- **Signature verification**: Verify token signature
+- **Expiration check**: Ensure token is not expired
+- **Issuer validation**: Verify token issuer
+- **Audience validation**: Verify token audience
+
 #### **Step 10.2: CORS Configuration**
 1. Configure CORS for CIAM domains
 2. Allow requests from application domains
 3. Restrict to necessary HTTP methods
 
+**Purpose of CORS configuration:**
+- **Security**: Control cross-origin requests
+- **Functionality**: Allow legitimate cross-origin requests
+- **Protection**: Prevent unauthorized access
+- **Compliance**: Meet security requirements
+
+**CORS configuration options:**
+- **Allowed origins**: Specify which domains can make requests
+- **Allowed methods**: Specify which HTTP methods are allowed
+- **Allowed headers**: Specify which headers are allowed
+- **Credentials**: Control whether credentials are included
+
 #### **Step 10.3: Rate Limiting**
 1. Implement rate limiting for authentication endpoints
 2. Configure DDoS protection
 3. Set up monitoring for suspicious activity
+
+**Purpose of rate limiting:**
+- **Security**: Prevent brute force attacks
+- **Performance**: Protect against DDoS attacks
+- **Resource protection**: Prevent resource exhaustion
+- **User experience**: Ensure fair access for all users
+
+**Rate limiting strategies:**
+- **Per IP**: Limit requests per IP address
+- **Per user**: Limit requests per user
+- **Per endpoint**: Different limits for different endpoints
+- **Time windows**: Limit requests within time windows
 
 ## 🔍 **Verification Steps**
 

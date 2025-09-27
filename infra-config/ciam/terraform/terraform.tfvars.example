@@ -1,0 +1,55 @@
+# Example Terraform variables file for Azure Entra ID CIAM
+# Copy this file to terraform.tfvars and update with your values
+
+# Required: Your Azure AD Tenant ID
+tenant_id = "12345678-1234-1234-1234-123456789012"
+
+# Optional: Override default values
+app_name         = "Top Vitamin Supplies"
+app_display_name = "Top Vitamin Supplies CIAM"
+homepage_url     = "https://topvitaminsupplies.com"
+
+# Environment configuration
+environment = "local" # local, staging, or production
+
+# Redirect URIs (customize for your domains)
+redirect_uris = [
+  "https://auth01.local.topvitaminsupply.com/callback",
+  "https://auth01.dev.topvitaminsupply.com/callback",
+  "https://auth01.topvitaminsupplies.com/callback",
+  "http://local.topvitaminsupply.com:3000/auth/callback"
+]
+
+# Logout URIs (customize for your domains)
+logout_uris = [
+  "https://auth01.local.topvitaminsupply.com/logout",
+  "https://auth01.dev.topvitaminsupply.com/logout",
+  "https://auth01.topvitaminsupplies.com/logout"
+]
+
+# User flow configuration
+user_flow_name = "TopVitaminSupplies-SignUpSignIn"
+
+# Identity providers to enable
+identity_providers = ["Microsoft"]
+
+# Google provider configuration (optional)
+enable_google_provider = false
+# google_client_id     = "your-google-client-id"
+# google_client_secret = "your-google-client-secret"
+
+# Client secret configuration
+client_secret_display_name   = "CIAM Client Secret"
+client_secret_expiry_months  = 24
+
+# Resource group for B2C resources
+resource_group_name = "rg-topvitaminsupplies-ciam"
+
+# Tags
+tags = {
+  Environment = "CIAM"
+  Project     = "TopVitaminSupplies"
+  ManagedBy   = "Terraform"
+  Purpose     = "External-Identities"
+  Owner       = "DevOps Team"
+}
