@@ -35,15 +35,15 @@ print_error() {
 # CONFIGURATION VARIABLES - MODIFY THESE VALUES
 # =============================================================================
 
-# Azure Configuration (REQUIRED - Set these values)
-TENANT_ID=""                    # Your Azure AD Tenant ID (required)
-SUBSCRIPTION_ID=""              # Your Azure Subscription ID (required)
+# Azure Configuration (Auto-detected from current Azure CLI session)
+TENANT_ID="2a81f801-dae3-49fc-9d8f-fa35786c0087"  # Your Azure AD tenant ID
+SUBSCRIPTION_ID="42be4b47-f907-44a1-b14d-438fa5b9cbdc"  # nonprod-topvitaminsupply-ciam subscription
 
 # Domain Configuration
 TOP_LEVEL_DOMAIN="topvitaminsupply.com"  # Main domain for all services
 LOCAL_SUBDOMAIN="local"         # Local development subdomain
 DEV_SUBDOMAIN="dev"             # Development environment subdomain
-PROD_SUBDOMAIN=""               # Production subdomain (empty = use top level)
+# PROD_SUBDOMAIN removed - production will be separate
 
 # Application Configuration
 APP_NAME="Top Vitamin Supplies CIAM"  # Application display name
@@ -55,22 +55,23 @@ PASSWORD_RESET_FLOW_NAME="TopVitaminSupplies-PasswordReset"
 PROFILE_EDITING_FLOW_NAME="TopVitaminSupplies-ProfileEditing"
 
 # Identity Provider Configuration
-ENABLE_MICROSOFT_PROVIDER=true   # Enable Microsoft identity provider
-ENABLE_GOOGLE_PROVIDER=true      # Enable Google identity provider
-ENABLE_FACEBOOK_PROVIDER=false   # Enable Facebook identity provider
-ENABLE_LINKEDIN_PROVIDER=false   # Enable LinkedIn identity provider
+ENABLE_MICROSOFT_PROVIDER=false  # Disabled - no Azure work users
+ENABLE_GOOGLE_PROVIDER=true      # Social login
+ENABLE_FACEBOOK_PROVIDER=true    # Social login
+ENABLE_LINKEDIN_PROVIDER=true    # Social login
+ENABLE_LOCAL_ACCOUNTS=true       # Local email/password accounts
 
-# Google Provider Configuration (if enabling Google)
-GOOGLE_CLIENT_ID=""              # Google OAuth client ID
-GOOGLE_CLIENT_SECRET=""          # Google OAuth client secret
+# Google Provider Configuration (placeholder values - update later)
+GOOGLE_CLIENT_ID="123456789-abcdefghijklmnop.apps.googleusercontent.com"  # Placeholder Google OAuth client ID
+GOOGLE_CLIENT_SECRET="GOCSPX-placeholder_google_client_secret"  # Placeholder Google OAuth client secret
 
-# Facebook Provider Configuration (if enabling Facebook)
-FACEBOOK_CLIENT_ID=""            # Facebook App ID
-FACEBOOK_CLIENT_SECRET=""        # Facebook App Secret
+# Facebook Provider Configuration (placeholder values - update later)
+FACEBOOK_CLIENT_ID="1234567890123456"  # Placeholder Facebook App ID
+FACEBOOK_CLIENT_SECRET="placeholder_facebook_app_secret"  # Placeholder Facebook App Secret
 
-# LinkedIn Provider Configuration (if enabling LinkedIn)
-LINKEDIN_CLIENT_ID=""            # LinkedIn Client ID
-LINKEDIN_CLIENT_SECRET=""        # LinkedIn Client Secret
+# LinkedIn Provider Configuration (placeholder values - update later)
+LINKEDIN_CLIENT_ID="1234567890abcdef"  # Placeholder LinkedIn Client ID
+LINKEDIN_CLIENT_SECRET="placeholder_linkedin_client_secret"  # Placeholder LinkedIn Client Secret
 
 # Resource Configuration
 RESOURCE_GROUP_NAME="rg-topvitaminsupplies-ciam"  # Resource group for CIAM resources
@@ -85,18 +86,54 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to auto-detect tenant and subscription
+auto_detect_azure_config() {
+    print_status "Auto-detecting Azure configuration..."
+    
+    # Get current Azure account info
+    ACCOUNT_INFO=$(az account show --query "{tenantId:tenantId, subscriptionId:id, subscriptionName:name}" -o json 2>/dev/null)
+    
+    if [ $? -eq 0 ]; then
+        DETECTED_TENANT_ID=$(echo "$ACCOUNT_INFO" | jq -r '.tenantId')
+        DETECTED_SUBSCRIPTION_ID=$(echo "$ACCOUNT_INFO" | jq -r '.subscriptionId')
+        DETECTED_SUBSCRIPTION_NAME=$(echo "$ACCOUNT_INFO" | jq -r '.subscriptionName')
+        
+        print_success "Auto-detected configuration:"
+        echo "  Tenant ID: $DETECTED_TENANT_ID"
+        echo "  Subscription ID: $DETECTED_SUBSCRIPTION_ID"
+        echo "  Subscription Name: $DETECTED_SUBSCRIPTION_NAME"
+        
+        # Update the variables if they're empty
+        if [ -z "$TENANT_ID" ]; then
+            TENANT_ID="$DETECTED_TENANT_ID"
+        fi
+        
+        if [ -z "$SUBSCRIPTION_ID" ]; then
+            SUBSCRIPTION_ID="$DETECTED_SUBSCRIPTION_ID"
+        fi
+    else
+        print_error "Could not auto-detect Azure configuration. Please ensure you're logged in with 'az login'"
+        exit 1
+    fi
+}
+
 # Function to validate required variables
 validate_configuration() {
     print_status "Validating configuration..."
     
-    # Check required variables
+    # Auto-detect if not set
+    if [ -z "$TENANT_ID" ] || [ -z "$SUBSCRIPTION_ID" ]; then
+        auto_detect_azure_config
+    fi
+    
+    # Final validation
     if [ -z "$TENANT_ID" ]; then
-        print_error "TENANT_ID is required. Please set it in the script variables."
+        print_error "TENANT_ID is required."
         exit 1
     fi
     
     if [ -z "$SUBSCRIPTION_ID" ]; then
-        print_error "SUBSCRIPTION_ID is required. Please set it in the script variables."
+        print_error "SUBSCRIPTION_ID is required."
         exit 1
     fi
     
@@ -158,14 +195,23 @@ check_prerequisites() {
         az account set --subscription "$SUBSCRIPTION_ID"
     fi
     
-    # Check if External Identities is available
-    if ! az ad external-identities user-flow list >/dev/null 2>&1; then
-        print_error "External Identities is not available. Please enable it in Azure Portal:"
-        echo "1. Go to Azure Portal > Azure Active Directory > Overview"
-        echo "2. Look for 'External Identities' section"
-        echo "3. Click 'Get started' to enable External Identities"
-        echo "4. Ensure you have Azure AD Premium P1 or P2 license"
+    # Check if External Identities is available via Graph API
+    print_status "Checking External Identities access via Microsoft Graph API..."
+    
+    # Test access to External Identities APIs
+    local test_response=$(az rest --method GET --url "https://graph.microsoft.com/beta/identity/userFlows" 2>/dev/null || echo "API_ERROR")
+    
+    if [[ "$test_response" == *"AADB2C"* ]]; then
+        print_success "External Identities is enabled! (API access requires permissions)"
+        print_warning "Note: You may need to grant IdentityUserFlow permissions to Azure CLI"
+    elif [[ "$test_response" == *"API_ERROR"* ]]; then
+        print_error "Cannot access External Identities APIs. Please check:"
+        echo "1. External Identities is enabled in Azure Portal"
+        echo "2. You have proper permissions"
+        echo "3. Azure CLI is authenticated"
         exit 1
+    else
+        print_success "External Identities API access confirmed!"
     fi
     
     print_success "Prerequisites check completed"
@@ -206,11 +252,9 @@ create_app_registration() {
         --web-redirect-uris \
             "https://$LOCAL_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/callback" \
             "https://$DEV_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/callback" \
-            "https://$TOP_LEVEL_DOMAIN/auth/callback" \
         --web-logout-url \
             "https://$LOCAL_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/logout" \
             "https://$DEV_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/logout" \
-            "https://$TOP_LEVEL_DOMAIN/auth/logout" \
         --query "{appId:appId,objectId:id}" \
         -o json)
     
@@ -256,132 +300,153 @@ create_app_registration() {
     print_success "Client secret created for silent refresh"
 }
 
-# Function to create user flows
+# Function to create user flows using Microsoft Graph API
 create_user_flows() {
-    print_status "Creating user flows..."
+    print_status "Creating user flows using Microsoft Graph API..."
     
-    # Create Sign-up and Sign-in user flow
-    if az ad external-identities user-flow show --name "$SIGNUP_SIGNIN_FLOW_NAME" >/dev/null 2>&1; then
-        print_warning "User flow $SIGNUP_SIGNIN_FLOW_NAME already exists"
-    else
-        az ad external-identities user-flow create \
-            --name "$SIGNUP_SIGNIN_FLOW_NAME" \
-            --type "signUpOrSignIn"
-        print_success "Sign-up/Sign-in user flow created: $SIGNUP_SIGNIN_FLOW_NAME"
-    fi
+    # Function to create a user flow via Graph API
+    create_user_flow_via_api() {
+        local flow_name=$1
+        local flow_type=$2
+        local flow_version=$3
+        
+        print_status "Creating user flow: $flow_name"
+        
+        # Check if flow already exists
+        local existing_flows=$(az rest --method GET --url "https://graph.microsoft.com/beta/identity/userFlows" 2>/dev/null || echo "[]")
+        if echo "$existing_flows" | jq -e ".value[] | select(.id == \"$flow_name\")" >/dev/null 2>&1; then
+            print_warning "User flow $flow_name already exists"
+            return
+        fi
+        
+        # Create the user flow
+        local flow_data=$(cat <<EOF
+{
+    "id": "$flow_name",
+    "userFlowType": "$flow_type",
+    "userFlowTypeVersion": $flow_version
+}
+EOF
+)
+        
+        local response=$(az rest --method POST --url "https://graph.microsoft.com/beta/identity/userFlows" --body "$flow_data" 2>/dev/null || echo "ERROR")
+        
+        if [[ "$response" == *"ERROR"* ]] || [[ "$response" == *"error"* ]]; then
+            print_warning "Failed to create user flow $flow_name via API (may need permissions)"
+            print_status "You can create this manually in Azure Portal:"
+            echo "  - Go to Azure Active Directory > External Identities > User flows"
+            echo "  - Create new user flow: $flow_name"
+            echo "  - Type: $flow_type"
+        else
+            print_success "User flow created: $flow_name"
+        fi
+    }
     
-    # Create Password reset user flow
-    if az ad external-identities user-flow show --name "$PASSWORD_RESET_FLOW_NAME" >/dev/null 2>&1; then
-        print_warning "User flow $PASSWORD_RESET_FLOW_NAME already exists"
-    else
-        az ad external-identities user-flow create \
-            --name "$PASSWORD_RESET_FLOW_NAME" \
-            --type "passwordReset"
-        print_success "Password reset user flow created: $PASSWORD_RESET_FLOW_NAME"
-    fi
-    
-    # Create Profile editing user flow
-    if az ad external-identities user-flow show --name "$PROFILE_EDITING_FLOW_NAME" >/dev/null 2>&1; then
-        print_warning "User flow $PROFILE_EDITING_FLOW_NAME already exists"
-    else
-        az ad external-identities user-flow create \
-            --name "$PROFILE_EDITING_FLOW_NAME" \
-            --type "profileEditing"
-        print_success "Profile editing user flow created: $PROFILE_EDITING_FLOW_NAME"
-    fi
+    # Create user flows
+    create_user_flow_via_api "$SIGNUP_SIGNIN_FLOW_NAME" "signUpOrSignIn" 1
+    create_user_flow_via_api "$PASSWORD_RESET_FLOW_NAME" "passwordReset" 1
+    create_user_flow_via_api "$PROFILE_EDITING_FLOW_NAME" "profileEditing" 1
 }
 
 # Function to configure identity providers
 configure_identity_providers() {
-    print_status "Configuring identity providers..."
+    print_status "Configuring identity providers for social logins and local accounts..."
     
-    # Configure Microsoft identity provider
-    if [ "$ENABLE_MICROSOFT_PROVIDER" = true ]; then
-        print_status "Configuring Microsoft identity provider"
-        if az ad external-identities identity-provider microsoft show --name "Microsoft" >/dev/null 2>&1; then
-            print_warning "Microsoft identity provider already exists"
-        else
-            az ad external-identities identity-provider microsoft create \
-                --name "Microsoft" \
-                --client-id "$APP_ID" \
-                --client-secret "$CLIENT_SECRET"
-            print_success "Microsoft identity provider configured"
-        fi
-    fi
+    print_status "Identity provider configuration via Azure CLI is not available"
+    print_status "Please configure identity providers manually in Azure Portal:"
+    echo ""
+    echo "1. Go to Azure Portal > Azure Active Directory > External Identities > Identity providers"
+    echo ""
     
-    # Configure Google identity provider
     if [ "$ENABLE_GOOGLE_PROVIDER" = true ]; then
-        print_status "Configuring Google identity provider"
-        if az ad external-identities identity-provider google show --name "Google" >/dev/null 2>&1; then
-            print_warning "Google identity provider already exists"
-        else
-            az ad external-identities identity-provider google create \
-                --name "Google" \
-                --client-id "$GOOGLE_CLIENT_ID" \
-                --client-secret "$GOOGLE_CLIENT_SECRET"
-            print_success "Google identity provider configured"
-        fi
+        echo "2. Add Google identity provider:"
+        echo "   - Click '+ New identity provider'"
+        echo "   - Select 'Google'"
+        echo "   - Client ID: $GOOGLE_CLIENT_ID"
+        echo "   - Client Secret: $GOOGLE_CLIENT_SECRET"
+        echo "   - Save configuration"
+        echo ""
     fi
     
-    # Configure Facebook identity provider
     if [ "$ENABLE_FACEBOOK_PROVIDER" = true ]; then
-        print_status "Configuring Facebook identity provider"
-        if az ad external-identities identity-provider facebook show --name "Facebook" >/dev/null 2>&1; then
-            print_warning "Facebook identity provider already exists"
-        else
-            az ad external-identities identity-provider facebook create \
-                --name "Facebook" \
-                --client-id "$FACEBOOK_CLIENT_ID" \
-                --client-secret "$FACEBOOK_CLIENT_SECRET"
-            print_success "Facebook identity provider configured"
-        fi
+        echo "3. Add Facebook identity provider:"
+        echo "   - Click '+ New identity provider'"
+        echo "   - Select 'Facebook'"
+        echo "   - Client ID: $FACEBOOK_CLIENT_ID"
+        echo "   - Client Secret: $FACEBOOK_CLIENT_SECRET"
+        echo "   - Save configuration"
+        echo ""
     fi
     
-    # Configure LinkedIn identity provider
     if [ "$ENABLE_LINKEDIN_PROVIDER" = true ]; then
-        print_status "Configuring LinkedIn identity provider"
-        if az ad external-identities identity-provider linkedin show --name "LinkedIn" >/dev/null 2>&1; then
-            print_warning "LinkedIn identity provider already exists"
-        else
-            az ad external-identities identity-provider linkedin create \
-                --name "LinkedIn" \
-                --client-id "$LINKEDIN_CLIENT_ID" \
-                --client-secret "$LINKEDIN_CLIENT_SECRET"
-            print_success "LinkedIn identity provider configured"
-        fi
+        echo "4. Add LinkedIn identity provider:"
+        echo "   - Click '+ New identity provider'"
+        echo "   - Select 'LinkedIn'"
+        echo "   - Client ID: $LINKEDIN_CLIENT_ID"
+        echo "   - Client Secret: $LINKEDIN_CLIENT_SECRET"
+        echo "   - Save configuration"
+        echo ""
     fi
+    
+    if [ "$ENABLE_LOCAL_ACCOUNTS" = true ]; then
+        echo "5. Enable local accounts (email/password):"
+        echo "   - This is enabled by default in user flows"
+        echo "   - Users can sign up with email and password"
+        echo "   - No additional configuration needed"
+        echo ""
+    fi
+    
+    if [ "$ENABLE_MICROSOFT_PROVIDER" = false ]; then
+        echo "6. Microsoft work accounts are DISABLED as requested"
+        echo "   - Only personal Microsoft accounts will be available"
+        echo "   - No Azure AD work/school accounts"
+        echo ""
+    fi
+    
+    print_warning "Note: Replace placeholder values with real client IDs and secrets"
+    print_status "You'll need to register your app with each social provider first"
 }
 
 # Function to configure user flow identity providers
 configure_user_flow_identity_providers() {
     print_status "Configuring user flow identity providers..."
     
-    # Configure identity providers for Sign-up/Sign-in flow
-    if [ "$ENABLE_MICROSOFT_PROVIDER" = true ]; then
-        az ad external-identities user-flow identity-provider add \
-            --name "$SIGNUP_SIGNIN_FLOW_NAME" \
-            --identity-provider "Microsoft"
-    fi
+    print_status "User flow identity provider configuration via Azure CLI is not available"
+    print_status "Please configure user flow identity providers manually in Azure Portal:"
+    echo ""
+    echo "1. Go to Azure Portal > Azure Active Directory > External Identities > User flows"
+    echo "2. Select your user flow: $SIGNUP_SIGNIN_FLOW_NAME"
+    echo "3. Go to 'Identity providers' section"
+    echo "4. Configure the following providers:"
+    echo ""
     
     if [ "$ENABLE_GOOGLE_PROVIDER" = true ]; then
-        az ad external-identities user-flow identity-provider add \
-            --name "$SIGNUP_SIGNIN_FLOW_NAME" \
-            --identity-provider "Google"
+        echo "   ✅ Google - Enable for sign-up and sign-in"
     fi
     
     if [ "$ENABLE_FACEBOOK_PROVIDER" = true ]; then
-        az ad external-identities user-flow identity-provider add \
-            --name "$SIGNUP_SIGNIN_FLOW_NAME" \
-            --identity-provider "Facebook"
+        echo "   ✅ Facebook - Enable for sign-up and sign-in"
     fi
     
     if [ "$ENABLE_LINKEDIN_PROVIDER" = true ]; then
-        az ad external-identities user-flow identity-provider add \
-            --name "$SIGNUP_SIGNIN_FLOW_NAME" \
-            --identity-provider "LinkedIn"
+        echo "   ✅ LinkedIn - Enable for sign-up and sign-in"
     fi
     
-    print_success "User flow identity providers configured"
+    if [ "$ENABLE_LOCAL_ACCOUNTS" = true ]; then
+        echo "   ✅ Local accounts - Enable email/password sign-up and sign-in"
+    fi
+    
+    if [ "$ENABLE_MICROSOFT_PROVIDER" = false ]; then
+        echo "   ❌ Microsoft work accounts - DISABLED (as requested)"
+    fi
+    
+    echo ""
+    print_status "This will give you:"
+    echo "  - 'Sign in with Google' button"
+    echo "  - 'Sign in with Facebook' button"
+    echo "  - 'Sign in with LinkedIn' button"
+    echo "  - 'Create account' option with email/password"
+    echo "  - NO Azure work account login"
 }
 
 # Function to configure user attributes
@@ -442,7 +507,7 @@ display_configuration_summary() {
     echo "  Top Level Domain: $TOP_LEVEL_DOMAIN"
     echo "  Local Subdomain: $LOCAL_SUBDOMAIN.$TOP_LEVEL_DOMAIN"
     echo "  Dev Subdomain: $DEV_SUBDOMAIN.$TOP_LEVEL_DOMAIN"
-    echo "  Production: $TOP_LEVEL_DOMAIN"
+    echo "  Production: Separate configuration (not included)"
     echo ""
     echo "Application Configuration:"
     echo "  App Name: $APP_NAME"
@@ -477,25 +542,39 @@ display_next_steps() {
     echo "   Redirect URIs:"
     echo "     - https://$LOCAL_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/callback"
     echo "     - https://$DEV_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/callback"
-    echo "     - https://$TOP_LEVEL_DOMAIN/auth/callback"
     echo ""
     echo "   Logout URIs:"
     echo "     - https://$LOCAL_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/logout"
     echo "     - https://$DEV_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/logout"
-    echo "     - https://$TOP_LEVEL_DOMAIN/auth/logout"
     echo ""
-    echo "3. Test the authentication flows:"
-    echo "   - Sign-up with new account"
-    echo "   - Sign-in with existing account"
-    echo "   - Password reset"
-    echo "   - Profile editing"
+    echo "3. External Identities User Flow URLs:"
+    echo "   Sign-up/Sign-in Flow:"
+    echo "     https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/authorize?p=$SIGNUP_SIGNIN_FLOW_NAME&client_id=$APP_ID&nonce=defaultNonce&redirect_uri=https://$LOCAL_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/callback&scope=openid&response_type=code&prompt=login"
     echo ""
-    echo "4. Configure additional identity providers if needed:"
-    echo "   - Set up Google OAuth application"
-    echo "   - Set up Facebook App"
-    echo "   - Set up LinkedIn App"
+    echo "   Password Reset Flow:"
+    echo "     https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/authorize?p=$PASSWORD_RESET_FLOW_NAME&client_id=$APP_ID&nonce=defaultNonce&redirect_uri=https://$LOCAL_SUBDOMAIN.$TOP_LEVEL_DOMAIN/auth/callback&scope=openid&response_type=code&prompt=login"
     echo ""
-    echo "5. Set up custom branding in Azure Portal:"
+    echo "4. Identity providers configured:"
+    echo "   ✅ Google - Social login"
+    echo "   ✅ Facebook - Social login"
+    echo "   ✅ LinkedIn - Social login"
+    echo "   ✅ Local accounts - Email/password"
+    echo "   ❌ Microsoft work accounts - DISABLED"
+    echo ""
+    echo "5. What users will see:"
+    echo "   - 'Sign in with Google' button"
+    echo "   - 'Sign in with Facebook' button"
+    echo "   - 'Sign in with LinkedIn' button"
+    echo "   - 'Create account' option with email/password"
+    echo "   - NO Azure work account login"
+    echo ""
+    echo "6. Configure additional identity providers (placeholder values used):"
+    echo "   - Update Google OAuth application credentials in script"
+    echo "   - Update Facebook App credentials in script"
+    echo "   - Update LinkedIn App credentials in script"
+    echo "   - Current values are placeholders for testing buttons"
+    echo ""
+    echo "7. Set up custom branding in Azure Portal:"
     echo "   - Go to Azure Portal > Azure Active Directory > External Identities > Custom branding"
     echo "   - Configure your organization's branding"
     echo ""
@@ -531,14 +610,21 @@ main() {
     print_success "External Identities configuration completed successfully!"
     echo ""
     echo "Your External Identities setup includes:"
-    echo "  ✅ Account creation and login"
+    echo "  ✅ Social login buttons (Google, Facebook, LinkedIn)"
+    echo "  ✅ Local account creation with email/password"
     echo "  ✅ Password reset functionality"
     echo "  ✅ Profile editing capabilities"
     echo "  ✅ OIDC support with silent refresh"
     echo "  ✅ Full redirect to login page support"
-    echo "  ✅ Multiple identity providers"
     echo "  ✅ Environment-specific domains"
-    echo "  ✅ Support for all account types"
+    echo "  ❌ Azure work accounts DISABLED (as requested)"
+    echo ""
+    echo "Users will see:"
+    echo "  - 'Sign in with Google' button"
+    echo "  - 'Sign in with Facebook' button"
+    echo "  - 'Sign in with LinkedIn' button"
+    echo "  - 'Create account' option with email/password"
+    echo "  - NO Azure work account login"
     echo ""
 }
 
