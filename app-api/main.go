@@ -438,15 +438,16 @@ func (r *SQLSiteRepository) Delete(id string) error {
 
 // Main app structure
 type App struct {
-	config            *Config
-	db                *sql.DB
-	posts             PostRepository
-	sites             SiteRepository
-	sessions          *sessions.CookieStore
-	logger            *Logger
-	thorneService     *services.ThorneService
-	thorneHandlers    *handlers.ThorneHandlers
-	azureAuthHandlers *handlers.AzureAuthHandlers
+	config              *Config
+	db                  *sql.DB
+	posts               PostRepository
+	sites               SiteRepository
+	sessions            *sessions.CookieStore
+	logger              *Logger
+	thorneService       *services.ThorneService
+	thorneHandlers      *handlers.ThorneHandlers
+	azureAuthHandlers   *handlers.AzureAuthHandlers
+	cognitoAuthHandlers *handlers.CognitoAuthHandlers
 }
 
 func NewApp(config *Config) (*App, error) {
@@ -468,16 +469,34 @@ func NewApp(config *Config) (*App, error) {
 	// Initialize Azure authentication handlers
 	azureAuthHandlers := handlers.NewAzureAuthHandlers(db)
 
+	// Initialize Cognito authentication handlers
+	cognitoConfig := &handlers.CognitoConfig{
+		UserPoolID:   "us-east-1_FJUcN8W07",
+		ClientID:     "4lt0iqap612c9jug55f3a1s69k",
+		ClientSecret: "", // In production, get from environment or secure storage
+		Region:       "us-east-1",
+		Domain:       "auth.dev.np-topvitaminsupply.com",
+		JWKSURL:      "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07/.well-known/jwks.json",
+		IssuerURL:    "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07",
+		AuthURL:      "https://auth.dev.np-topvitaminsupply.com/login/continue",
+		TokenURL:     "https://auth.dev.np-topvitaminsupply.com/oauth2/token",
+		RedirectURI:  "https://dev.np-totalvitaminsupply.com/auth/cognito/callback",
+		Scope:        "email openid phone",
+		ResponseType: "code",
+	}
+	cognitoAuthHandlers := handlers.NewCognitoAuthHandlers(db, cognitoConfig)
+
 	app := &App{
-		config:            config,
-		db:                db,
-		posts:             &SQLPostRepository{db: db},
-		sites:             &SQLSiteRepository{db: db},
-		sessions:          sessions.NewCookieStore([]byte(config.Session.Secret)),
-		logger:            &Logger{level: logLevel},
-		thorneService:     thorneService,
-		thorneHandlers:    thorneHandlers,
-		azureAuthHandlers: azureAuthHandlers,
+		config:              config,
+		db:                  db,
+		posts:               &SQLPostRepository{db: db},
+		sites:               &SQLSiteRepository{db: db},
+		sessions:            sessions.NewCookieStore([]byte(config.Session.Secret)),
+		logger:              &Logger{level: logLevel},
+		thorneService:       thorneService,
+		thorneHandlers:      thorneHandlers,
+		azureAuthHandlers:   azureAuthHandlers,
+		cognitoAuthHandlers: cognitoAuthHandlers,
 	}
 
 	return app, nil
@@ -1266,6 +1285,13 @@ func main() {
 	api.HandleFunc("/auth/verify-token", app.azureAuthHandlers.VerifyToken).Methods("POST")
 	api.HandleFunc("/auth/user/{id}", app.azureAuthHandlers.GetUserInfo).Methods("GET")
 	api.HandleFunc("/auth/azure-config", app.azureAuthHandlers.GetAzureConfig).Methods("GET")
+
+	// Cognito Authentication API endpoints
+	api.HandleFunc("/auth/cognito/login", app.cognitoAuthHandlers.Login).Methods("GET")
+	api.HandleFunc("/auth/cognito/callback", app.cognitoAuthHandlers.Callback).Methods("GET")
+	api.HandleFunc("/auth/cognito/refresh", app.cognitoAuthHandlers.RefreshToken).Methods("GET")
+	api.HandleFunc("/auth/cognito/logout", app.cognitoAuthHandlers.Logout).Methods("GET")
+	api.HandleFunc("/auth/cognito/config", app.cognitoAuthHandlers.GetCognitoConfig).Methods("GET")
 
 	app.logger.Info("main", "startup", "Server ready to accept connections", map[string]interface{}{
 		"context": map[string]interface{}{

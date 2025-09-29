@@ -1,0 +1,25 @@
+code that is relevant is for apps started in script 
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/local-scripts/start-full-stack-unified.sh
+
+manage use cases and requirements under /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements
+maintain final resulting use cases, acceptance criterial and requirements under
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements/final-functional
+for functional
+
+and under 
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements/final-nonfunctional
+for non functional
+
+maintain a log of requirement changes with date and time summarizing change Request
+under /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements/requirement-change-history
+
+each change request shuld be in it own file file name format YYYY-MM-dd-HH-mm-ss-requirement-request.md
+
+if specific environmental or other configurations  requirements go in requirement folders put it somewhere there else choose a differnt folder
+
+and the specific values choose some folder that makes sense
+
+database schema and migration scripts are here 
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/app-api/migrations
+any updates that result in database schema or initial data  should also result in migrations scripts
+also in file named _current--full-schema.sql store sql to create latest schema from scratch

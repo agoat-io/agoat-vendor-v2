@@ -3,6 +3,10 @@ authorization will be with aws coginito, create some config file for this to sup
 this is the url for the manages login/signup UI
 https://auth.dev.np-topvitaminsupply.com/login/continue?client_id=4lt0iqap612c9jug55f3a1s69k&response_type=code&scope=email+openid+phone&redirect_uri=https%3A%2F%2Fdev.np-totalvitaminsupply.com
 
+
+if login selected it should do full redirect to managed login page not events
+accept any credentials in the app apges and then redirect with callback.   The callback should Traefik
+state proprery to return to the exact page it was in originally.
 after login in since same domain it should refresh token automatically with background calls to coginito
 
 this is the token signing key url
@@ -12,3 +16,4 @@ the ui should get token and send it to the APIs
 
 the ui should use refresh token to get new token
 the apis should validate the tokens
+
