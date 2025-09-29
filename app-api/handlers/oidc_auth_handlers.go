@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -142,22 +139,6 @@ func loadOIDCConfig(db *sql.DB, systemName string) (*OIDCConfig, error) {
 func getRedirectURI(systemName string) string {
 	baseURL := "https://dev.np-totalvitaminsupply.com"
 	return fmt.Sprintf("%s/auth/%s/callback", baseURL, systemName)
-}
-
-// generatePKCE generates PKCE code verifier and challenge
-func generatePKCE() (string, string, error) {
-	// Generate code verifier (43-128 characters, URL-safe)
-	verifierBytes := make([]byte, 32)
-	if _, err := rand.Read(verifierBytes); err != nil {
-		return "", "", err
-	}
-	codeVerifier := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(verifierBytes)
-
-	// Generate code challenge (SHA256 hash of verifier)
-	hash := sha256.Sum256([]byte(codeVerifier))
-	codeChallenge := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(hash[:])
-
-	return codeVerifier, codeChallenge, nil
 }
 
 // validateReturnURL validates return URL to prevent open redirects
@@ -671,25 +652,4 @@ func (h *OIDCAuthHandlers) GetOIDCConfig(w http.ResponseWriter, r *http.Request)
 		"success": true,
 		"config":  h.config,
 	})
-}
-
-// Helper functions for JWT claim extraction
-func getStringClaim(claims map[string]interface{}, key string) string {
-	if val, ok := claims[key].(string); ok {
-		return val
-	}
-	return ""
-}
-
-func getBoolClaim(claims map[string]interface{}, key string) bool {
-	if val, ok := claims[key].(bool); ok {
-		return val
-	}
-	return false
-}
-
-// hashToken creates a hash of the token for logging purposes
-func hashToken(token string) string {
-	hash := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(hash[:])
 }

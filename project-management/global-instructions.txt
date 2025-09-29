@@ -65,3 +65,7 @@ use these templates for consistent requirements documentation:
 - nonfunctional-requirement-template.md: for non-functional requirements  
 - user-story-template.md: for user stories
 -based on changes update ADRS in folder /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/adrs
+
+if playwright tests are requested then:
+- detect any javascript errors either through including them in playwright reports or any other Waypoint
+- ensure you read logs from server side apps to help troubleshot and fix any issues 

@@ -15,14 +15,14 @@ import {
 import { CalendarIcon, PersonIcon, PlusIcon, EyeOpenIcon } from '@radix-ui/react-icons'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
-import { useAzureAuth } from '../contexts/AzureAuthContext'
+import { useSimpleAuth } from '../contexts/SimpleAuthContext'
 
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const navigate = useNavigate()
-  const { user, isAuthenticated } = useAzureAuth()
+  const { user, isAuthenticated } = useSimpleAuth()
 
   // Redirect if not authenticated
   useEffect(() => {

@@ -10,7 +10,7 @@ import NewPost from './pages/NewPost'
 import PostDetail from './pages/PostDetail'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './components/ThemeProvider'
-import { AzureAuthProvider, useAzureAuth } from './contexts/AzureAuthContext'
+import { SimpleAuthProvider, useSimpleAuth } from './contexts/SimpleAuthContext'
 import EditPost from './pages/EditPost'
 import GlobalErrorToast from './components/GlobalErrorToast'
 import ThorneEducation from './pages/ThorneEducation'
@@ -23,7 +23,7 @@ import AuthLogout from './pages/AuthLogout'
 
 function Header() {
   const location = useLocation()
-  const { user, isAuthenticated, logout } = useAzureAuth()
+  const { user, isAuthenticated, logout } = useSimpleAuth()
   
   return (
     <Box style={{ 
@@ -51,7 +51,7 @@ function Header() {
                 A
               </Box>
               <Heading size="5" style={{ color: 'var(--gray-12)' }}>
-                topvitaminsupplies.com
+                AGoat Publisher
               </Heading>
             </Flex>
           </Link>
@@ -114,7 +114,7 @@ function Header() {
 }
 
 function AppContent() {
-  const { isLoading } = useAzureAuth()
+  const { isLoading } = useSimpleAuth()
 
   if (isLoading) {
     return (
@@ -162,14 +162,14 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <AzureAuthProvider>
+      <SimpleAuthProvider>
         <ThemeProvider>
           <Theme>
             <AppContent />
             <GlobalErrorToast />
           </Theme>
         </ThemeProvider>
-      </AzureAuthProvider>
+      </SimpleAuthProvider>
     </ErrorBoundary>
   )
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"encoding/gob"
 	"encoding/json"
@@ -1300,13 +1301,40 @@ func main() {
 	})
 
 	fmt.Printf("Server starting on port %s\n", config.Server.Port)
-	if err := http.ListenAndServe(":"+config.Server.Port, router); err != nil {
-		app.logger.Error("main", "startup", "HTTP server error", map[string]interface{}{
-			"context": map[string]interface{}{
-				"error": err.Error(),
+
+	// Load SSL certificate for HTTPS
+	certFile := "../certs/dev.np-topvitaminsupply.com.crt"
+	keyFile := "../certs/dev.np-topvitaminsupply.com.key"
+
+	// Check if certificate files exist
+	if _, err := os.Stat(certFile); os.IsNotExist(err) {
+		fmt.Printf("SSL certificate not found at %s, starting HTTP server\n", certFile)
+		if err := http.ListenAndServe(":"+config.Server.Port, router); err != nil {
+			app.logger.Error("main", "startup", "HTTP server error", map[string]interface{}{
+				"context": map[string]interface{}{
+					"error": err.Error(),
+				},
+			})
+			fmt.Printf("HTTP server error: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		fmt.Printf("SSL certificate found, starting HTTPS server\n")
+		server := &http.Server{
+			Addr:    ":" + config.Server.Port,
+			Handler: router,
+			TLSConfig: &tls.Config{
+				MinVersion: tls.VersionTLS12,
 			},
-		})
-		fmt.Printf("HTTP server error: %v\n", err)
-		os.Exit(1)
+		}
+		if err := server.ListenAndServeTLS(certFile, keyFile); err != nil {
+			app.logger.Error("main", "startup", "HTTPS server error", map[string]interface{}{
+				"context": map[string]interface{}{
+					"error": err.Error(),
+				},
+			})
+			fmt.Printf("HTTPS server error: %v\n", err)
+			os.Exit(1)
+		}
 	}
 }

@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -353,10 +351,4 @@ func (h *AzureAuthHandlers) GetAzureConfig(w http.ResponseWriter, r *http.Reques
 		"success": true,
 		"config":  config,
 	})
-}
-
-// hashToken creates a hash of the token for logging purposes
-func hashToken(token string) string {
-	hash := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(hash[:])
 }
