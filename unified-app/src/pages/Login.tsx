@@ -10,11 +10,11 @@ import {
   Container
 } from '@radix-ui/themes'
 import { PersonIcon } from '@radix-ui/react-icons'
-import { useSimpleAuth } from '../contexts/SimpleAuthContext'
+import { useOIDCAuth } from '../contexts/OIDCAuthContext'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { login, isAuthenticated, user, isLoading, error } = useSimpleAuth()
+  const { login, isAuthenticated, user, isLoading, error } = useOIDCAuth()
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -25,7 +25,9 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      await login()
+      // Get the current URL to return to after login
+      const returnUrl = window.location.href
+      await login(returnUrl)
     } catch (err) {
       console.error('Login error:', err)
     }
@@ -92,7 +94,7 @@ export default function Login() {
               style={{ width: '100%' }}
             >
               <PersonIcon />
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Redirecting to login...' : 'Login with OIDC'}
             </Button>
           </Flex>
 
@@ -104,7 +106,7 @@ export default function Login() {
             borderTop: '1px solid var(--gray-6)'
           }}>
             <Text size="2" color="gray">
-              Demo login - no credentials required
+              Secure login with OIDC (AWS Cognito)
             </Text>
           </Box>
         </Card>

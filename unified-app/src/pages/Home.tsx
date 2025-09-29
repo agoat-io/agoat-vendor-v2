@@ -14,13 +14,13 @@ import {
 import { CalendarIcon, PersonIcon, ArrowRightIcon, PlusIcon } from '@radix-ui/react-icons'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
-import { useSimpleAuth } from '../contexts/SimpleAuthContext'
+import { useOIDCAuth } from '../contexts/OIDCAuthContext'
 
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { user, isAuthenticated } = useSimpleAuth()
+  const { user, isAuthenticated } = useOIDCAuth()
 
   // Fetch posts
   useEffect(() => {
@@ -159,13 +159,13 @@ export default function Home() {
           <Flex gap="3" mb="4" justify="between" align="center">
             <Box>
               <Text size="3" color="gray">
-                Welcome back, {user?.username}! ({user?.role})
+                Welcome back, {user?.username || user?.email}! ({user?.auth_method})
               </Text>
               <Text size="2" color="green" style={{ fontWeight: '500' }}>
                 ✓ Access to practitioner special pricing enabled
               </Text>
             </Box>
-            {(user?.role === 'admin' || user?.role === 'author') && (
+            {(user?.auth_method === 'cognito' || user?.email_verified) && (
               <Link to="/new-post" style={{ textDecoration: 'none' }}>
                 <Button>
                   <PlusIcon />

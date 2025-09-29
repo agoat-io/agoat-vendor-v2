@@ -1,0 +1,46 @@
+{
+  "providers": [
+    {
+      "system_name": "cognito",
+      "display_name": "AWS Cognito Dev",
+      "provider_type": "oidc",
+      "is_active": true,
+      "is_default_for_type": true,
+      "provider_instance_id": "us-east-1_FJUcN8W07",
+      "provider_environment": "development",
+      "provider_region": "us-east-1",
+      "provider_domain": "auth.dev.np-topvitaminsupply.com",
+      "jwks_url": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07/.well-known/jwks.json",
+      "issuer_url": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07",
+      "oidc_discovery_url": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07/.well-known/openid_configuration",
+      "authorization_endpoint": "https://auth.dev.np-topvitaminsupply.com/login",
+      "token_endpoint": "https://auth.dev.np-topvitaminsupply.com/oauth2/token",
+      "userinfo_endpoint": "https://auth.dev.np-topvitaminsupply.com/oauth2/userInfo",
+      "end_session_endpoint": "https://auth.dev.np-topvitaminsupply.com/logout",
+      "client_id": "4lt0iqap612c9jug55f3a1s69k",
+      "client_secret": "",
+      "scopes": "email openid phone",
+      "response_type": "code",
+      "response_mode": "query",
+      "code_challenge_method": "S256",
+      "supported_claims": {
+        "sub": "string",
+        "email": "string",
+        "email_verified": "boolean",
+        "phone_number": "string",
+        "phone_number_verified": "boolean",
+        "given_name": "string",
+        "family_name": "string",
+        "name": "string",
+        "preferred_username": "string",
+        "cognito:username": "string"
+      },
+      "provider_metadata": {
+        "user_pool_id": "us-east-1_FJUcN8W07",
+        "region": "us-east-1",
+        "domain": "auth.dev.np-topvitaminsupply.com"
+      },
+      "redirect_uri": "https://dev.np-topvitaminsupply.com/auth/callback"
+    }
+  ]
+}

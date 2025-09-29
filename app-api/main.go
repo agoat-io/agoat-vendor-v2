@@ -449,6 +449,7 @@ type App struct {
 	thorneHandlers      *handlers.ThorneHandlers
 	azureAuthHandlers   *handlers.AzureAuthHandlers
 	cognitoAuthHandlers *handlers.CognitoAuthHandlers
+	oidcAuthHandlers    *handlers.OIDCAuthHandlersConfig
 }
 
 func NewApp(config *Config) (*App, error) {
@@ -479,13 +480,19 @@ func NewApp(config *Config) (*App, error) {
 		Domain:       "auth.dev.np-topvitaminsupply.com",
 		JWKSURL:      "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07/.well-known/jwks.json",
 		IssuerURL:    "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07",
-		AuthURL:      "https://auth.dev.np-topvitaminsupply.com/login/continue",
+		AuthURL:      "https://auth.dev.np-topvitaminsupply.com/login",
 		TokenURL:     "https://auth.dev.np-topvitaminsupply.com/oauth2/token",
-		RedirectURI:  "https://dev.np-totalvitaminsupply.com/auth/cognito/callback",
+		RedirectURI:  "https://dev.np-topvitaminsupply.com/auth/callback",
 		Scope:        "email openid phone",
 		ResponseType: "code",
 	}
 	cognitoAuthHandlers := handlers.NewCognitoAuthHandlers(db, cognitoConfig)
+
+	// Initialize OIDC authentication handlers using config file
+	oidcAuthHandlers, err := handlers.NewOIDCAuthHandlersConfig(db, "./config/oidc-config.json")
+	if err != nil {
+		log.Printf("Warning: Failed to initialize OIDC auth handlers: %v", err)
+	}
 
 	app := &App{
 		config:              config,
@@ -498,6 +505,7 @@ func NewApp(config *Config) (*App, error) {
 		thorneHandlers:      thorneHandlers,
 		azureAuthHandlers:   azureAuthHandlers,
 		cognitoAuthHandlers: cognitoAuthHandlers,
+		oidcAuthHandlers:    oidcAuthHandlers,
 	}
 
 	return app, nil
@@ -1294,6 +1302,15 @@ func main() {
 	api.HandleFunc("/auth/cognito/logout", app.cognitoAuthHandlers.Logout).Methods("GET")
 	api.HandleFunc("/auth/cognito/config", app.cognitoAuthHandlers.GetCognitoConfig).Methods("GET")
 
+	// OIDC Authentication API endpoints (if available)
+	if app.oidcAuthHandlers != nil {
+		api.HandleFunc("/auth/oidc/login", app.oidcAuthHandlers.Login).Methods("GET")
+		api.HandleFunc("/auth/oidc/callback", app.oidcAuthHandlers.Callback).Methods("GET")
+		api.HandleFunc("/auth/oidc/refresh", app.oidcAuthHandlers.RefreshToken).Methods("GET")
+		api.HandleFunc("/auth/oidc/logout", app.oidcAuthHandlers.Logout).Methods("GET")
+		api.HandleFunc("/auth/oidc/config", app.oidcAuthHandlers.GetOIDCConfig).Methods("GET")
+	}
+
 	app.logger.Info("main", "startup", "Server ready to accept connections", map[string]interface{}{
 		"context": map[string]interface{}{
 			"port": config.Server.Port,
@@ -1302,9 +1319,19 @@ func main() {
 
 	fmt.Printf("Server starting on port %s\n", config.Server.Port)
 
-	// Load SSL certificate for HTTPS
-	certFile := "../certs/dev.np-topvitaminsupply.com.crt"
-	keyFile := "../certs/dev.np-topvitaminsupply.com.key"
+	// Load SSL certificate for HTTPS from configuration
+	appConfig, err := config.LoadAppConfig("")
+	if err != nil {
+		fmt.Printf("Warning: Failed to load app config: %v\n", err)
+		appConfig = &config.AppConfig{
+			SSL: config.SSLConfig{
+				CertFile: "../certs/dev.np-topvitaminsupply.com.crt",
+				KeyFile:  "../certs/dev.np-topvitaminsupply.com.key",
+			},
+		}
+	}
+	certFile := appConfig.SSL.CertFile
+	keyFile := appConfig.SSL.KeyFile
 
 	// Check if certificate files exist
 	if _, err := os.Stat(certFile); os.IsNotExist(err) {

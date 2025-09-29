@@ -15,14 +15,14 @@ import {
 import { CalendarIcon, PersonIcon, PlusIcon, EyeOpenIcon } from '@radix-ui/react-icons'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
-import { useSimpleAuth } from '../contexts/SimpleAuthContext'
+import { useOIDCAuth } from '../contexts/OIDCAuthContext'
 
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const navigate = useNavigate()
-  const { user, isAuthenticated } = useSimpleAuth()
+  const { user, isAuthenticated } = useOIDCAuth()
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -127,13 +127,13 @@ export default function Dashboard() {
               📊 Dashboard
             </Heading>
             <Text size="4" color="gray" style={{ fontWeight: '500' }}>
-              Welcome back, <strong>{user?.username}</strong>! 
+              Welcome back, <strong>{user?.username || user?.email}</strong>! 
             </Text>
             <Badge color="blue" size="2" style={{ marginTop: '0.5rem' }}>
-              {user?.role?.toUpperCase()}
+              {user?.auth_method?.toUpperCase()}
             </Badge>
           </Box>
-          {(user?.role === 'admin' || user?.role === 'author') && (
+          {(user?.auth_method === 'cognito' || user?.email_verified) && (
             <Button 
               size="3" 
               onClick={() => navigate('/new-post')}
@@ -190,7 +190,7 @@ export default function Dashboard() {
                 <Text size="3" color="gray" style={{ textAlign: 'center', maxWidth: '400px' }}>
                   Start your journey by creating your first post. Share your thoughts, insights, and stories with the world!
                 </Text>
-                {(user?.role === 'admin' || user?.role === 'author') && (
+                {(user?.auth_method === 'cognito' || user?.email_verified) && (
                   <Button 
                     size="3"
                     onClick={() => navigate('/new-post')}
@@ -303,7 +303,7 @@ export default function Dashboard() {
                         <EyeOpenIcon />
                         View
                       </Button>
-                      {(user?.role === 'admin' || user?.role === 'author') && (
+                      {(user?.auth_method === 'cognito' || user?.email_verified) && (
                         <Button 
                           variant="outline" 
                           size="2"

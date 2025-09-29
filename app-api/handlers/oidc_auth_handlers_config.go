@@ -16,8 +16,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// OIDCUser represents a user from any OIDC-compliant provider
-type OIDCUser struct {
+// OIDCUserConfig represents a user from any OIDC-compliant provider (config version)
+type OIDCUserConfig struct {
 	ID                string                 `json:"id"`
 	OIDCSub           string                 `json:"oidc_sub"`
 	OIDCIssuer        string                 `json:"oidc_issuer"`
@@ -43,115 +43,55 @@ type OIDCUser struct {
 	UpdatedAt         time.Time              `json:"updated_at"`
 }
 
-// OIDCConfig represents OIDC-compliant configuration
-type OIDCConfig struct {
-	SystemName            string                 `json:"system_name"`
-	ProviderType          string                 `json:"provider_type"`
-	JWKSURL               string                 `json:"jwks_url"`
-	IssuerURL             string                 `json:"issuer_url"`
-	OIDCDiscoveryURL      string                 `json:"oidc_discovery_url"`
-	AuthorizationEndpoint string                 `json:"authorization_endpoint"`
-	TokenEndpoint         string                 `json:"token_endpoint"`
-	UserInfoEndpoint      string                 `json:"userinfo_endpoint"`
-	EndSessionEndpoint    string                 `json:"end_session_endpoint"`
-	ClientID              string                 `json:"client_id"`
-	ClientSecret          string                 `json:"client_secret"`
-	Scopes                string                 `json:"scopes"`
-	ResponseType          string                 `json:"response_type"`
-	ResponseMode          string                 `json:"response_mode"`
-	CodeChallengeMethod   string                 `json:"code_challenge_method"`
-	SupportedClaims       map[string]string      `json:"supported_claims"`
-	ProviderMetadata      map[string]interface{} `json:"provider_metadata"`
-}
-
-// OIDCAuthHandlers handles OIDC-compliant authentication for any provider
-type OIDCAuthHandlers struct {
+// OIDCAuthHandlersConfig handles OIDC-compliant authentication using config file
+type OIDCAuthHandlersConfig struct {
 	db           *sql.DB
-	config       *OIDCConfig
+	config       *config.OIDCConfig
+	appConfig    *config.AppConfig
 	oauth2Config *oauth2.Config
 }
 
-// NewOIDCAuthHandlers creates a new OIDCAuthHandlers instance
-func NewOIDCAuthHandlers(db *sql.DB, systemName string) (*OIDCAuthHandlers, error) {
-	// Load OIDC configuration from database
-	config, err := loadOIDCConfig(db, systemName)
+// NewOIDCAuthHandlersConfig creates a new OIDCAuthHandlersConfig instance using config file
+func NewOIDCAuthHandlersConfig(db *sql.DB, configPath string) (*OIDCAuthHandlersConfig, error) {
+	// Load OIDC configuration from config file
+	configs, err := config.LoadOIDCConfig(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load OIDC config: %w", err)
 	}
 
+	// Load app configuration
+	appConfig, err := config.LoadAppConfig("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load app config: %w", err)
+	}
+
+	// Get the default OIDC configuration
+	oidcConfig, err := configs.GetDefaultOIDCConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get default OIDC config: %w", err)
+	}
+
 	oauth2Config := &oauth2.Config{
-		ClientID:     config.ClientID,
-		ClientSecret: config.ClientSecret,
-		RedirectURL:  getRedirectURI(systemName),
-		Scopes:       strings.Split(config.Scopes, " "),
+		ClientID:     oidcConfig.ClientID,
+		ClientSecret: oidcConfig.ClientSecret,
+		RedirectURL:  oidcConfig.RedirectURI,
+		Scopes:       strings.Split(oidcConfig.Scopes, " "),
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  config.AuthorizationEndpoint,
-			TokenURL: config.TokenEndpoint,
+			AuthURL:  oidcConfig.AuthorizationEndpoint,
+			TokenURL: oidcConfig.TokenEndpoint,
 		},
 	}
 
-	return &OIDCAuthHandlers{
+	return &OIDCAuthHandlersConfig{
 		db:           db,
-		config:       config,
+		config:       oidcConfig,
+		appConfig:    appConfig,
 		oauth2Config: oauth2Config,
 	}, nil
 }
 
-// loadOIDCConfig loads OIDC configuration from database
-func loadOIDCConfig(db *sql.DB, systemName string) (*OIDCConfig, error) {
-	query := `
-		SELECT 
-			system_name, provider_type, jwks_url, issuer_url, oidc_discovery_url,
-			authorization_endpoint, token_endpoint, userinfo_endpoint, end_session_endpoint,
-			client_id, client_secret_encrypted, scopes, response_type, response_mode,
-			code_challenge_method, supported_claims, provider_metadata
-		FROM ciam_systems 
-		WHERE system_name = $1 AND is_active = TRUE
-	`
-
-	var config OIDCConfig
-	var supportedClaimsJSON, providerMetadataJSON string
-
-	err := db.QueryRow(query, systemName).Scan(
-		&config.SystemName, &config.ProviderType, &config.JWKSURL, &config.IssuerURL,
-		&config.OIDCDiscoveryURL, &config.AuthorizationEndpoint, &config.TokenEndpoint,
-		&config.UserInfoEndpoint, &config.EndSessionEndpoint, &config.ClientID,
-		&config.ClientSecret, &config.Scopes, &config.ResponseType, &config.ResponseMode,
-		&config.CodeChallengeMethod, &supportedClaimsJSON, &providerMetadataJSON,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Parse JSON fields
-	if err := json.Unmarshal([]byte(supportedClaimsJSON), &config.SupportedClaims); err != nil {
-		return nil, fmt.Errorf("failed to parse supported_claims: %w", err)
-	}
-
-	if err := json.Unmarshal([]byte(providerMetadataJSON), &config.ProviderMetadata); err != nil {
-		return nil, fmt.Errorf("failed to parse provider_metadata: %w", err)
-	}
-
-	return &config, nil
-}
-
-// getRedirectURI returns the redirect URI for the given system
-func getRedirectURI(systemName string) string {
-	// Load app configuration for base URL
-	appConfig, err := config.LoadAppConfig("")
-	var baseURL string
-	if err != nil {
-		log.Printf("Warning: Failed to load app config, using default: %v", err)
-		baseURL = "https://dev.np-topvitaminsupply.com"
-	} else {
-		baseURL = appConfig.App.BaseURL
-	}
-	return fmt.Sprintf("%s/auth/%s/callback", baseURL, systemName)
-}
-
 // validateReturnURL validates return URL to prevent open redirects
-func (h *OIDCAuthHandlers) validateReturnURL(returnURL string) bool {
+func (h *OIDCAuthHandlersConfig) validateReturnURL(returnURL string) bool {
 	// Parse the URL
 	u, err := url.Parse(returnURL)
 	if err != nil {
@@ -159,19 +99,8 @@ func (h *OIDCAuthHandlers) validateReturnURL(returnURL string) bool {
 		return false
 	}
 
-	// Load allowed origins from configuration
-	appConfig, err := config.LoadAppConfig("")
-	var allowedOrigins []string
-	if err != nil {
-		log.Printf("Warning: Failed to load app config, using default origins: %v", err)
-		allowedOrigins = []string{
-			"https://dev.np-topvitaminsupply.com",
-			"http://localhost:3000",
-			"http://localhost:5173",
-		}
-	} else {
-		allowedOrigins = appConfig.AllowedOrigins
-	}
+	// Use allowed origins from configuration
+	allowedOrigins := h.appConfig.AllowedOrigins
 
 	// Check if the origin is allowed
 	for _, allowedOrigin := range allowedOrigins {
@@ -200,17 +129,12 @@ func (h *OIDCAuthHandlers) validateReturnURL(returnURL string) bool {
 }
 
 // getDefaultReturnURL returns the default return URL
-func (h *OIDCAuthHandlers) getDefaultReturnURL() string {
-	appConfig, err := config.LoadAppConfig("")
-	if err != nil {
-		log.Printf("Warning: Failed to load app config, using default return URL: %v", err)
-		return "https://dev.np-topvitaminsupply.com/dashboard"
-	}
-	return appConfig.DefaultReturnURL
+func (h *OIDCAuthHandlersConfig) getDefaultReturnURL() string {
+	return h.appConfig.DefaultReturnURL
 }
 
 // Login initiates OIDC authentication with PKCE and return URL preservation
-func (h *OIDCAuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
+func (h *OIDCAuthHandlersConfig) Login(w http.ResponseWriter, r *http.Request) {
 	// Get return URL from query parameter
 	returnURL := r.URL.Query().Get("return_url")
 
@@ -255,7 +179,7 @@ func (h *OIDCAuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Callback handles OIDC authentication callback with return URL processing
-func (h *OIDCAuthHandlers) Callback(w http.ResponseWriter, r *http.Request) {
+func (h *OIDCAuthHandlersConfig) Callback(w http.ResponseWriter, r *http.Request) {
 	// Get authorization code and state
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
@@ -354,7 +278,7 @@ func (h *OIDCAuthHandlers) Callback(w http.ResponseWriter, r *http.Request) {
 }
 
 // RefreshToken refreshes OIDC tokens
-func (h *OIDCAuthHandlers) RefreshToken(w http.ResponseWriter, r *http.Request) {
+func (h *OIDCAuthHandlersConfig) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// Get refresh token from session or request
 	// In production, this should come from secure session storage
 	refreshToken := r.Header.Get("X-Refresh-Token")
@@ -383,12 +307,12 @@ func (h *OIDCAuthHandlers) RefreshToken(w http.ResponseWriter, r *http.Request) 
 		"success":       true,
 		"access_token":  newToken.AccessToken,
 		"refresh_token": newToken.RefreshToken,
-		"expires_in":    int(newToken.Expiry.Sub(time.Now()).Seconds()),
+		"expires_in":    int(time.Until(newToken.Expiry).Seconds()),
 	})
 }
 
 // Logout handles OIDC logout with return URL preservation
-func (h *OIDCAuthHandlers) Logout(w http.ResponseWriter, r *http.Request) {
+func (h *OIDCAuthHandlersConfig) Logout(w http.ResponseWriter, r *http.Request) {
 	// Get return URL from query parameter (optional)
 	returnURL := r.URL.Query().Get("return_url")
 
@@ -415,7 +339,7 @@ func (h *OIDCAuthHandlers) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // parseIDToken parses JWT ID token to extract user information
-func (h *OIDCAuthHandlers) parseIDToken(idToken string) (*OIDCUser, error) {
+func (h *OIDCAuthHandlersConfig) parseIDToken(idToken string) (*OIDCUserConfig, error) {
 	// In production, you should properly validate the JWT token using the JWKS endpoint
 	// For now, we'll do basic parsing (this is not secure for production)
 	parts := strings.Split(idToken, ".")
@@ -435,7 +359,7 @@ func (h *OIDCAuthHandlers) parseIDToken(idToken string) (*OIDCUser, error) {
 	}
 
 	// Extract user information from claims based on supported claims
-	user := &OIDCUser{
+	user := &OIDCUserConfig{
 		OIDCSub:           getStringClaim(claims, "sub"),
 		OIDCIssuer:        getStringClaim(claims, "iss"),
 		OIDCAudience:      getStringClaim(claims, "aud"),
@@ -479,7 +403,7 @@ func (h *OIDCAuthHandlers) parseIDToken(idToken string) (*OIDCUser, error) {
 }
 
 // createOrUpdateUser creates or updates a user in the database
-func (h *OIDCAuthHandlers) createOrUpdateUser(oidcUser *OIDCUser) (string, error) {
+func (h *OIDCAuthHandlersConfig) createOrUpdateUser(oidcUser *OIDCUserConfig) (string, error) {
 	// Check if user already exists by email
 	var existingUserID string
 	query := `SELECT id FROM users WHERE email = $1`
@@ -597,7 +521,7 @@ func (h *OIDCAuthHandlers) createOrUpdateUser(oidcUser *OIDCUser) (string, error
 }
 
 // createOIDCMapping creates an OIDC mapping for the user
-func (h *OIDCAuthHandlers) createOIDCMapping(userID string, oidcUser *OIDCUser) error {
+func (h *OIDCAuthHandlersConfig) createOIDCMapping(userID string, oidcUser *OIDCUserConfig) error {
 	// Get provider identifier from metadata
 	providerIdentifier := ""
 	if userPoolID, exists := oidcUser.ProviderMetadata["user_pool_id"]; exists {
@@ -613,7 +537,7 @@ func (h *OIDCAuthHandlers) createOIDCMapping(userID string, oidcUser *OIDCUser) 
 }
 
 // storeTokens stores OIDC tokens securely
-func (h *OIDCAuthHandlers) storeTokens(userID string, token *oauth2.Token) error {
+func (h *OIDCAuthHandlersConfig) storeTokens(userID string, token *oauth2.Token) error {
 	// Get CIAM system ID
 	var ciamSystemID string
 	query := `SELECT id FROM ciam_systems WHERE system_name = $1 AND is_active = TRUE`
@@ -667,7 +591,7 @@ func (h *OIDCAuthHandlers) storeTokens(userID string, token *oauth2.Token) error
 }
 
 // GetOIDCConfig returns the OIDC configuration
-func (h *OIDCAuthHandlers) GetOIDCConfig(w http.ResponseWriter, r *http.Request) {
+func (h *OIDCAuthHandlersConfig) GetOIDCConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,

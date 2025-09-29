@@ -10,7 +10,7 @@ import NewPost from './pages/NewPost'
 import PostDetail from './pages/PostDetail'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './components/ThemeProvider'
-import { SimpleAuthProvider, useSimpleAuth } from './contexts/SimpleAuthContext'
+import { OIDCAuthProvider, useOIDCAuth } from './contexts/OIDCAuthContext'
 import EditPost from './pages/EditPost'
 import GlobalErrorToast from './components/GlobalErrorToast'
 import ThorneEducation from './pages/ThorneEducation'
@@ -23,7 +23,7 @@ import AuthLogout from './pages/AuthLogout'
 
 function Header() {
   const location = useLocation()
-  const { user, isAuthenticated, logout } = useSimpleAuth()
+  const { user, isAuthenticated, logout } = useOIDCAuth()
   
   return (
     <Box style={{ 
@@ -77,7 +77,7 @@ function Header() {
                     Dashboard
                   </Button>
                 </Link>
-                {(user?.role === 'admin' || user?.role === 'author') && (
+                {(user?.auth_method === 'cognito' || user?.email_verified) && (
                   <Link to="/new-post" style={{ textDecoration: 'none' }}>
                     <Button variant={location.pathname === '/new-post' ? 'solid' : 'ghost'} size="2">
                       <PlusIcon />
@@ -91,7 +91,7 @@ function Header() {
             {isAuthenticated ? (
               <Flex gap="2" align="center">
                 <Text size="2" color="gray">
-                  Welcome, {user?.username} ({user?.role})
+                  Welcome, {user?.username || user?.email} ({user?.auth_method})
                 </Text>
                 <Button variant="outline" size="2" onClick={logout}>
                   <ExitIcon />
@@ -114,7 +114,7 @@ function Header() {
 }
 
 function AppContent() {
-  const { isLoading } = useSimpleAuth()
+  const { isLoading } = useOIDCAuth()
 
   if (isLoading) {
     return (
@@ -162,14 +162,14 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <SimpleAuthProvider>
+      <OIDCAuthProvider>
         <ThemeProvider>
           <Theme>
             <AppContent />
             <GlobalErrorToast />
           </Theme>
         </ThemeProvider>
-      </SimpleAuthProvider>
+      </OIDCAuthProvider>
     </ErrorBoundary>
   )
 }
