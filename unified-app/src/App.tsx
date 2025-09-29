@@ -2,14 +2,13 @@ import { Routes, Route } from 'react-router-dom'
 import { Theme, Container, Flex, Box, Heading, Button, Separator, Text } from '@radix-ui/themes'
 import '@radix-ui/themes/styles.css'
 import { Link, useLocation } from 'react-router-dom'
-import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon } from '@radix-ui/react-icons'
+import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon, PaletteIcon } from '@radix-ui/react-icons'
 import Home from './pages/Home'
-import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import NewPost from './pages/NewPost'
 import PostDetail from './pages/PostDetail'
 import ErrorBoundary from './components/ErrorBoundary'
-import { ThemeProvider } from './components/ThemeProvider'
+import { ThemeProvider, ThemeSelector, useTheme } from './components/ThemeProvider'
 import { OIDCAuthProvider, useOIDCAuth } from './contexts/OIDCAuthContext'
 import EditPost from './pages/EditPost'
 import GlobalErrorToast from './components/GlobalErrorToast'
@@ -23,16 +22,19 @@ import AuthLogout from './pages/AuthLogout'
 
 function Header() {
   const location = useLocation()
-  const { user, isAuthenticated, logout } = useOIDCAuth()
+  const { user, isAuthenticated, logout, login } = useOIDCAuth()
+  const { themeConfig, setIsThemeSelectorOpen } = useTheme()
   
   return (
-    <Box style={{ 
-      background: 'var(--color-surface)', 
-      borderBottom: '1px solid var(--gray-6)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 1000
-    }}>
+    <Box 
+      className="app-header"
+      style={{ 
+        background: 'var(--color-surface)', 
+        borderBottom: '1px solid var(--gray-6)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000
+      }}>
       <Container size="3">
         <Flex justify="between" align="center" py="4">
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -88,6 +90,14 @@ function Header() {
               </>
             )}
             <Separator orientation="vertical" />
+            <Button 
+              variant="ghost" 
+              size="2" 
+              onClick={() => setIsThemeSelectorOpen(true)}
+              title={`Current theme: ${themeConfig.name}`}
+            >
+              <PaletteIcon />
+            </Button>
             {isAuthenticated ? (
               <Flex gap="2" align="center">
                 <Text size="2" color="gray">
@@ -99,12 +109,21 @@ function Header() {
                 </Button>
               </Flex>
             ) : (
-              <Link to="/login" style={{ textDecoration: 'none' }}>
-                <Button variant={location.pathname === '/login' ? 'solid' : 'outline'} size="2">
-                  <PersonIcon />
-                  Login
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                size="2" 
+                onClick={async () => {
+                  try {
+                    const returnUrl = window.location.href;
+                    await login(returnUrl);
+                  } catch (err) {
+                    console.error('Login error:', err);
+                  }
+                }}
+              >
+                <PersonIcon />
+                Login
+              </Button>
             )}
           </Flex>
         </Flex>
@@ -136,7 +155,6 @@ function AppContent() {
         <Container size="3">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/new-post" element={<NewPost />} />
             <Route path="/post/:id" element={<PostDetail />} />
@@ -156,6 +174,7 @@ function AppContent() {
           </Routes>
         </Container>
       </Box>
+      <ThemeSelector />
     </Box>
   )
 }

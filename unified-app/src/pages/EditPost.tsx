@@ -30,7 +30,7 @@ export default function EditPost() {
   // Redirect if not authenticated or not authorized
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login')
+      navigate('/')
       return
     }
     

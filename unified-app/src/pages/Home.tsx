@@ -20,7 +20,7 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { user, isAuthenticated } = useOIDCAuth()
+  const { user, isAuthenticated, login } = useOIDCAuth()
 
   // Fetch posts
   useEffect(() => {
@@ -115,17 +115,26 @@ export default function Home() {
                 </Text>
               </Box>
               {!isAuthenticated ? (
-                <Link to="/login" style={{ textDecoration: 'none' }}>
-                  <Button size="3" style={{ 
+                <Button 
+                  size="3" 
+                  style={{ 
                     background: 'var(--green-9)', 
                     color: 'white',
                     padding: '12px 24px',
                     minWidth: '160px',
                     whiteSpace: 'nowrap'
-                  }}>
-                    Create Account
-                  </Button>
-                </Link>
+                  }}
+                  onClick={async () => {
+                    try {
+                      const returnUrl = window.location.href;
+                      await login(returnUrl);
+                    } catch (err) {
+                      console.error('Login error:', err);
+                    }
+                  }}
+                >
+                  Create Account
+                </Button>
               ) : (
                 <Link to="/thorne/education" style={{ textDecoration: 'none' }}>
                   <Button size="3" style={{ background: 'var(--green-9)', color: 'white' }}>

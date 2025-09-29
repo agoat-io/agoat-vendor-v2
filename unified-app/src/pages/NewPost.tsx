@@ -31,7 +31,7 @@ export default function NewPost() {
   // Redirect if not authenticated or not authorized
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login')
+      navigate('/')
       return
     }
     

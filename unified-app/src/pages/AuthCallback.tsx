@@ -67,9 +67,9 @@ export default function AuthCallback() {
         setError(err instanceof Error ? err.message : 'Authentication failed');
         setStatus('error');
         
-        // Redirect to login page after showing error
+        // Redirect to home page after showing error
         setTimeout(() => {
-          navigate('/login');
+          navigate('/');
         }, 3000);
       }
     };

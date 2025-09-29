@@ -806,3 +806,228 @@ html {
     background-position: -200% 0;
   }
 }
+
+/* ===== THEME SYSTEM STYLES ===== */
+
+/* Base theme variables */
+:root {
+  --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Simple themes - minimal styling */
+[data-style="simple"] {
+  --card-backdrop: none;
+  --card-blur: none;
+  --card-border: 1px solid var(--gray-6);
+  --card-shadow: var(--shadow-2);
+}
+
+/* Fancy themes - enhanced styling with gradients and effects */
+[data-style="fancy"] {
+  --card-backdrop: none;
+  --card-blur: none;
+  --card-border: 1px solid rgba(255, 255, 255, 0.1);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+[data-style="fancy"] .rt-Card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: var(--theme-transition);
+}
+
+[data-style="fancy"] .rt-Card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Glassmorphism themes - glass-like effects */
+[data-style="glassmorph"] {
+  --card-backdrop: blur(20px);
+  --card-blur: blur(20px);
+  --card-border: 1px solid rgba(255, 255, 255, 0.2);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+[data-style="glassmorph"] .rt-Card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: var(--card-blur);
+  -webkit-backdrop-filter: var(--card-blur);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition: var(--theme-transition);
+}
+
+[data-style="glassmorph"] .rt-Card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark theme specific adjustments */
+[data-appearance="dark"][data-style="glassmorph"] .rt-Card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-appearance="dark"][data-style="glassmorph"] .rt-Card:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Header styling for different themes */
+[data-style="fancy"] .app-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-style="glassmorph"] .app-header {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-appearance="dark"][data-style="glassmorph"] .app-header {
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Button styling for different themes */
+[data-style="fancy"] .rt-Button {
+  background: linear-gradient(135deg, var(--accent-9) 0%, var(--accent-10) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: var(--theme-transition);
+}
+
+[data-style="fancy"] .rt-Button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+[data-style="glassmorph"] .rt-Button {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: var(--theme-transition);
+}
+
+[data-style="glassmorph"] .rt-Button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+[data-appearance="dark"][data-style="glassmorph"] .rt-Button {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-appearance="dark"][data-style="glassmorph"] .rt-Button:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Input styling for different themes */
+[data-style="glassmorph"] .rt-TextField input,
+[data-style="glassmorph"] .rt-TextArea textarea {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-appearance="dark"][data-style="glassmorph"] .rt-TextField input,
+[data-appearance="dark"][data-style="glassmorph"] .rt-TextArea textarea {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dialog styling for different themes */
+[data-style="glassmorph"] .rt-DialogContent {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-appearance="dark"][data-style="glassmorph"] .rt-DialogContent {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Theme-specific background patterns */
+[data-theme="dark-fancy1"] body {
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+}
+
+[data-theme="dark-fancy2"] body {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(236, 72, 153, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(6, 182, 212, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.2) 0%, transparent 50%);
+}
+
+[data-theme="light-fancy-glassmorph"] body {
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+}
+
+[data-theme="simple-light-glassmorph"] body {
+  background-image: 
+    radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+}
+
+[data-theme="simple-dark-glassmorph"] body {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(96, 165, 250, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(52, 211, 153, 0.1) 0%, transparent 50%);
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Enhanced glassmorphism effects */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+[data-appearance="dark"] .glass-effect {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Theme-specific text effects */
+[data-style="fancy"] .gradient-text {
+  background: linear-gradient(135deg, var(--accent-9) 0%, var(--accent-10) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-style="glassmorph"] .gradient-text {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-appearance="dark"][data-style="glassmorph"] .gradient-text {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

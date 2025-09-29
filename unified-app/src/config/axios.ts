@@ -100,7 +100,7 @@ apiClient.interceptors.response.use(
       logger.warning('api', 'response', 'Unauthorized access', errorData)
       // Handle unauthorized access
       localStorage.removeItem('auth_user')
-      window.location.href = '/login'
+      window.location.href = '/'
     } else if (error.response?.status >= 500) {
       logger.error('api', 'response', 'Server error', errorData)
     } else if (error.response?.status >= 400) {

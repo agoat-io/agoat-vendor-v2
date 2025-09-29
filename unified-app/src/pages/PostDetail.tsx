@@ -5,7 +5,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
-import { useAzureAuth } from '../contexts/AzureAuthContext'
+import { useOIDCAuth } from '../contexts/OIDCAuthContext'
 import { 
   Box, 
   Heading, 
@@ -26,7 +26,7 @@ const PostDetail: React.FC = () => {
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { user, isAuthenticated } = useAzureAuth()
+  const { user, isAuthenticated, login } = useOIDCAuth()
 
   // Check authentication status
   useEffect(() => {
@@ -194,7 +194,14 @@ const PostDetail: React.FC = () => {
                     <Text size="3" color="gray" mb="3">
                       This is a preview. Please log in to read the full post.
                     </Text>
-                    <Button onClick={() => navigate('/login')}>
+                    <Button onClick={async () => {
+                      try {
+                        const returnUrl = window.location.href;
+                        await login(returnUrl);
+                      } catch (err) {
+                        console.error('Login error:', err);
+                      }
+                    }}>
                       Login to Read More
                     </Button>
                   </Box>
