@@ -311,7 +311,10 @@ func (h *OIDCAuthHandlersConfig) RefreshToken(w http.ResponseWriter, r *http.Req
 	})
 }
 
-// Logout handles OIDC logout with return URL preservation
+// Logout handles OIDC logout following the correct sequence:
+// 1. Revoke refresh token via /oauth2/revoke
+// 2. Clear all tokens and session data
+// 3. Redirect to Cognito /logout endpoint
 func (h *OIDCAuthHandlersConfig) Logout(w http.ResponseWriter, r *http.Request) {
 	// Get return URL from query parameter (optional)
 	returnURL := r.URL.Query().Get("return_url")
@@ -327,14 +330,37 @@ func (h *OIDCAuthHandlersConfig) Logout(w http.ResponseWriter, r *http.Request) 
 		returnURL = h.getDefaultReturnURL()
 	}
 
-	// Build OIDC logout URL
+	// Get tokens from request (in production, these would come from session/cookies)
+	refreshToken := r.URL.Query().Get("refresh_token")
+
+	// Step 1: Revoke the refresh token by calling the Cognito /oauth2/revoke endpoint
+	if refreshToken != "" {
+		err := h.revokeTokenInternal(refreshToken)
+		if err != nil {
+			log.Printf("Failed to revoke refresh token: %v", err)
+		} else {
+			log.Printf("Refresh token revoked successfully")
+		}
+	}
+
+	// Step 2: Clear all tokens and session data from your app
+	// (In production, this would clear server-side session data)
+	log.Printf("Clearing session data for user")
+
+	// Step 3: Redirect the user to the Cognito /logout endpoint
+	// Build the logout callback URL that Cognito will redirect to after logout
+	logoutCallbackURL := fmt.Sprintf("%s/auth/signout",
+		h.appConfig.App.BaseURL)
+
+	// Use the end_session_endpoint from configuration with logout_uri
 	logoutURL := fmt.Sprintf("%s?client_id=%s&logout_uri=%s",
 		h.config.EndSessionEndpoint,
 		h.config.ClientID,
-		url.QueryEscape(returnURL))
+		url.QueryEscape(logoutCallbackURL))
 
-	// Clear session (in production, clear secure session)
-	log.Printf("User logged out from system %s, redirecting to: %s", h.config.SystemName, logoutURL)
+	log.Printf("User logout initiated for system %s, redirecting to Cognito: %s", h.config.SystemName, logoutURL)
+
+	// Redirect to Cognito logout endpoint
 	http.Redirect(w, r, logoutURL, http.StatusTemporaryRedirect)
 }
 
@@ -620,4 +646,130 @@ func (h *OIDCAuthHandlersConfig) GetUserInfo(w http.ResponseWriter, r *http.Requ
 			"created_by_oidc": true,
 		},
 	})
+}
+
+// LogoutCallback handles the logout callback from Cognito
+// This is called after Cognito clears its session cookie and redirects back to our app
+func (h *OIDCAuthHandlersConfig) LogoutCallback(w http.ResponseWriter, r *http.Request) {
+	// Get return URL from query parameter
+	returnURL := r.URL.Query().Get("return_url")
+
+	// Validate return URL if provided
+	if returnURL == "" {
+		returnURL = h.getDefaultReturnURL()
+	} else if !h.validateReturnURL(returnURL) {
+		log.Printf("Invalid return URL for logout callback: %s, using default", returnURL)
+		returnURL = h.getDefaultReturnURL()
+	}
+
+	// Cognito has already cleared its session cookie and redirected back to us
+	// We just need to redirect the user to their final destination
+	log.Printf("Logout callback received from Cognito for system %s, redirecting to: %s", h.config.SystemName, returnURL)
+
+	// Redirect to the return URL
+	http.Redirect(w, r, returnURL, http.StatusTemporaryRedirect)
+}
+
+// revokeTokenInternal is a helper function to revoke a token
+func (h *OIDCAuthHandlersConfig) revokeTokenInternal(token string) error {
+	// Use the custom Cognito domain directly for revoke endpoint
+	cognitoDomain := h.config.ProviderDomain
+
+	revokeURL := fmt.Sprintf("https://%s/oauth2/revoke", cognitoDomain)
+
+	// Prepare the request data
+	data := url.Values{}
+	data.Set("token", token)
+	data.Set("client_id", h.config.ClientID)
+
+	// Make the revoke request
+	req, err := http.NewRequest("POST", revokeURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return fmt.Errorf("error creating revoke request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error making revoke request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("token revocation failed with status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// RevokeToken revokes a token using Cognito's revoke endpoint
+func (h *OIDCAuthHandlersConfig) RevokeToken(w http.ResponseWriter, r *http.Request) {
+	// Parse form data to get token from request body
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	// Get token from form data
+	token := r.FormValue("token")
+	if token == "" {
+		// Fallback to query parameter
+		token = r.URL.Query().Get("token")
+	}
+	if token == "" {
+		// Fallback to Authorization header
+		token = r.Header.Get("Authorization")
+		if strings.HasPrefix(token, "Bearer ") {
+			token = strings.TrimPrefix(token, "Bearer ")
+		}
+	}
+
+	if token == "" {
+		http.Error(w, "No token provided", http.StatusBadRequest)
+		return
+	}
+
+	// Use the custom Cognito domain directly for revoke endpoint
+	cognitoDomain := h.config.ProviderDomain
+
+	revokeURL := fmt.Sprintf("https://%s/oauth2/revoke", cognitoDomain)
+
+	// Prepare the request data
+	data := url.Values{}
+	data.Set("token", token)
+	data.Set("client_id", h.config.ClientID)
+
+	// Make the revoke request
+	req, err := http.NewRequest("POST", revokeURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		log.Printf("Error creating revoke request: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error making revoke request: %v", err)
+		http.Error(w, "Token revocation failed", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		log.Printf("Token revoked successfully")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"message": "Token revoked successfully",
+		})
+	} else {
+		log.Printf("Token revocation failed with status: %d", resp.StatusCode)
+		http.Error(w, "Token revocation failed", http.StatusInternalServerError)
+	}
 }

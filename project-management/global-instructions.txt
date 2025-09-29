@@ -27,11 +27,8 @@ requirements-and-user-stories folders should contain ONLY use cases and requirem
 
 for technical implementation details, architecture, and design documents, use:
 /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/technical-implementation
-with subfolders for:
-- authentication: authentication system implementation
-- database: database schema and implementation
-- features: feature implementation details
-- api: API implementation details
+and explain what technical details are releveant in various md files there.
+any time new features are added or changed then update technical implementation explanations
 
 for analysis and research documents, use:
 /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/analysis
@@ -69,3 +66,4 @@ use these templates for consistent requirements documentation:
 if playwright tests are requested then:
 - detect any javascript errors either through including them in playwright reports or any other Waypoint
 - ensure you read logs from server side apps to help troubleshot and fix any issues 
+but only run playwright if requested

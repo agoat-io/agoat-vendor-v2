@@ -1209,6 +1209,25 @@ func (app *App) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleSignout handles the frontend signout route
+func (app *App) handleSignout(w http.ResponseWriter, r *http.Request) {
+	// Get return URL from query parameter
+	returnURL := r.URL.Query().Get("return_url")
+
+	// Validate return URL if provided
+	if returnURL == "" {
+		returnURL = "https://dev.np-topvitaminsupply.com"
+	}
+
+	// Use OIDC logout callback handler if available
+	if app.oidcAuthHandlers != nil {
+		app.oidcAuthHandlers.LogoutCallback(w, r)
+	} else {
+		// Fallback: redirect to return URL
+		http.Redirect(w, r, returnURL, http.StatusTemporaryRedirect)
+	}
+}
+
 func main() {
 	gob.Register(&User{})
 
@@ -1309,9 +1328,14 @@ func main() {
 		api.HandleFunc("/auth/oidc/callback", app.oidcAuthHandlers.Callback).Methods("GET")
 		api.HandleFunc("/auth/oidc/refresh", app.oidcAuthHandlers.RefreshToken).Methods("GET")
 		api.HandleFunc("/auth/oidc/logout", app.oidcAuthHandlers.Logout).Methods("GET")
+		api.HandleFunc("/auth/oidc/logout-callback", app.oidcAuthHandlers.LogoutCallback).Methods("GET")
+		api.HandleFunc("/auth/oidc/revoke", app.oidcAuthHandlers.RevokeToken).Methods("POST")
 		api.HandleFunc("/auth/oidc/config", app.oidcAuthHandlers.GetOIDCConfig).Methods("GET")
 		api.HandleFunc("/auth/oidc/user-info", app.oidcAuthHandlers.GetUserInfo).Methods("GET")
 	}
+
+	// Frontend authentication routes (non-API)
+	router.HandleFunc("/auth/signout", app.handleSignout).Methods("GET")
 
 	app.logger.Info("main", "startup", "Server ready to accept connections", map[string]interface{}{
 		"context": map[string]interface{}{

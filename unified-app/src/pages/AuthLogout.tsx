@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAzureAuth } from '../contexts/AzureAuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useOIDCAuth } from '../contexts/OIDCAuthContext';
 import { 
   Box, 
   Heading, 
@@ -13,7 +13,8 @@ import { Spinner } from '../components/ui';
 
 export default function AuthLogout() {
   const navigate = useNavigate();
-  const { logout } = useAzureAuth();
+  const [searchParams] = useSearchParams();
+  const { logout } = useOIDCAuth();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [error, setError] = useState<string | null>(null);
 
@@ -21,17 +22,51 @@ export default function AuthLogout() {
     const handleLogout = async () => {
       try {
         setStatus('processing');
-        await logout();
+        
+        // Get return URL from query parameters
+        const returnURL = searchParams.get('return_url') || '/';
+        
+        // Get tokens before clearing them
+        const accessToken = localStorage.getItem('oidc_access_token');
+        const refreshToken = localStorage.getItem('oidc_refresh_token');
+        
+        // Clear local user data immediately (Step 2: Clear all tokens and session data)
+        localStorage.removeItem('oidc_user');
+        localStorage.removeItem('oidc_access_token');
+        localStorage.removeItem('oidc_refresh_token');
+        
+        // Call backend logout endpoint which will:
+        // 1. Revoke refresh token via /oauth2/revoke
+        // 2. Clear server-side session data
+        // 3. Redirect to Cognito /logout endpoint
+        let logoutUrl = `/api/auth/oidc/logout?return_url=${encodeURIComponent(returnURL)}`;
+        if (refreshToken) {
+          logoutUrl += `&refresh_token=${encodeURIComponent(refreshToken)}`;
+        }
+        if (accessToken) {
+          logoutUrl += `&access_token=${encodeURIComponent(accessToken)}`;
+        }
+        
+        // Redirect to backend logout endpoint
+        window.location.href = logoutUrl;
+        
+        // Note: The logout function will redirect to Cognito, so this code
+        // may not execute if the redirect happens immediately
         setStatus('success');
         
-        // Redirect to home page after successful logout
+        // Fallback redirect in case the OIDC logout doesn't redirect
         setTimeout(() => {
-          navigate('/');
+          navigate(returnURL);
         }, 2000);
       } catch (err) {
         console.error('Logout error:', err);
         setError(err instanceof Error ? err.message : 'Logout failed');
         setStatus('error');
+        
+        // Clear local data even if logout failed
+        localStorage.removeItem('oidc_user');
+        localStorage.removeItem('oidc_access_token');
+        localStorage.removeItem('oidc_refresh_token');
         
         // Redirect to home page even if logout failed
         setTimeout(() => {
@@ -41,7 +76,7 @@ export default function AuthLogout() {
     };
 
     handleLogout();
-  }, [logout, navigate]);
+  }, [logout, navigate, searchParams]);
 
   if (status === 'processing') {
     return (

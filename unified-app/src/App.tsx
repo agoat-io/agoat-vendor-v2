@@ -152,6 +152,7 @@ function AppContent() {
             {/* Authentication Routes */}
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/auth/logout" element={<AuthLogout />} />
+            <Route path="/auth/signout" element={<AuthLogout />} />
           </Routes>
         </Container>
       </Box>

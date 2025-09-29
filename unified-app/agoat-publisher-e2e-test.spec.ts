@@ -302,4 +302,37 @@ test.describe('AGoat Publisher E2E Tests', () => {
     // Take screenshot of callback page
     await page.screenshot({ path: 'test-results/callback-page-debug.png', fullPage: true });
   });
+
+  test('should test OIDC logout flow and callback handling', async ({ page }) => {
+    // Test the logout endpoint directly
+    const logoutResponse = await page.request.get('https://dev.np-topvitaminsupply.com:8080/api/auth/oidc/logout?return_url=' + encodeURIComponent('https://dev.np-topvitaminsupply.com'));
+    
+    // Check if logout endpoint returns redirect
+    expect(logoutResponse.status()).toBe(307);
+    
+    // Get the redirect location
+    const location = logoutResponse.headers()['location'];
+    console.log('Logout redirect location:', location);
+    
+    // Verify the logout URL format
+    expect(location).toContain('auth.dev.np-topvitaminsupply.com/logout');
+    expect(location).toContain('client_id=4lt0iqap612c9jug55f3a1s69k');
+    expect(location).toContain('logout_uri=');
+    expect(location).toContain('auth/oidc/logout-callback');
+    
+    // Test the logout callback endpoint
+    const callbackResponse = await page.request.get('https://dev.np-topvitaminsupply.com:8080/api/auth/oidc/logout-callback?return_url=' + encodeURIComponent('https://dev.np-topvitaminsupply.com'));
+    
+    // Check if callback endpoint returns redirect
+    expect(callbackResponse.status()).toBe(307);
+    
+    // Get the callback redirect location
+    const callbackLocation = callbackResponse.headers()['location'];
+    console.log('Logout callback redirect location:', callbackLocation);
+    
+    // Verify the callback redirects to the return URL
+    expect(callbackLocation).toBe('https://dev.np-topvitaminsupply.com');
+    
+    console.log('✅ OIDC logout flow working correctly');
+  });
 });
