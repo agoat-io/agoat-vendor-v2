@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 443,
     host: '0.0.0.0',
     https: {
       key: fs.readFileSync('../certs/dev.np-topvitaminsupply.com.key'),

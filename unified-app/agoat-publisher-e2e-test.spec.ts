@@ -70,7 +70,7 @@ test.describe('AGoat Publisher E2E Tests', () => {
 
   test('should check API health endpoint', async ({ page }) => {
     // Test the API health endpoint
-    const response = await page.request.get('https://localhost:8080/api/status');
+    const response = await page.request.get('https://dev.np-topvitaminsupply.com:8080/api/status');
     
     expect(response.status()).toBe(200);
     

@@ -125,7 +125,7 @@ if ! curl -s http://localhost:8080/api/status > /dev/null; then
 fi
 
 # Start frontend in background
-echo "🎨 Starting Unified App frontend on http://localhost:3000..."
+echo "🎨 Starting Unified App frontend on https://dev.np-topvitaminsupply.com (port 443)..."
 cd "$UNIFIED_APP_DIR"
 npm run dev > frontend.log 2>&1 &
 FRONTEND_PID=$!
@@ -136,7 +136,7 @@ echo ""
 sleep 5
 
 # Check if frontend is running
-if ! curl -s http://localhost:3000 > /dev/null; then
+if ! curl -s -k https://dev.np-topvitaminsupply.com > /dev/null; then
     echo "⚠️  Warning: Frontend may not be fully started yet"
     echo "📋 Frontend log:"
     tail -n 5 "$UNIFIED_APP_DIR/frontend.log" 2>/dev/null || echo "No log file found"
@@ -147,16 +147,16 @@ fi
 echo "🎉 AGoat Publisher Unified Full Stack Development Environment is running!"
 echo ""
 echo "📊 Service Status:"
-echo "   🌐 API Server:     http://localhost:8080 (PID: $API_PID)"
-echo "   🎨 Frontend:       http://localhost:3000 (PID: $FRONTEND_PID)"
+echo "   🌐 API Server:     https://dev.np-topvitaminsupply.com:8080 (PID: $API_PID)"
+echo "   🎨 Frontend:       https://dev.np-topvitaminsupply.com (PID: $FRONTEND_PID)"
 echo "   📋 API Logs:       $API_DIR/api.log"
 echo "   📋 Frontend Logs:  $UNIFIED_APP_DIR/frontend.log"
 echo ""
 echo "🔗 Quick Links:"
-echo "   📖 Blog Home:      http://localhost:3000"
-echo "   🔐 Login:          http://localhost:3000/login"
-echo "   📊 Dashboard:      http://localhost:3000/dashboard"
-echo "   ✏️  New Post:       http://localhost:3000/new-post"
+echo "   📖 Blog Home:      https://dev.np-topvitaminsupply.com"
+echo "   🔐 Login:          https://dev.np-topvitaminsupply.com/login"
+echo "   📊 Dashboard:      https://dev.np-topvitaminsupply.com/dashboard"
+echo "   ✏️  New Post:       https://dev.np-topvitaminsupply.com/new-post"
 echo ""
 echo "💡 Features:"
 echo "   ✅ Single React.js application (no Module Federation)"
