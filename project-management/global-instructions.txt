@@ -63,7 +63,6 @@ use these templates for consistent requirements documentation:
 - user-story-template.md: for user stories
 -based on changes update ADRS in folder /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/adrs
 
-if playwright tests are requested then:
-- detect any javascript errors either through including them in playwright reports or any other Waypoint
+do not do playwright tests unless asked to explicitely, and if requested then:
+- detect any javascript errors 
 - ensure you read logs from server side apps to help troubleshot and fix any issues 
-but only run playwright if requested

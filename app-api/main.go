@@ -1219,13 +1219,14 @@ func (app *App) handleSignout(w http.ResponseWriter, r *http.Request) {
 		returnURL = "https://dev.np-topvitaminsupply.com"
 	}
 
-	// Use OIDC logout callback handler if available
-	if app.oidcAuthHandlers != nil {
-		app.oidcAuthHandlers.LogoutCallback(w, r)
-	} else {
-		// Fallback: redirect to return URL
-		http.Redirect(w, r, returnURL, http.StatusTemporaryRedirect)
-	}
+	// This is the signout page that Cognito redirects to after logout
+	// We should redirect to the return URL to complete the logout flow
+	app.logger.Info("auth", "signout", "User signout completed, redirecting to return URL", map[string]interface{}{
+		"return_url": returnURL,
+	})
+
+	// Redirect to the return URL
+	http.Redirect(w, r, returnURL, http.StatusTemporaryRedirect)
 }
 
 func main() {

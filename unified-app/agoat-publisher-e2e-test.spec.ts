@@ -304,8 +304,10 @@ test.describe('AGoat Publisher E2E Tests', () => {
   });
 
   test('should test OIDC logout flow and callback handling', async ({ page }) => {
-    // Test the logout endpoint directly
-    const logoutResponse = await page.request.get('https://dev.np-topvitaminsupply.com:8080/api/auth/oidc/logout?return_url=' + encodeURIComponent('https://dev.np-topvitaminsupply.com'));
+    // Test the logout endpoint directly with redirect following disabled
+    const logoutResponse = await page.request.get('https://dev.np-topvitaminsupply.com:8080/api/auth/oidc/logout?return_url=' + encodeURIComponent('https://dev.np-topvitaminsupply.com'), {
+      maxRedirects: 0
+    });
     
     // Check if logout endpoint returns redirect
     expect(logoutResponse.status()).toBe(307);
@@ -318,10 +320,12 @@ test.describe('AGoat Publisher E2E Tests', () => {
     expect(location).toContain('auth.dev.np-topvitaminsupply.com/logout');
     expect(location).toContain('client_id=4lt0iqap612c9jug55f3a1s69k');
     expect(location).toContain('logout_uri=');
-    expect(location).toContain('auth/oidc/logout-callback');
+    expect(location).toContain('auth%2Fsignout');
     
     // Test the logout callback endpoint
-    const callbackResponse = await page.request.get('https://dev.np-topvitaminsupply.com:8080/api/auth/oidc/logout-callback?return_url=' + encodeURIComponent('https://dev.np-topvitaminsupply.com'));
+    const callbackResponse = await page.request.get('https://dev.np-topvitaminsupply.com:8080/auth/signout?return_url=' + encodeURIComponent('https://dev.np-topvitaminsupply.com'), {
+      maxRedirects: 0
+    });
     
     // Check if callback endpoint returns redirect
     expect(callbackResponse.status()).toBe(307);
