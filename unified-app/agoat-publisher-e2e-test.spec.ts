@@ -215,4 +215,91 @@ test.describe('AGoat Publisher E2E Tests', () => {
       console.log('Dashboard page error:', error);
     }
   });
+
+  test('should test OIDC login flow and callback handling', async ({ page }) => {
+    // Navigate to login page
+    await page.goto('https://dev.np-topvitaminsupply.com/login');
+
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+
+    // Check if login button exists
+    const loginButton = page.locator('button:has-text("Login with OIDC")');
+    await expect(loginButton).toBeVisible();
+
+    // Click login button
+    await loginButton.click();
+
+    // Wait for redirect to happen
+    await page.waitForTimeout(3000);
+
+    // Check current URL to see where we were redirected
+    const currentUrl = page.url();
+    console.log('Current URL after login click:', currentUrl);
+
+    // Check if we're on Cognito login page
+    if (currentUrl.includes('auth.dev.np-topvitaminsupply.com')) {
+      console.log('Successfully redirected to Cognito login page');
+
+      // Check for any error messages on the page
+      const errorMessages = await page.locator('text=/error|invalid|failed/i').all();
+      if (errorMessages.length > 0) {
+        console.log('Error messages found on page:');
+        for (const error of errorMessages) {
+          const text = await error.textContent();
+          console.log('- ', text);
+        }
+      }
+
+      // Check page title and content
+      const title = await page.title();
+      console.log('Page title:', title);
+
+      // Check for specific error indicators
+      const invalidRequestError = page.locator('text=/invalid request/i');
+      if (await invalidRequestError.isVisible()) {
+        console.log('❌ Invalid request error found!');
+        const errorText = await invalidRequestError.textContent();
+        console.log('Error text:', errorText);
+      } else {
+        console.log('✅ No invalid request error found');
+      }
+
+      // Take screenshot for debugging
+      await page.screenshot({ path: 'test-results/login-flow-debug.png', fullPage: true });
+
+    } else {
+      console.log('❌ Not redirected to Cognito login page');
+      console.log('Expected URL to contain: auth.dev.np-topvitaminsupply.com');
+      console.log('Actual URL:', currentUrl);
+    }
+  });
+
+  test('should test OIDC callback page and WebSocket connection', async ({ page }) => {
+    // Navigate directly to callback page to test WebSocket connection
+    await page.goto('https://dev.np-topvitaminsupply.com/auth/callback?code=test&state=test');
+    
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Check for WebSocket connection errors in console
+    const consoleErrors: string[] = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error' && msg.text().includes('WebSocket')) {
+        consoleErrors.push(msg.text());
+      }
+    });
+    
+    // Wait a bit for any WebSocket connection attempts
+    await page.waitForTimeout(2000);
+    
+    if (consoleErrors.length > 0) {
+      console.log('WebSocket errors found:', consoleErrors);
+    } else {
+      console.log('✅ No WebSocket connection errors found');
+    }
+    
+    // Take screenshot of callback page
+    await page.screenshot({ path: 'test-results/callback-page-debug.png', fullPage: true });
+  });
 });

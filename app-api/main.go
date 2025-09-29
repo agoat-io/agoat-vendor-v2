@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	appconfig "agoat.io/agoat-publisher/config"
 	"agoat.io/agoat-publisher/handlers"
 	"agoat.io/agoat-publisher/services"
 	"github.com/google/uuid"
@@ -1309,6 +1310,7 @@ func main() {
 		api.HandleFunc("/auth/oidc/refresh", app.oidcAuthHandlers.RefreshToken).Methods("GET")
 		api.HandleFunc("/auth/oidc/logout", app.oidcAuthHandlers.Logout).Methods("GET")
 		api.HandleFunc("/auth/oidc/config", app.oidcAuthHandlers.GetOIDCConfig).Methods("GET")
+		api.HandleFunc("/auth/oidc/user-info", app.oidcAuthHandlers.GetUserInfo).Methods("GET")
 	}
 
 	app.logger.Info("main", "startup", "Server ready to accept connections", map[string]interface{}{
@@ -1320,11 +1322,11 @@ func main() {
 	fmt.Printf("Server starting on port %s\n", config.Server.Port)
 
 	// Load SSL certificate for HTTPS from configuration
-	appConfig, err := config.LoadAppConfig("")
+	appConfig, err := appconfig.LoadAppConfig("")
 	if err != nil {
 		fmt.Printf("Warning: Failed to load app config: %v\n", err)
-		appConfig = &config.AppConfig{
-			SSL: config.SSLConfig{
+		appConfig = &appconfig.AppConfig{
+			SSL: appconfig.SSLConfig{
 				CertFile: "../certs/dev.np-topvitaminsupply.com.crt",
 				KeyFile:  "../certs/dev.np-topvitaminsupply.com.key",
 			},

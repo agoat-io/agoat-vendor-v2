@@ -156,10 +156,26 @@ export const OIDCAuthProvider: React.FC<OIDCAuthProviderProps> = ({ children }) 
       }
 
       if (code && state) {
-        // This is an OIDC callback - the backend will handle the token exchange
-        // and redirect back to the return URL
-        setIsLoading(true);
-        // The backend will handle the redirect, so we just wait
+        // This is an OIDC callback - the backend should have processed it
+        // Try to get user info from the backend
+        try {
+          const response = await fetch('/api/auth/oidc/user-info', {
+            method: 'GET',
+            credentials: 'include', // Include cookies for session
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            if (userData.success && userData.user) {
+              setUser(userData.user);
+              localStorage.setItem('oidc_user', JSON.stringify(userData.user));
+            }
+          }
+        } catch (err) {
+          console.error('Failed to get user info after callback:', err);
+        }
+        
+        setIsLoading(false);
       }
     };
 

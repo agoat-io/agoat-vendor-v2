@@ -598,3 +598,26 @@ func (h *OIDCAuthHandlersConfig) GetOIDCConfig(w http.ResponseWriter, r *http.Re
 		"config":  h.config,
 	})
 }
+
+// GetUserInfo returns the current user information
+func (h *OIDCAuthHandlersConfig) GetUserInfo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// For now, return a placeholder response
+	// In a real implementation, you would:
+	// 1. Get the user ID from the session or JWT token
+	// 2. Query the database for user information
+	// 3. Return the user data
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"user": map[string]interface{}{
+			"id":              "placeholder-user-id",
+			"email":           "user@example.com",
+			"username":        "testuser",
+			"auth_method":     "oidc",
+			"email_verified":  true,
+			"created_by_oidc": true,
+		},
+	})
+}

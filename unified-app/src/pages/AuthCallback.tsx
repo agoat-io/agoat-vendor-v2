@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { PublicClientApplication } from '@azure/msal-browser';
-import { currentAzureConfig } from '../config/azureAuth';
-import { useAzureAuth } from '../contexts/AzureAuthContext';
+import { useOIDCAuth } from '../contexts/OIDCAuthContext';
 import { 
   Box, 
   Heading, 
@@ -13,12 +11,10 @@ import {
 } from '@radix-ui/themes';
 import { Spinner } from '../components/ui';
 
-const msalInstance = new PublicClientApplication(currentAzureConfig);
-
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { handleSuccessfulLogin } = useAzureAuth();
+  const { user, isAuthenticated } = useOIDCAuth();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [error, setError] = useState<string | null>(null);
 
@@ -27,16 +23,22 @@ export default function AuthCallback() {
       try {
         setStatus('processing');
         
-        // Initialize MSAL if not already done
-        await msalInstance.initialize();
+        // Check if there's an error in the URL
+        const errorParam = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
         
-        // Handle the redirect promise
-        const response = await msalInstance.handleRedirectPromise();
+        if (errorParam) {
+          throw new Error(errorDescription || errorParam);
+        }
         
-        if (response) {
-          // Successful authentication
-          if (response.account) {
-            // The handleSuccessfulLogin will be called by the context
+        // Check if we have authentication code and state
+        const code = searchParams.get('code');
+        const state = searchParams.get('state');
+        
+        if (code && state) {
+          // This is an OIDC callback - the backend should have already processed it
+          // and redirected us back. Check if user is now authenticated
+          if (isAuthenticated && user) {
             setStatus('success');
             
             // Redirect to dashboard or home page
@@ -44,18 +46,20 @@ export default function AuthCallback() {
               navigate('/dashboard');
             }, 2000);
           } else {
-            throw new Error('No account information received');
+            // Wait a bit for the context to update
+            setTimeout(() => {
+              if (isAuthenticated && user) {
+                setStatus('success');
+                setTimeout(() => {
+                  navigate('/dashboard');
+                }, 2000);
+              } else {
+                throw new Error('Authentication not completed');
+              }
+            }, 1000);
           }
         } else {
-          // Check if there's an error in the URL
-          const errorParam = searchParams.get('error');
-          const errorDescription = searchParams.get('error_description');
-          
-          if (errorParam) {
-            throw new Error(errorDescription || errorParam);
-          }
-          
-          // No response and no error, redirect to home
+          // No code/state, redirect to home
           navigate('/');
         }
       } catch (err) {
@@ -71,7 +75,7 @@ export default function AuthCallback() {
     };
 
     handleCallback();
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, isAuthenticated, user]);
 
   if (status === 'processing') {
     return (

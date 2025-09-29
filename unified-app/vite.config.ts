@@ -18,6 +18,11 @@ export default defineConfig({
       key: fs.readFileSync('../certs/dev.np-topvitaminsupply.com.key'),
       cert: fs.readFileSync('../certs/dev.np-topvitaminsupply.com.crt'),
     },
+    hmr: {
+      port: 443,
+      host: 'dev.np-topvitaminsupply.com',
+      protocol: 'wss'
+    },
     proxy: {
       '/api': {
         target: 'https://localhost:8080',
