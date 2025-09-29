@@ -1,25 +1,66 @@
 code that is relevant is for apps started in script 
 /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/local-scripts/start-full-stack-unified.sh
 
-manage use cases and requirements under /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements
-maintain final resulting use cases, acceptance criterial and requirements under
-/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements/final-functional
-for functional
+manage use cases and requirements under /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements-and-user-stories
+maintain final resulting use cases, acceptance criteria and requirements under
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements-and-user-stories/final-functional
+for functional requirements
 
 and under 
-/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements/final-nonfunctional
-for non functional
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements-and-user-stories/final-nonfunctional
+for non-functional requirements
+
+and under
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements-and-user-stories/user-stories
+for user stories
 
 maintain a log of requirement changes with date and time summarizing change Request
-under /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements/requirement-change-history
+under /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements-and-user-stories/requirement-change-history
 
-each change request shuld be in it own file file name format YYYY-MM-dd-HH-mm-ss-requirement-request.md
+each change request should be in its own file with file name format YYYY-MM-dd-HH-mm-ss-requirement-request.md
 
-if specific environmental or other configurations  requirements go in requirement folders put it somewhere there else choose a differnt folder
+requirements-and-user-stories folders should contain ONLY use cases and requirements:
+- functional requirements: what the system shall do
+- non-functional requirements: how well the system shall perform
+- user stories: user-focused requirements in "As a... I want... So that..." format
+- acceptance criteria: testable conditions for requirements
+
+for technical implementation details, architecture, and design documents, use:
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/technical-implementation
+with subfolders for:
+- authentication: authentication system implementation
+- database: database schema and implementation
+- features: feature implementation details
+- api: API implementation details
+
+for analysis and research documents, use:
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/analysis
+for existing analysis documents
+
+for architecture decision records, use:
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/adrs
+for existing ADRs
+
+for API documentation, use:
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/api
+for existing API docs
+
+for testing documentation, use:
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/tools
+for existing tool documentation
+
+if specific environmental or other configuration requirements go in requirement folders, put them somewhere there, else choose a different folder
 
 and the specific values choose some folder that makes sense
 
 database schema and migration scripts are here 
 /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/app-api/migrations
-any updates that result in database schema or initial data  should also result in migrations scripts
+any updates that result in database schema or initial data should also result in migration scripts
 also in file named _current--full-schema.sql store sql to create latest schema from scratch
+
+requirements templates are available at:
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/requirements-and-user-stories/templates
+use these templates for consistent requirements documentation:
+- functional-requirement-template.md: for functional requirements
+- nonfunctional-requirement-template.md: for non-functional requirements  
+- user-story-template.md: for user stories
