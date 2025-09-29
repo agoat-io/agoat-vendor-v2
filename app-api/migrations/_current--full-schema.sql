@@ -120,10 +120,17 @@ CREATE TABLE posts (
 -- OIDC-compliant CIAM system configurations supporting multiple providers
 CREATE TABLE ciam_systems (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    system_name VARCHAR(50) NOT NULL UNIQUE, -- 'cognito', 'azure_entra', 'auth0', etc.
+    system_name VARCHAR(50) NOT NULL, -- 'cognito', 'azure_entra', 'auth0', etc.
     display_name VARCHAR(100) NOT NULL,
     provider_type VARCHAR(50) DEFAULT 'oidc' CHECK (provider_type IN ('oidc', 'oauth2', 'saml', 'custom')),
     is_active BOOLEAN DEFAULT TRUE,
+    
+    -- Provider instance identification
+    provider_instance_id VARCHAR(255) NOT NULL DEFAULT 'default', -- Unique identifier for specific instance/environment/pool
+    provider_environment VARCHAR(50) DEFAULT 'production' CHECK (provider_environment IN ('production', 'staging', 'development', 'test', 'local')),
+    provider_region VARCHAR(50), -- Provider region information
+    provider_domain VARCHAR(255), -- Provider domain from JWT token iss claim
+    is_default_for_type BOOLEAN DEFAULT FALSE, -- Indicates if this is the default provider for this provider_type
     
     -- OIDC Standard Endpoints
     jwks_url TEXT, -- JSON Web Key Set URL for token validation
@@ -147,7 +154,11 @@ CREATE TABLE ciam_systems (
     provider_metadata JSONB DEFAULT '{}', -- Provider Metadata - provider-specific configuration and settings
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Unique constraints for multiple provider support
+    UNIQUE (system_name, provider_instance_id), -- Support multiple instances of same provider type
+    UNIQUE (provider_type, is_default_for_type) WHERE is_default_for_type = TRUE -- Only one default per provider type
 );
 
 -- OIDC provider-agnostic user identity mappings - all provider-specific data stored in provider_metadata JSONB field
@@ -156,6 +167,12 @@ CREATE TABLE user_ciam_mappings (
     app_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     ciam_identifier VARCHAR(255) NOT NULL, -- OIDC 'sub' claim
     ciam_system VARCHAR(50) NOT NULL, -- 'cognito', 'azure_entra', 'auth0', etc.
+    
+    -- Provider instance reference
+    ciam_system_id UUID REFERENCES ciam_systems(id) ON DELETE CASCADE, -- Direct reference to specific CIAM system instance
+    provider_instance_id VARCHAR(255), -- Provider instance identifier for quick lookup
+    provider_environment VARCHAR(50), -- Provider environment for audit and debugging
+    token_issuer VARCHAR(255), -- JWT token issuer URL for validation
     
     -- Generic provider fields
     provider_identifier VARCHAR(255), -- Generic provider identifier - specific data in provider_metadata
@@ -179,6 +196,12 @@ CREATE TABLE oidc_tokens (
     token_hash VARCHAR(255) NOT NULL, -- Hashed token for security (never store plain tokens)
     token_metadata JSONB DEFAULT '{}', -- Token claims, expiry, scope, etc.
     expires_at TIMESTAMP WITH TIME ZONE, -- When the token expires
+    
+    -- Provider instance information for token validation
+    token_issuer VARCHAR(255), -- JWT token issuer URL for validation
+    provider_instance_id VARCHAR(255), -- Provider instance identifier for quick lookup
+    token_audience VARCHAR(255), -- JWT token audience for validation
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id, ciam_system_id, token_type) -- One token per type per user per system
@@ -195,6 +218,11 @@ CREATE TABLE oidc_sessions (
     return_url TEXT, -- Return URL after authentication
     session_data JSONB DEFAULT '{}', -- Additional session data and metadata
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL, -- When session expires
+    
+    -- Provider instance information for session management
+    provider_instance_id VARCHAR(255), -- Provider instance identifier for quick lookup
+    provider_environment VARCHAR(50), -- Provider environment for audit and debugging
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -254,6 +282,13 @@ CREATE INDEX idx_ciam_systems_name ON ciam_systems (system_name);
 CREATE INDEX idx_ciam_systems_provider_type ON ciam_systems (provider_type);
 CREATE INDEX idx_ciam_systems_client_id ON ciam_systems (client_id) WHERE client_id IS NOT NULL;
 
+-- CIAM systems indexes for multiple provider support
+CREATE INDEX idx_ciam_systems_provider_instance_id ON ciam_systems (provider_instance_id);
+CREATE INDEX idx_ciam_systems_provider_environment ON ciam_systems (provider_environment);
+CREATE INDEX idx_ciam_systems_provider_region ON ciam_systems (provider_region);
+CREATE INDEX idx_ciam_systems_provider_domain ON ciam_systems (provider_domain);
+CREATE INDEX idx_ciam_systems_default_for_type ON ciam_systems (provider_type, is_default_for_type) WHERE is_default_for_type = TRUE;
+
 -- User CIAM mappings indexes
 CREATE INDEX idx_user_ciam_mappings_app_user_id ON user_ciam_mappings (app_user_id);
 CREATE INDEX idx_user_ciam_mappings_ciam_identifier ON user_ciam_mappings (ciam_identifier);
@@ -262,17 +297,32 @@ CREATE INDEX idx_user_ciam_mappings_system ON user_ciam_mappings (ciam_system);
 CREATE INDEX idx_user_ciam_mappings_provider_identifier ON user_ciam_mappings (provider_identifier) WHERE provider_identifier IS NOT NULL;
 CREATE INDEX idx_user_ciam_mappings_last_auth ON user_ciam_mappings (last_authenticated_at DESC) WHERE last_authenticated_at IS NOT NULL;
 
+-- User CIAM mappings indexes for multiple provider support
+CREATE INDEX idx_user_ciam_mappings_ciam_system_id ON user_ciam_mappings (ciam_system_id);
+CREATE INDEX idx_user_ciam_mappings_provider_instance_id ON user_ciam_mappings (provider_instance_id);
+CREATE INDEX idx_user_ciam_mappings_provider_environment ON user_ciam_mappings (provider_environment);
+CREATE INDEX idx_user_ciam_mappings_token_issuer ON user_ciam_mappings (token_issuer);
+
 -- OIDC tokens indexes
 CREATE INDEX idx_oidc_tokens_user_id ON oidc_tokens (user_id);
 CREATE INDEX idx_oidc_tokens_ciam_system_id ON oidc_tokens (ciam_system_id);
 CREATE INDEX idx_oidc_tokens_expires_at ON oidc_tokens (expires_at) WHERE expires_at IS NOT NULL;
 CREATE INDEX idx_oidc_tokens_type ON oidc_tokens (token_type);
 
+-- OIDC tokens indexes for multiple provider support
+CREATE INDEX idx_oidc_tokens_token_issuer ON oidc_tokens (token_issuer);
+CREATE INDEX idx_oidc_tokens_provider_instance_id ON oidc_tokens (provider_instance_id);
+CREATE INDEX idx_oidc_tokens_token_audience ON oidc_tokens (token_audience);
+
 -- OIDC sessions indexes
 CREATE INDEX idx_oidc_sessions_session_id ON oidc_sessions (session_id);
 CREATE INDEX idx_oidc_sessions_user_id ON oidc_sessions (user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_oidc_sessions_state ON oidc_sessions (state);
 CREATE INDEX idx_oidc_sessions_expires_at ON oidc_sessions (expires_at);
+
+-- OIDC sessions indexes for multiple provider support
+CREATE INDEX idx_oidc_sessions_provider_instance_id ON oidc_sessions (provider_instance_id);
+CREATE INDEX idx_oidc_sessions_provider_environment ON oidc_sessions (provider_environment);
 
 -- =============================================================================
 -- TRIGGERS FOR UPDATED_AT COLUMNS
@@ -422,6 +472,95 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Function to get OIDC configuration for a specific provider instance
+CREATE OR REPLACE FUNCTION get_oidc_config_by_instance(
+    system_name_param VARCHAR(50),
+    provider_instance_id_param VARCHAR(255) DEFAULT NULL
+)
+RETURNS TABLE (
+    system_id UUID,
+    provider_type VARCHAR(50),
+    provider_instance_id VARCHAR(255),
+    provider_environment VARCHAR(50),
+    provider_region VARCHAR(50),
+    provider_domain VARCHAR(255),
+    jwks_url TEXT,
+    issuer_url TEXT,
+    oidc_discovery_url TEXT,
+    authorization_endpoint TEXT,
+    token_endpoint TEXT,
+    userinfo_endpoint TEXT,
+    end_session_endpoint TEXT,
+    client_id VARCHAR(255),
+    scopes TEXT,
+    response_type VARCHAR(50),
+    response_mode VARCHAR(50),
+    code_challenge_method VARCHAR(50),
+    supported_claims JSONB,
+    provider_metadata JSONB,
+    is_default_for_type BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        cs.id,
+        cs.provider_type,
+        cs.provider_instance_id,
+        cs.provider_environment,
+        cs.provider_region,
+        cs.provider_domain,
+        cs.jwks_url,
+        cs.issuer_url,
+        cs.oidc_discovery_url,
+        cs.authorization_endpoint,
+        cs.token_endpoint,
+        cs.userinfo_endpoint,
+        cs.end_session_endpoint,
+        cs.client_id,
+        cs.scopes,
+        cs.response_type,
+        cs.response_mode,
+        cs.code_challenge_method,
+        cs.supported_claims,
+        cs.provider_metadata,
+        cs.is_default_for_type
+    FROM ciam_systems cs
+    WHERE cs.system_name = system_name_param 
+    AND cs.is_active = TRUE
+    AND (provider_instance_id_param IS NULL OR cs.provider_instance_id = provider_instance_id_param)
+    ORDER BY cs.is_default_for_type DESC, cs.created_at ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get provider instance from JWT token issuer
+CREATE OR REPLACE FUNCTION get_provider_instance_by_issuer(token_issuer_param VARCHAR(255))
+RETURNS TABLE (
+    system_id UUID,
+    system_name VARCHAR(50),
+    provider_type VARCHAR(50),
+    provider_instance_id VARCHAR(255),
+    provider_environment VARCHAR(50),
+    provider_region VARCHAR(50),
+    provider_domain VARCHAR(255),
+    is_default_for_type BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        cs.id,
+        cs.system_name,
+        cs.provider_type,
+        cs.provider_instance_id,
+        cs.provider_environment,
+        cs.provider_region,
+        cs.provider_domain,
+        cs.is_default_for_type
+    FROM ciam_systems cs
+    WHERE cs.issuer_url = token_issuer_param 
+    AND cs.is_active = TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Function to create or update OIDC user mapping
 CREATE OR REPLACE FUNCTION upsert_oidc_user_mapping(
     user_id_param UUID, -- Application user ID
@@ -468,6 +607,70 @@ BEGIN
         ) VALUES (
             user_id_param, oidc_sub_param, ciam_system_name_param,
             provider_identifier_param, provider_metadata_param,
+            TRUE, NOW()
+        ) RETURNING id INTO mapping_id;
+    END IF;
+    
+    RETURN mapping_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to create or update OIDC user mapping with provider instance
+CREATE OR REPLACE FUNCTION upsert_oidc_user_mapping_with_instance(
+    user_id_param UUID,
+    ciam_system_name_param VARCHAR(50),
+    provider_instance_id_param VARCHAR(255),
+    oidc_sub_param VARCHAR(255),
+    token_issuer_param VARCHAR(255),
+    provider_identifier_param VARCHAR(255),
+    provider_metadata_param JSONB DEFAULT '{}'
+)
+RETURNS UUID AS $$
+DECLARE
+    mapping_id UUID;
+    ciam_system_id_val UUID;
+BEGIN
+    -- Get CIAM system ID from system name and provider instance
+    SELECT id INTO ciam_system_id_val 
+    FROM ciam_systems 
+    WHERE system_name = ciam_system_name_param 
+    AND provider_instance_id = provider_instance_id_param
+    AND is_active = TRUE;
+    
+    IF ciam_system_id_val IS NULL THEN
+        RAISE EXCEPTION 'CIAM system not found: % with instance: %', ciam_system_name_param, provider_instance_id_param;
+    END IF;
+    
+    -- Check if mapping already exists
+    SELECT id INTO mapping_id
+    FROM user_ciam_mappings
+    WHERE app_user_id = user_id_param 
+    AND ciam_system = ciam_system_name_param
+    AND provider_instance_id = provider_instance_id_param
+    AND ciam_identifier = oidc_sub_param;
+    
+    IF mapping_id IS NOT NULL THEN
+        -- Update existing mapping
+        UPDATE user_ciam_mappings SET
+            ciam_system_id = ciam_system_id_val,
+            provider_identifier = provider_identifier_param,
+            provider_metadata = provider_metadata_param,
+            token_issuer = token_issuer_param,
+            last_authenticated_at = NOW(),
+            updated_at = NOW()
+        WHERE id = mapping_id;
+    ELSE
+        -- Create new mapping
+        INSERT INTO user_ciam_mappings (
+            app_user_id, ciam_identifier, ciam_system, ciam_system_id,
+            provider_identifier, provider_metadata, token_issuer,
+            provider_instance_id, provider_environment,
+            is_current_ciam, last_authenticated_at
+        ) VALUES (
+            user_id_param, oidc_sub_param, ciam_system_name_param, ciam_system_id_val,
+            provider_identifier_param, provider_metadata_param, token_issuer_param,
+            provider_instance_id_param, 
+            (SELECT provider_environment FROM ciam_systems WHERE id = ciam_system_id_val),
             TRUE, NOW()
         ) RETURNING id INTO mapping_id;
     END IF;
@@ -551,6 +754,22 @@ ALTER TABLE user_ciam_mappings ADD CONSTRAINT user_ciam_mappings_provider_identi
 ALTER TABLE user_ciam_mappings ADD CONSTRAINT user_ciam_mappings_ciam_system_not_empty 
     CHECK (ciam_system IS NOT NULL AND ciam_system != '');
 
+-- Ensure provider_instance_id is not empty
+ALTER TABLE ciam_systems ADD CONSTRAINT ciam_systems_provider_instance_id_not_empty 
+    CHECK (provider_instance_id IS NOT NULL AND provider_instance_id != '');
+
+-- Ensure provider_environment is valid
+ALTER TABLE ciam_systems ADD CONSTRAINT ciam_systems_provider_environment_valid 
+    CHECK (provider_environment IN ('production', 'staging', 'development', 'test', 'local'));
+
+-- Ensure provider_instance_id is not empty in user_ciam_mappings
+ALTER TABLE user_ciam_mappings ADD CONSTRAINT user_ciam_mappings_provider_instance_id_not_empty 
+    CHECK (provider_instance_id IS NULL OR provider_instance_id != '');
+
+-- Ensure token_issuer is not empty when provided
+ALTER TABLE user_ciam_mappings ADD CONSTRAINT user_ciam_mappings_token_issuer_not_empty 
+    CHECK (token_issuer IS NULL OR token_issuer != '');
+
 -- =============================================================================
 -- DEFAULT DATA
 -- =============================================================================
@@ -592,9 +811,9 @@ BEGIN
     END IF;
 END $$;
 
--- Insert default CIAM systems
-INSERT INTO ciam_systems (system_name, display_name, provider_type, is_active, jwks_url, issuer_url, oidc_discovery_url, authorization_endpoint, token_endpoint, userinfo_endpoint, end_session_endpoint, client_id, scopes, response_type, response_mode, code_challenge_method, supported_claims, provider_metadata) VALUES
-('cognito', 'AWS Cognito', 'oidc', TRUE, 
+-- Insert default CIAM systems with provider instance information
+INSERT INTO ciam_systems (system_name, display_name, provider_type, is_active, provider_instance_id, provider_environment, provider_region, provider_domain, jwks_url, issuer_url, oidc_discovery_url, authorization_endpoint, token_endpoint, userinfo_endpoint, end_session_endpoint, client_id, scopes, response_type, response_mode, code_challenge_method, supported_claims, provider_metadata, is_default_for_type) VALUES
+('cognito', 'AWS Cognito Dev', 'oidc', TRUE, 'us-east-1_FJUcN8W07', 'development', 'us-east-1', 'auth.dev.np-topvitaminsupply.com',
  'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07/.well-known/jwks.json',
  'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07',
  'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07/.well-known/openid_configuration',
@@ -608,11 +827,15 @@ INSERT INTO ciam_systems (system_name, display_name, provider_type, is_active, j
  'query',
  'S256',
  '{"sub": "string", "email": "string", "email_verified": "boolean", "phone_number": "string", "phone_number_verified": "boolean", "given_name": "string", "family_name": "string", "name": "string", "preferred_username": "string", "cognito:username": "string"}',
- '{"user_pool_id": "us-east-1_FJUcN8W07", "region": "us-east-1", "domain": "auth.dev.np-topvitaminsupply.com"}')
-ON CONFLICT (system_name) DO UPDATE SET
+ '{"user_pool_id": "us-east-1_FJUcN8W07", "region": "us-east-1", "domain": "auth.dev.np-topvitaminsupply.com"}',
+ TRUE)
+ON CONFLICT (system_name, provider_instance_id) DO UPDATE SET
     display_name = EXCLUDED.display_name,
     provider_type = EXCLUDED.provider_type,
     is_active = EXCLUDED.is_active,
+    provider_environment = EXCLUDED.provider_environment,
+    provider_region = EXCLUDED.provider_region,
+    provider_domain = EXCLUDED.provider_domain,
     jwks_url = EXCLUDED.jwks_url,
     issuer_url = EXCLUDED.issuer_url,
     oidc_discovery_url = EXCLUDED.oidc_discovery_url,
@@ -627,10 +850,11 @@ ON CONFLICT (system_name) DO UPDATE SET
     code_challenge_method = EXCLUDED.code_challenge_method,
     supported_claims = EXCLUDED.supported_claims,
     provider_metadata = EXCLUDED.provider_metadata,
+    is_default_for_type = EXCLUDED.is_default_for_type,
     updated_at = NOW();
 
-INSERT INTO ciam_systems (system_name, display_name, provider_type, is_active, jwks_url, issuer_url, oidc_discovery_url, authorization_endpoint, token_endpoint, userinfo_endpoint, end_session_endpoint, client_id, scopes, response_type, response_mode, code_challenge_method, supported_claims, provider_metadata) VALUES
-('azure_entra', 'Microsoft Azure Entra ID', 'oidc', TRUE,
+INSERT INTO ciam_systems (system_name, display_name, provider_type, is_active, provider_instance_id, provider_environment, provider_region, provider_domain, jwks_url, issuer_url, oidc_discovery_url, authorization_endpoint, token_endpoint, userinfo_endpoint, end_session_endpoint, client_id, scopes, response_type, response_mode, code_challenge_method, supported_claims, provider_metadata, is_default_for_type) VALUES
+('azure_entra', 'Microsoft Azure Entra ID', 'oidc', TRUE, 'placeholder-tenant-id', 'development', 'global', 'login.microsoftonline.com',
  'https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys',
  'https://login.microsoftonline.com/{tenant_id}/v2.0',
  'https://login.microsoftonline.com/{tenant_id}/.well-known/openid_configuration',
@@ -644,11 +868,15 @@ INSERT INTO ciam_systems (system_name, display_name, provider_type, is_active, j
  'query',
  'S256',
  '{"sub": "string", "email": "string", "email_verified": "boolean", "given_name": "string", "family_name": "string", "name": "string", "preferred_username": "string", "oid": "string", "tid": "string"}',
- '{"tenant_id": "placeholder", "authority_url": "https://login.microsoftonline.com/{tenant_id}"}')
-ON CONFLICT (system_name) DO UPDATE SET
+ '{"tenant_id": "placeholder", "authority_url": "https://login.microsoftonline.com/{tenant_id}"}',
+ TRUE)
+ON CONFLICT (system_name, provider_instance_id) DO UPDATE SET
     display_name = EXCLUDED.display_name,
     provider_type = EXCLUDED.provider_type,
     is_active = EXCLUDED.is_active,
+    provider_environment = EXCLUDED.provider_environment,
+    provider_region = EXCLUDED.provider_region,
+    provider_domain = EXCLUDED.provider_domain,
     jwks_url = EXCLUDED.jwks_url,
     issuer_url = EXCLUDED.issuer_url,
     oidc_discovery_url = EXCLUDED.oidc_discovery_url,
@@ -663,6 +891,7 @@ ON CONFLICT (system_name) DO UPDATE SET
     code_challenge_method = EXCLUDED.code_challenge_method,
     supported_claims = EXCLUDED.supported_claims,
     provider_metadata = EXCLUDED.provider_metadata,
+    is_default_for_type = EXCLUDED.is_default_for_type,
     updated_at = NOW();
 
 -- =============================================================================
@@ -674,7 +903,7 @@ COMMENT ON TABLE customers IS 'Customer accounts for multitenant architecture';
 COMMENT ON TABLE sites IS 'Sites belonging to customers';
 COMMENT ON TABLE users IS 'User accounts with OIDC-compliant authentication support only';
 COMMENT ON TABLE posts IS 'Content posts with tenant context';
-COMMENT ON TABLE ciam_systems IS 'OIDC-compliant CIAM system configurations - no legacy configuration fields';
+COMMENT ON TABLE ciam_systems IS 'OIDC-compliant CIAM system configurations supporting multiple instances of the same provider type';
 COMMENT ON TABLE user_ciam_mappings IS 'OIDC provider-agnostic user identity mappings - all provider-specific data stored in provider_metadata JSONB field';
 COMMENT ON TABLE oidc_tokens IS 'Secure storage for OIDC tokens with metadata';
 COMMENT ON TABLE oidc_sessions IS 'OIDC session management with state and PKCE support';
@@ -684,20 +913,34 @@ COMMENT ON COLUMN users.auth_method IS 'Authentication method - only local or oi
 COMMENT ON COLUMN users.provider_metadata IS 'Provider-specific user data stored as JSONB - no provider-specific columns';
 
 COMMENT ON COLUMN ciam_systems.provider_type IS 'OIDC provider type (oidc, oauth2, saml, custom)';
+COMMENT ON COLUMN ciam_systems.provider_instance_id IS 'Unique identifier for specific provider instance/environment/pool - obtained from JWT token iss claim';
+COMMENT ON COLUMN ciam_systems.provider_environment IS 'Provider environment context (production, staging, development, test, local)';
+COMMENT ON COLUMN ciam_systems.provider_region IS 'Provider region information (us-east-1, us-west-2, europe-west-1, global)';
+COMMENT ON COLUMN ciam_systems.provider_domain IS 'Provider domain from JWT token iss claim or configuration';
+COMMENT ON COLUMN ciam_systems.is_default_for_type IS 'Indicates if this is the default provider for this provider_type';
 COMMENT ON COLUMN ciam_systems.oidc_discovery_url IS 'OIDC discovery endpoint URL';
 COMMENT ON COLUMN ciam_systems.supported_claims IS 'JSON schema of supported OIDC claims';
 COMMENT ON COLUMN ciam_systems.provider_metadata IS 'Provider-specific configuration and metadata';
 
+COMMENT ON COLUMN user_ciam_mappings.ciam_system_id IS 'Direct reference to specific CIAM system instance';
+COMMENT ON COLUMN user_ciam_mappings.provider_instance_id IS 'Provider instance identifier for quick lookup - same as ciam_systems.provider_instance_id';
+COMMENT ON COLUMN user_ciam_mappings.provider_environment IS 'Provider environment for audit and debugging';
+COMMENT ON COLUMN user_ciam_mappings.token_issuer IS 'JWT token issuer URL for validation - obtained from JWT token iss claim';
 COMMENT ON COLUMN user_ciam_mappings.provider_identifier IS 'Generic provider identifier - specific data in provider_metadata';
 COMMENT ON COLUMN user_ciam_mappings.provider_metadata IS 'All provider-specific data stored here - no provider-specific columns';
 COMMENT ON COLUMN user_ciam_mappings.last_authenticated_at IS 'Last successful authentication timestamp';
 
 COMMENT ON COLUMN oidc_tokens.token_hash IS 'Hashed token for security (never store plain tokens)';
 COMMENT ON COLUMN oidc_tokens.token_metadata IS 'Token claims, expiry, and other metadata';
+COMMENT ON COLUMN oidc_tokens.token_issuer IS 'JWT token issuer URL for validation - obtained from JWT token iss claim';
+COMMENT ON COLUMN oidc_tokens.provider_instance_id IS 'Provider instance identifier for quick lookup';
+COMMENT ON COLUMN oidc_tokens.token_audience IS 'JWT token audience for validation - obtained from JWT token aud claim';
 
 COMMENT ON COLUMN oidc_sessions.state IS 'OAuth2 state parameter for CSRF protection';
 COMMENT ON COLUMN oidc_sessions.code_verifier IS 'PKCE code verifier for enhanced security';
 COMMENT ON COLUMN oidc_sessions.return_url IS 'URL to redirect to after authentication';
+COMMENT ON COLUMN oidc_sessions.provider_instance_id IS 'Provider instance identifier for quick lookup';
+COMMENT ON COLUMN oidc_sessions.provider_environment IS 'Provider environment for audit and debugging';
 
 -- =============================================================================
 -- SCHEMA VERSION TRACKING
@@ -708,5 +951,6 @@ INSERT INTO schema_migrations (version, name, checksum, status) VALUES
 (1, 'initial_schema', 'initial_schema_v1_0', 'success'),
 (2, 'cognito_ciam_support', 'cognito_ciam_support_v1_0', 'success'),
 (3, 'oidc_agnostic_ciam_support', 'oidc_agnostic_ciam_support_v1_0', 'success'),
-(4, 'remove_cognito_backward_compatibility', 'remove_cognito_backward_compatibility_v1_0', 'success')
+(4, 'remove_cognito_backward_compatibility', 'remove_cognito_backward_compatibility_v1_0', 'success'),
+(5, 'support_multiple_providers_same_type', 'support_multiple_providers_same_type_v1_0', 'success')
 ON CONFLICT (version) DO NOTHING;
