@@ -102,576 +102,88 @@ App
 ### Core Components
 
 #### 1. App Component
-```typescript
-import { Routes, Route } from 'react-router-dom'
-import { Theme, Container, Flex, Box, Heading, Button, Separator, Text } from '@radix-ui/themes'
-import '@radix-ui/themes/styles.css'
-import { Link, useLocation } from 'react-router-dom'
-import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon } from '@radix-ui/react-icons'
-import Home from './pages/Home'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import NewPost from './pages/NewPost'
-import PostDetail from './pages/PostDetail'
-import ErrorBoundary from './components/ErrorBoundary'
-import { ThemeProvider } from './components/ThemeProvider'
-import { OIDCAuthProvider, useOIDCAuth } from './contexts/OIDCAuthContext'
-import EditPost from './pages/EditPost'
-import GlobalErrorToast from './components/GlobalErrorToast'
-import ThorneEducation from './pages/ThorneEducation'
-import ThorneCategory from './pages/ThorneCategory'
-import ThorneRegistration from './pages/ThorneRegistration'
-import ThornePatientPortal from './pages/ThornePatientPortal'
-import ThorneCompliance from './pages/ThorneCompliance'
-import AuthCallback from './pages/AuthCallback'
-import AuthLogout from './pages/AuthLogout'
 
-function App() {
-  return (
-    <ThemeProvider>
-      <OIDCAuthProvider>
-        <GlobalErrorToast />
-        <ErrorBoundary>
-          <AppContent />
-        </ErrorBoundary>
-      </OIDCAuthProvider>
-    </ThemeProvider>
-  )
-}
+**Implementation File**: `unified-app/src/App.tsx`
 
-export default App
-```
+The main App component provides:
+- **Theme Provider**: Radix UI theme configuration
+- **Authentication Provider**: OIDC authentication context
+- **Error Handling**: Global error toast and error boundary
+- **Routing**: React Router configuration for all application routes
+- **Component Structure**: Organized component hierarchy with providers
 
 #### 2. Header Component
-```typescript
-function Header() {
-  const location = useLocation()
-  const { user, isAuthenticated, logout } = useOIDCAuth()
-  
-  return (
-    <Box style={{ 
-      background: 'var(--color-surface)', 
-      borderBottom: '1px solid var(--gray-6)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 1000
-    }}>
-      <Container size="3">
-        <Flex justify="between" align="center" py="4">
-          <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Flex align="center" gap="3">
-              <Box style={{ 
-                width: '32px', 
-                height: '32px', 
-                background: 'var(--accent-9)', 
-                borderRadius: 'var(--radius-3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 'bold'
-              }}>
-                A
-              </Box>
-              <Heading size="5" style={{ color: 'var(--gray-12)' }}>
-                AGoat Publisher
-              </Heading>
-            </Flex>
-          </Link>
-          
-          <Flex gap="3" align="center">
-            <Link to="/thorne/education" style={{ textDecoration: 'none' }}>
-              <Button variant="ghost" size="2">
-                <HeartIcon />
-                Thorne Supplements
-              </Button>
-            </Link>
-            
-            {isAuthenticated ? (
-              <Flex gap="3" align="center">
-                <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-                  <Button variant={location.pathname === '/dashboard' ? 'solid' : 'ghost'} size="2">
-                    <DashboardIcon />
-                    Dashboard
-                  </Button>
-                </Link>
-                <Link to="/new-post" style={{ textDecoration: 'none' }}>
-                  <Button variant={location.pathname === '/new-post' ? 'solid' : 'ghost'} size="2">
-                    <PlusIcon />
-                    New Post
-                  </Button>
-                </Link>
-                <Button variant="ghost" size="2" onClick={() => logout()}>
-                  <ExitIcon />
-                  Logout
-                </Button>
-              </Flex>
-            ) : (
-              <Link to="/login" style={{ textDecoration: 'none' }}>
-                <Button variant={location.pathname === '/login' ? 'solid' : 'outline'} size="2">
-                  <PersonIcon />
-                  Login
-                </Button>
-              </Link>
-            )}
-          </Flex>
-        </Flex>
-      </Container>
-    </Box>
-  )
-}
-```
+
+**Implementation File**: `unified-app/src/components/Header.tsx`
+
+The Header component provides:
+- **Navigation**: Main navigation links (Home, Dashboard, New Post)
+- **Authentication State**: Shows login/logout based on authentication status
+- **User Information**: Displays user details when authenticated
+- **Responsive Design**: Mobile-friendly navigation layout
 
 ## State Management
 
 ### Authentication Context
-```typescript
-interface OIDCAuthContextType {
-  user: OIDCUser | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  error: string | null
-  login: (returnUrl?: string) => Promise<void>
-  logout: (returnUrl?: string) => Promise<void>
-  refreshToken: () => Promise<void>
-}
 
-export const OIDCAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<OIDCUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+**Implementation File**: `unified-app/src/contexts/OIDCAuthContext.tsx`
 
-  const login = async (returnUrl?: string) => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const currentUrl = returnUrl || window.location.origin
-      const loginUrl = `/api/auth/oidc/login?return_url=${encodeURIComponent(currentUrl)}`
-      window.location.href = loginUrl
-    } catch (err: any) {
-      setError(err.message || 'Login failed')
-      setIsLoading(false)
-    }
-  }
-
-  const logout = async (returnUrl?: string) => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      setUser(null)
-      localStorage.removeItem('oidc_user')
-      
-      const currentUrl = returnUrl || window.location.origin
-      const logoutUrl = `/api/auth/oidc/logout?return_url=${encodeURIComponent(currentUrl)}`
-      window.location.href = logoutUrl
-    } catch (err: any) {
-      setError(err.message || 'Logout failed')
-      setIsLoading(false)
-    }
-  }
-
-  return (
-    <OIDCAuthContext.Provider value={{
-      user,
-      isAuthenticated: !!user,
-      isLoading,
-      error,
-      login,
-      logout,
-      refreshToken
-    }}>
-      {children}
-    </OIDCAuthContext.Provider>
-  )
-}
-```
-
-### Type Definitions
-```typescript
-// types/auth.ts
-export interface OIDCUser {
-  id: string
-  email: string
-  name: string
-  given_name?: string
-  family_name?: string
-  email_verified: boolean
-  phone_number?: string
-  phone_number_verified?: boolean
-  preferred_username?: string
-  picture?: string
-  sub: string
-  iss: string
-  aud: string
-  exp: number
-  iat: number
-}
-
-// types/post.ts
-export interface Post {
-  id: string
-  site_id: string
-  title: string
-  content: string
-  excerpt: string
-  status: 'draft' | 'published' | 'archived'
-  published_at?: string
-  created_at: string
-  updated_at: string
-  author?: {
-    id: string
-    name: string
-    email: string
-  }
-  tags?: string[]
-  metadata?: {
-    word_count?: number
-    reading_time?: number
-  }
-}
-
-// types/api.ts
-export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  error?: {
-    code: string
-    message: string
-    details?: string
-    error_id: string
-  }
-  message?: string
-  timestamp: string
-}
-```
+The OIDC authentication context provides:
+- **User State**: Current user information and authentication status
+- **Loading State**: Authentication process loading indicators
+- **Error Handling**: Authentication error management
+- **Authentication Methods**: Login, logout, and token refresh functions
+- **Context Provider**: React context for sharing authentication state across components
 
 ## Page Components
 
 ### 1. Home Page
-```typescript
-import React, { useEffect, useState } from 'react'
-import { useOIDCAuth } from '../contexts/OIDCAuthContext'
-import { 
-  Box, 
-  Heading, 
-  Text, 
-  Card, 
-  Flex, 
-  Container,
-  Button,
-  Grid
-} from '@radix-ui/themes'
-import { CalendarIcon, PersonIcon, ArrowRightIcon, PlusIcon } from '@radix-ui/react-icons'
-import { Link } from 'react-router-dom'
-import { Post } from '../types/post'
-import { apiRequest } from '../utils/api'
 
-export default function Home() {
-  const { isAuthenticated, user } = useOIDCAuth()
-  const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
+**Implementation File**: `unified-app/src/pages/Home.tsx`
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await apiRequest<Post[]>('/api/sites/18c6498d-f738-4c9f-aefd-d66bec11d751/posts')
-        if (response.success && response.data) {
-          setPosts(response.data)
-        }
-      } catch (error) {
-        console.error('Failed to fetch posts:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPosts()
-  }, [])
-
-  return (
-    <Container size="3">
-      <Box py="6">
-        <Flex direction="column" gap="6">
-          {/* Hero Section */}
-          <Box>
-            <Heading size="8" mb="4">
-              Welcome to AGoat Publisher
-            </Heading>
-            <Text size="4" color="gray" mb="6">
-              Create and manage your blog content with ease. 
-              {isAuthenticated ? ` Welcome back, ${user?.name}!` : ' Get started by logging in.'}
-            </Text>
-            
-            {isAuthenticated ? (
-              <Flex gap="3">
-                <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-                  <Button size="3">
-                    <PersonIcon />
-                    Go to Dashboard
-                  </Button>
-                </Link>
-                <Link to="/new-post" style={{ textDecoration: 'none' }}>
-                  <Button variant="outline" size="3">
-                    <PlusIcon />
-                    Create New Post
-                  </Button>
-                </Link>
-              </Flex>
-            ) : (
-              <Link to="/login" style={{ textDecoration: 'none' }}>
-                <Button size="3">
-                  <PersonIcon />
-                  Get Started
-                </Button>
-              </Link>
-            )}
-          </Box>
-
-          {/* Recent Posts */}
-          <Box>
-            <Heading size="6" mb="4">Recent Posts</Heading>
-            {loading ? (
-              <Text>Loading posts...</Text>
-            ) : posts.length > 0 ? (
-              <Grid columns={{ initial: '1', sm: '2', md: '3' }} gap="4">
-                {posts.map((post) => (
-                  <Card key={post.id} style={{ height: '100%' }}>
-                    <Box p="4">
-                      <Heading size="4" mb="2">
-                        <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                          {post.title}
-                        </Link>
-                      </Heading>
-                      <Text size="2" color="gray" mb="3">
-                        {post.excerpt}
-                      </Text>
-                      <Flex justify="between" align="center">
-                        <Flex align="center" gap="2">
-                          <CalendarIcon />
-                          <Text size="1" color="gray">
-                            {new Date(post.published_at || post.created_at).toLocaleDateString()}
-                          </Text>
-                        </Flex>
-                        <Link to={`/post/${post.id}`} style={{ textDecoration: 'none' }}>
-                          <Button variant="ghost" size="1">
-                            Read More
-                            <ArrowRightIcon />
-                          </Button>
-                        </Link>
-                      </Flex>
-                    </Box>
-                  </Card>
-                ))}
-              </Grid>
-            ) : (
-              <Text color="gray">No posts available.</Text>
-            )}
-          </Box>
-        </Flex>
-      </Box>
-    </Container>
-  )
-}
-```
+The Home page provides:
+- **Public Content**: Displays published blog posts for public viewing
+- **Authentication Integration**: Shows login prompts for unauthenticated users
+- **Post Display**: Lists recent posts with titles, excerpts, and metadata
+- **Navigation**: Links to individual post details and authentication pages
 
 ### 2. Dashboard Page
-```typescript
-import React, { useEffect, useState } from 'react'
-import { useOIDCAuth } from '../contexts/OIDCAuthContext'
-import { 
-  Box, 
-  Heading, 
-  Text, 
-  Card, 
-  Flex, 
-  Container,
-  Button,
-  Table,
-  Badge
-} from '@radix-ui/themes'
-import { PlusIcon, Pencil1Icon, EyeOpenIcon } from '@radix-ui/react-icons'
-import { Link } from 'react-router-dom'
-import { Post } from '../types/post'
-import { apiRequest } from '../utils/api'
 
-export default function Dashboard() {
-  const { user } = useOIDCAuth()
-  const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
+**Implementation File**: `unified-app/src/pages/Dashboard.tsx`
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await apiRequest<Post[]>('/api/sites/18c6498d-f738-4c9f-aefd-d66bec11d751/posts')
-        if (response.success && response.data) {
-          setPosts(response.data)
-        }
-      } catch (error) {
-        console.error('Failed to fetch posts:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+The Dashboard page provides:
+- **User Management**: User-specific content and settings
+- **Post Management**: Create, edit, and manage blog posts
+- **Site Management**: Configure blog sites and settings
+- **Analytics**: View post statistics and performance metrics
 
-    fetchPosts()
-  }, [])
+## Styling and Theming
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'published': return 'green'
-      case 'draft': return 'yellow'
-      case 'archived': return 'gray'
-      default: return 'gray'
-    }
-  }
+### Tailwind CSS Configuration
 
-  return (
-    <Container size="3">
-      <Box py="6">
-        <Flex direction="column" gap="6">
-          <Flex justify="between" align="center">
-            <Box>
-              <Heading size="6" mb="2">Dashboard</Heading>
-              <Text color="gray">Manage your blog posts and content</Text>
-            </Box>
-            <Link to="/new-post" style={{ textDecoration: 'none' }}>
-              <Button>
-                <PlusIcon />
-                New Post
-              </Button>
-            </Link>
-          </Flex>
+**Configuration File**: `unified-app/tailwind.config.js`
 
-          <Card>
-            <Box p="4">
-              <Heading size="4" mb="4">Your Posts</Heading>
-              {loading ? (
-                <Text>Loading posts...</Text>
-              ) : (
-                <Table.Root>
-                  <Table.Header>
-                    <Table.Row>
-                      <Table.ColumnHeaderCell>Title</Table.ColumnHeaderCell>
-                      <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
-                      <Table.ColumnHeaderCell>Published</Table.ColumnHeaderCell>
-                      <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
-                    {posts.map((post) => (
-                      <Table.Row key={post.id}>
-                        <Table.Cell>
-                          <Text weight="medium">{post.title}</Text>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Badge color={getStatusColor(post.status)}>
-                            {post.status}
-                          </Badge>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Text size="2" color="gray">
-                            {post.published_at 
-                              ? new Date(post.published_at).toLocaleDateString()
-                              : 'Not published'
-                            }
-                          </Text>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Flex gap="2">
-                            <Link to={`/post/${post.id}`} style={{ textDecoration: 'none' }}>
-                              <Button variant="ghost" size="1">
-                                <EyeOpenIcon />
-                              </Button>
-                            </Link>
-                            <Link to={`/edit-post/${post.id}`} style={{ textDecoration: 'none' }}>
-                              <Button variant="ghost" size="1">
-                                <Pencil1Icon />
-                              </Button>
-                            </Link>
-                          </Flex>
-                        </Table.Cell>
-                      </Table.Row>
-                    ))}
-                  </Table.Body>
-                </Table.Root>
-              )}
-            </Box>
-          </Card>
-        </Flex>
-      </Box>
-    </Container>
-  )
-}
-```
+The Tailwind CSS configuration includes:
+- **Content Sources**: HTML and TypeScript/JavaScript files for class detection
+- **Theme Extensions**: Custom colors, spacing, and design tokens
+- **Plugin Integration**: Radix UI theme integration
+- **Responsive Design**: Mobile-first responsive breakpoints
 
 ## API Integration
 
 ### API Service Layer
-```typescript
-// utils/api.ts
-export async function apiRequest<T = any>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
-  const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://dev.np-topvitaminsupply.com:8080'
-  const url = `${baseURL}${endpoint}`
-  
-  const defaultOptions: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    credentials: 'include',
-  }
 
-  try {
-    const response = await fetch(url, { ...defaultOptions, ...options })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    return data
-  } catch (error) {
-    console.error('API request failed:', error)
-    throw error
-  }
-}
+**Implementation File**: `unified-app/src/utils/api.ts`
 
-// Custom hooks for API calls
-export function usePosts(siteId: string) {
-  const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+The API service layer provides:
+- **HTTP Client**: Fetch-based API requests with error handling
+- **Type Safety**: TypeScript interfaces for API responses
+- **Authentication**: Automatic token handling for authenticated requests
+- **Error Handling**: Standardized error response processing
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setLoading(true)
-        const response = await apiRequest<Post[]>(`/api/sites/${siteId}/posts`)
-        if (response.success && response.data) {
-          setPosts(response.data)
-        } else {
-          setError(response.error?.message || 'Failed to fetch posts')
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
-      } finally {
-        setLoading(false)
-      }
-    }
+## Build and Development
 
-    fetchPosts()
-  }, [siteId])
-
-  return { posts, loading, error, refetch: () => fetchPosts() }
-}
-```
-
-## Styling and Theming
+### Vite Configuration
 
 ### Tailwind CSS Configuration
 ```javascript

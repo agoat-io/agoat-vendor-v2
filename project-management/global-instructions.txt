@@ -25,10 +25,12 @@ requirements-and-user-stories folders should contain ONLY use cases and requirem
 - user stories: user-focused requirements in "As a... I want... So that..." format
 - acceptance criteria: testable conditions for requirements
 
-for technical implementation details, architecture, and design documents, use:
+when you do any changes always update  technical implementation details, architecture, and design documents, use:
 /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/technical-implementation
 and explain what technical details are releveant in various md files there.
 any time new features are added or changed then update technical implementation explanations
+do not include large portions of code there, hust mention the file names in case one wants to see relevant code.
+maybe small snipets of code if needed to understand something.
 
 for analysis and research documents, use:
 /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/analysis
@@ -62,7 +64,16 @@ use these templates for consistent requirements documentation:
 - nonfunctional-requirement-template.md: for non-functional requirements  
 - user-story-template.md: for user stories
 -based on changes update ADRS in folder /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/adrs
+the final functional requirements, non functioal requirements and user stores and use cases should contain current state not a history of changes, other folders will includ requirement changes and code change history.
 
 do not do playwright tests unless asked to explicitely, and if requested then:
 - detect any javascript errors 
-- ensure you read logs from server side apps to help troubleshot and fix any issues 
+- ensure you read logs from server side apps to help troubleshot and fix any issues
+
+always describe in files here /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/code-change-history
+all changes made to code what files in with what purpose
+one file per change prepend with date yyyy-mm-dd-hh-mm-<change-title>.md
+
+ensure the corresponding type of content is included for the file type.  One file by component type and update relevant dr content to code changes
+include disaster recovery detailed steps here
+/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/disaster-recovery

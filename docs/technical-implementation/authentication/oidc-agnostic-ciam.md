@@ -1,7 +1,293 @@
 # OIDC-Agnostic CIAM Implementation
 
 ## Overview
-This document describes the implementation of an OIDC-agnostic Customer Identity and Access Management (CIAM) system that supports any OIDC-compliant provider while maintaining provider-specific functionality through flexible configuration.
+This document describes the current implementation of an OIDC-agnostic Customer Identity and Access Management (CIAM) system that supports any OIDC-compliant provider while maintaining provider-specific functionality through flexible configuration. The system is currently implemented with AWS Cognito as the primary OIDC provider.
+
+## Current Implementation Status
+
+### Implemented Features
+- ✅ OIDC-compliant authentication with AWS Cognito
+- ✅ PKCE (Proof Key for Code Exchange) flow
+- ✅ State parameter for return URL preservation
+- ✅ Token refresh mechanism
+- ✅ Secure logout flow with token revocation
+- ✅ Configuration-based OIDC provider setup
+- ✅ Frontend authentication context
+- ✅ Database schema for OIDC-agnostic user management
+
+### Current Configuration
+- **Primary Provider**: AWS Cognito (us-east-1_FJUcN8W07)
+- **Custom Domain**: auth.dev.np-topvitaminsupply.com
+- **Client ID**: 4lt0iqap612c9jug55f3a1s69k
+- **Scopes**: email openid phone
+- **Response Type**: code
+- **Code Challenge Method**: S256
+
+## Current Implementation Details
+
+### Backend Implementation
+
+#### OIDC Configuration Loading
+
+**Implementation File**: `app-api/config/oidc_config.go`
+
+The OIDC configuration is loaded from JSON files and supports multiple providers. Key configuration structures include:
+
+- `OIDCConfig` - Container for multiple providers
+- `OIDCProvider` - Individual provider configuration with all OIDC endpoints and settings
+
+**Configuration Loading Process**:
+1. Load from `oidc-config.json` file
+2. Override with environment variables for active provider
+3. Validate configuration on startup
+4. Use `GetActiveProvider()` to retrieve current provider settings
+
+#### Authentication Handlers
+```go
+// app-api/handlers/oidc_auth_handlers_config.go
+type OIDCAuthHandlersConfig struct {
+    config    *OIDCProvider
+    appConfig *AppConfig
+    oauth2Config *oauth2.Config
+}
+
+func (h *OIDCAuthHandlersConfig) Login(w http.ResponseWriter, r *http.Request) {
+    // Get return URL from query parameters
+    returnURL := r.URL.Query().Get("return_url")
+    
+    // Validate return URL
+    if returnURL != "" && !h.validateReturnURL(returnURL) {
+        returnURL = h.getDefaultReturnURL()
+    }
+    
+    // Generate PKCE parameters
+    codeVerifier, codeChallenge, err := generatePKCE()
+    if err != nil {
+        http.Error(w, "Error generating PKCE", http.StatusInternalServerError)
+        return
+    }
+    
+    // Store state and PKCE verifier
+    state := generateState(returnURL, codeVerifier)
+    
+    // Build authorization URL
+    authURL := h.oauth2Config.AuthCodeURL(state, oauth2.SetAuthURLParam("code_challenge", codeChallenge))
+    
+    // Redirect to OIDC provider
+    http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
+}
+```
+
+#### Logout Implementation
+```go
+func (h *OIDCAuthHandlersConfig) Logout(w http.ResponseWriter, r *http.Request) {
+    // Get return URL from query parameters
+    returnURL := r.URL.Query().Get("return_url")
+    
+    // Get tokens from request
+    refreshToken := r.URL.Query().Get("refresh_token")
+    
+    // Step 1: Revoke refresh token
+    if refreshToken != "" {
+        err := h.revokeTokenInternal(refreshToken)
+        if err != nil {
+            log.Printf("Failed to revoke refresh token: %v", err)
+        }
+    }
+    
+    // Step 2: Clear session data
+    log.Printf("Clearing session data for user")
+    
+    // Step 3: Redirect to Cognito logout
+    logoutCallbackURL := fmt.Sprintf("%s/auth/signout", h.appConfig.App.BaseURL)
+    logoutURL := fmt.Sprintf("%s?client_id=%s&logout_uri=%s",
+        h.config.EndSessionEndpoint,
+        h.config.ClientID,
+        url.QueryEscape(logoutCallbackURL))
+    
+    http.Redirect(w, r, logoutURL, http.StatusTemporaryRedirect)
+}
+```
+
+### Frontend Implementation
+
+#### Authentication Context
+```typescript
+// unified-app/src/contexts/OIDCAuthContext.tsx
+interface OIDCAuthContextType {
+  user: OIDCUser | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  error: string | null
+  login: (returnUrl?: string) => Promise<void>
+  logout: (returnUrl?: string) => Promise<void>
+  refreshToken: () => Promise<void>
+}
+
+export const OIDCAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<OIDCUser | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const login = async (returnUrl?: string) => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const currentUrl = returnUrl || window.location.origin
+      const loginUrl = `/api/auth/oidc/login?return_url=${encodeURIComponent(currentUrl)}`
+      window.location.href = loginUrl
+    } catch (err: any) {
+      setError(err.message || 'Login failed')
+      setIsLoading(false)
+    }
+  }
+
+  const logout = async (returnUrl?: string) => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      setUser(null)
+      localStorage.removeItem('oidc_user')
+      
+      const currentUrl = returnUrl || window.location.origin
+      const logoutUrl = `/api/auth/oidc/logout?return_url=${encodeURIComponent(currentUrl)}`
+      window.location.href = logoutUrl
+    } catch (err: any) {
+      setError(err.message || 'Logout failed')
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <OIDCAuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      error,
+      login,
+      logout,
+      refreshToken
+    }}>
+      {children}
+    </OIDCAuthContext.Provider>
+  )
+}
+```
+
+#### Authentication Callback Handling
+```typescript
+// unified-app/src/pages/AuthCallback.tsx
+export default function AuthCallback() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { setUser } = useOIDCAuth()
+  const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing')
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        setStatus('processing')
+        
+        // Get authorization code and state from URL
+        const code = searchParams.get('code')
+        const state = searchParams.get('state')
+        
+        if (!code || !state) {
+          throw new Error('Missing authorization code or state')
+        }
+        
+        // Exchange code for tokens
+        const response = await fetch(`/api/auth/oidc/callback?code=${code}&state=${state}`)
+        
+        if (!response.ok) {
+          throw new Error('Token exchange failed')
+        }
+        
+        const data = await response.json()
+        
+        if (data.success && data.data) {
+          // Store user data
+          setUser(data.data.user)
+          localStorage.setItem('oidc_user', JSON.stringify(data.data.user))
+          localStorage.setItem('oidc_access_token', data.data.access_token)
+          localStorage.setItem('oidc_refresh_token', data.data.refresh_token)
+          
+          setStatus('success')
+          
+          // Redirect to return URL or dashboard
+          const returnURL = data.data.return_url || '/dashboard'
+          navigate(returnURL)
+        } else {
+          throw new Error(data.error?.message || 'Authentication failed')
+        }
+      } catch (err) {
+        console.error('Callback error:', err)
+        setError(err instanceof Error ? err.message : 'Authentication failed')
+        setStatus('error')
+      }
+    }
+
+    handleCallback()
+  }, [searchParams, setUser, navigate])
+
+  // ... render logic
+}
+```
+
+### Configuration Files
+
+#### OIDC Configuration (oidc-config.json)
+```json
+{
+  "providers": [
+    {
+      "system_name": "cognito",
+      "display_name": "AWS Cognito Dev",
+      "provider_type": "oidc",
+      "is_active": true,
+      "is_default_for_type": true,
+      "provider_instance_id": "us-east-1_FJUcN8W07",
+      "provider_environment": "development",
+      "provider_region": "us-east-1",
+      "provider_domain": "auth.dev.np-topvitaminsupply.com",
+      "jwks_url": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07/.well-known/jwks.json",
+      "issuer_url": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07",
+      "oidc_discovery_url": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_FJUcN8W07/.well-known/openid_configuration",
+      "authorization_endpoint": "https://auth.dev.np-topvitaminsupply.com/login",
+      "token_endpoint": "https://auth.dev.np-topvitaminsupply.com/oauth2/token",
+      "userinfo_endpoint": "https://auth.dev.np-topvitaminsupply.com/oauth2/userInfo",
+      "end_session_endpoint": "https://auth.dev.np-topvitaminsupply.com/logout",
+      "client_id": "4lt0iqap612c9jug55f3a1s69k",
+      "client_secret": "",
+      "scopes": "email openid phone",
+      "response_type": "code",
+      "response_mode": "query",
+      "code_challenge_method": "S256",
+      "supported_claims": {
+        "sub": "string",
+        "email": "string",
+        "email_verified": "boolean",
+        "phone_number": "string",
+        "phone_number_verified": "boolean",
+        "given_name": "string",
+        "family_name": "string",
+        "name": "string",
+        "preferred_username": "string",
+        "cognito:username": "string"
+      },
+      "provider_metadata": {
+        "user_pool_id": "us-east-1_FJUcN8W07",
+        "region": "us-east-1",
+        "domain": "auth.dev.np-topvitaminsupply.com"
+      },
+      "redirect_uri": "https://dev.np-topvitaminsupply.com/auth/callback"
+    }
+  ]
+}
+```
 
 ## Design Principles
 

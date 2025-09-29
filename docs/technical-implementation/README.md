@@ -2,47 +2,73 @@
 
 This folder contains technical implementation details, architecture documentation, and design specifications for the AGoat Publisher system.
 
+## Quick Start
+
+For a high-level overview of the current implementation, start with:
+- **[Implementation Summary](IMPLEMENTATION-SUMMARY.md)** - Current system overview and key file references
+
+For detailed technical specifications, see the individual documentation files below.
+
 ## Folder Structure
 
 ### `/authentication/`
 Contains authentication system implementation details:
-- `oidc-agnostic-ciam.md` - OIDC-agnostic CIAM implementation
+- `oidc-agnostic-ciam.md` - OIDC-agnostic CIAM implementation with current AWS Cognito setup
 - `multiple-providers-same-type.md` - Multiple provider support implementation
-- Additional authentication implementation documents
+
+### `/api/`
+Contains comprehensive API implementation details:
+- `api-implementation.md` - Complete API architecture, endpoints, and implementation
+
+### `/frontend/`
+Contains frontend implementation details:
+- `frontend-implementation.md` - React application architecture, components, and implementation
+
+### `/deployment/`
+Contains deployment and infrastructure details:
+- `deployment-implementation.md` - Complete deployment setup, Docker, Kubernetes, and CI/CD
+
+### `/testing/`
+Contains testing implementation details:
+- `testing-implementation.md` - Unit tests, integration tests, E2E tests, and testing infrastructure
+
+### `/configuration/`
+Contains configuration management details:
+- `configuration-management.md` - Configuration files, environment variables, and secret management
+
+### `/security/`
+Contains security implementation details:
+- `security-implementation.md` - Authentication, authorization, data protection, and security monitoring
 
 ### `/database/`
 Contains database implementation details:
 - `database-schema-analysis.md` - Database schema analysis and design
-- Additional database implementation documents
 
 ### `/features/`
 Contains feature implementation details:
 - `cognito-return-url-state.md` - Return URL state feature implementation
-- Additional feature implementation documents
-
-### `/api/`
-Contains API implementation details:
-- API specifications and documentation
-- Endpoint implementation details
-- Integration guides
 
 ## Content Guidelines
 
 ### Technical Implementation Documents Should Contain:
-- **Architecture Details**: System architecture and design
-- **Implementation Specifications**: How features are implemented
-- **Code Examples**: Relevant code snippets and examples
+- **Architecture Details**: System architecture and design patterns
+- **Implementation Specifications**: How features are implemented (without large code blocks)
+- **File References**: Specific file names and locations for relevant code
+- **Small Code Snippets**: Only when necessary to understand implementation concepts
 - **Database Schemas**: Database design and schema details
 - **API Specifications**: API endpoints and specifications
 - **Configuration Details**: System configuration and setup
 - **Integration Details**: How components integrate
 - **Technical Decisions**: Technical choices and rationale
+- **Current Implementation Status**: What's implemented vs. planned
 
 ### Technical Implementation Documents Should NOT Contain:
-- Pure requirements (use `/docs/requirements/` instead)
+- Large portions of code (reference file names instead)
+- Pure requirements (use `/docs/requirements-and-user-stories/` instead)
 - Business rules and user stories
 - High-level business objectives
 - Non-technical acceptance criteria
+- Complete code implementations (use file references)
 
 ## Document Types
 
@@ -84,14 +110,30 @@ All technical implementation documents should be:
 - **Consistent**: Follow established patterns
 - **Testable**: Include verification steps
 
-## Maintenance
+## Maintenance Process
 
-Technical implementation documents must be:
+### When to Update Technical Implementation Documentation:
+- **New Features Added**: Update relevant implementation documents
+- **Code Changes**: Update technical details when implementation changes
+- **Architecture Changes**: Update architecture documents
+- **Configuration Changes**: Update configuration documentation
+- **Security Updates**: Update security implementation details
+
+### Update Process:
+1. **Identify Affected Documents**: Determine which technical implementation documents need updates
+2. **Update Implementation Details**: Modify technical specifications without including large code blocks
+3. **Reference File Names**: Include specific file names and locations for relevant code
+4. **Add Small Snippets**: Include only necessary code snippets to explain concepts
+5. **Update Status**: Mark what's implemented vs. planned
+6. **Validate Against Code**: Ensure documentation matches actual implementation
+
+### Document Maintenance Requirements:
 - Updated when implementation changes
 - Reviewed during code reviews
 - Validated against actual code
 - Maintained in sync with requirements
 - Version controlled with code changes
+- File references kept current
 
 ## Related Documentation
 
