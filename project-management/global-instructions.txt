@@ -64,3 +64,4 @@ use these templates for consistent requirements documentation:
 - functional-requirement-template.md: for functional requirements
 - nonfunctional-requirement-template.md: for non-functional requirements  
 - user-story-template.md: for user stories
+-based on changes update ADRS in folder /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/docs/adrs

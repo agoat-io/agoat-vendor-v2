@@ -37,6 +37,149 @@ Each ADR follows this format:
 - Logical partitioning allows flexibility while maintaining isolation
 - Optimized key design prevents hotspots and ensures scalability
 
+### ADR 00002: OIDC-Agnostic Authentication Architecture
+**Status**: Accepted  
+**Date**: 2024-09-28  
+**Description**: OIDC-compliant authentication system supporting multiple identity providers
+
+**Key Decisions**:
+- Generic OIDC-compliant database schema
+- Provider-specific data in JSONB fields
+- Multiple instances of same provider type support
+- PKCE and state parameters for security
+- Automatic token refresh capabilities
+
+**Rationale**:
+- Provider flexibility with OIDC standard compliance
+- Future-proofing with generic schema
+- Multi-instance support for different environments
+- Modern OAuth2 security practices
+- Seamless user experience with state preservation
+
+### ADR 00003: Database Architecture and Multitenancy
+**Status**: Accepted  
+**Date**: 2024-09-28  
+**Description**: Comprehensive database architecture supporting multitenancy and business domains
+
+**Key Decisions**:
+- CockroachDB for distributed database hosting
+- UUID-based primary keys for even distribution
+- Tenant-aware indexing for efficient queries
+- Separate schemas for different business domains
+- Comprehensive audit trails and data versioning
+
+**Rationale**:
+- Horizontal scaling with CockroachDB
+- Complete tenant separation and data isolation
+- Optimized performance for distributed queries
+- ACID compliance and fault tolerance
+- Support for multiple business domains
+
+### ADR 00004: Frontend Architecture and Technology Stack
+**Status**: Accepted  
+**Date**: 2024-09-28  
+**Description**: Modern React-based frontend with comprehensive UI/UX capabilities
+
+**Key Decisions**:
+- React 18 with TypeScript for type safety
+- Vite as build tool for fast development
+- Radix UI for accessible components
+- Tailwind CSS 4.1.12 for utility-first styling
+- Wysimark for rich text editing
+- DOMPurify for content sanitization
+
+**Rationale**:
+- Modern React features and performance improvements
+- Type safety reduces runtime errors
+- Fast development with Vite
+- Built-in accessibility with Radix UI
+- Consistent, maintainable styling
+- Modern rich text editing capabilities
+
+### ADR 00005: Backend Architecture and API Design
+**Status**: Accepted  
+**Date**: 2024-09-28  
+**Description**: Go-based backend with RESTful API design and comprehensive features
+
+**Key Decisions**:
+- Go 1.24.2 for high performance and concurrency
+- Gorilla Mux for HTTP routing and middleware
+- Gorilla Sessions for secure session management
+- PostgreSQL driver for database connectivity
+- Structured logging with JSON format
+- RESTful API design with clear resource endpoints
+
+**Rationale**:
+- Excellent performance and low memory footprint
+- Native goroutines for concurrent requests
+- Strong typing and error handling
+- Rich ecosystem with mature libraries
+- Single binary deployment
+- Simple, readable codebase
+
+### ADR 00006: Deployment and Infrastructure Architecture
+**Status**: Accepted  
+**Date**: 2024-09-28  
+**Description**: Cloud-native deployment architecture with GCP and containerization
+
+**Key Decisions**:
+- Google Cloud Platform as primary cloud provider
+- CockroachDB for distributed database hosting
+- Google Cloud Secrets Manager for configuration
+- Docker containers for application deployment
+- Local development environment with unified startup
+- Environment-specific configurations
+
+**Rationale**:
+- Managed services and scalability
+- Distributed, fault-tolerant database
+- Secure configuration management
+- Consistent deployment across environments
+- Fast local development with hot reload
+- Cloud-native architecture supports growth
+
+### ADR 00007: Security Architecture and Implementation
+**Status**: Accepted  
+**Date**: 2024-09-28  
+**Description**: Comprehensive security architecture with modern authentication and protection
+
+**Key Decisions**:
+- OIDC-compliant authentication with PKCE
+- Token-based security with secure storage
+- Content sanitization to prevent XSS
+- Input validation and SQL injection prevention
+- Audit logging for security events
+- Role-based access control (RBAC)
+
+**Rationale**:
+- Industry-standard authentication
+- Modern OAuth2 security practices
+- Protection against common web vulnerabilities
+- Comprehensive data protection
+- Regulatory compliance support
+- Fine-grained authorization control
+
+### ADR 00008: Content Management and Business Domain Architecture
+**Status**: Accepted  
+**Date**: 2024-09-28  
+**Description**: Hybrid content management supporting both general content and business domains
+
+**Key Decisions**:
+- Unified content management for blog posts
+- Business domain separation for Thorne functionality
+- Rich text editing with Wysimark and markdown
+- Content versioning and status management
+- Media management with optimization
+- SEO optimization with meta tags
+
+**Rationale**:
+- Flexible content management system
+- Specific business domain support
+- Modern content creation tools
+- Content quality through versioning
+- Optimized content delivery
+- Security through content sanitization
+
 ## Decision Process
 
 ### When to Create an ADR
