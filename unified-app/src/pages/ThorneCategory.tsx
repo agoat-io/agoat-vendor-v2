@@ -11,7 +11,7 @@ import {
   Badge,
   Grid
 } from '@radix-ui/themes'
-import { HeartIcon, StarIcon, StarIcon as ZapIcon, StarIcon as ShieldIcon, ArrowLeftIcon } from '@radix-ui/react-icons'
+import { HeartIcon, StarIcon, StarIcon as ZapIcon, StarIcon as ShieldIcon, ChevronLeftIcon } from '@radix-ui/react-icons'
 import apiClient from '../config/axios'
 
 interface ThorneProduct {
@@ -133,7 +133,7 @@ export default function ThorneCategory() {
       <Box mb="4">
         <Link to="/thorne/education" style={{ textDecoration: 'none' }}>
           <Button variant="ghost" size="2">
-            <ArrowLeftIcon width="16" height="16" />
+            <ChevronLeftIcon width="16" height="16" />
             Back to Education
           </Button>
         </Link>

@@ -11,7 +11,7 @@ import {
   TextField,
   TextArea
 } from '@radix-ui/themes'
-import { CheckIcon, ArrowLeftIcon } from '@radix-ui/react-icons'
+import { CheckIcon, ChevronLeftIcon } from '@radix-ui/react-icons'
 import apiClient from '../config/axios'
 
 interface RegistrationData {
@@ -116,7 +116,7 @@ export default function ThorneRegistration() {
       {/* Back Navigation */}
       <Box mb="4">
         <Button variant="ghost" size="2" onClick={() => navigate('/thorne/education')}>
-          <ArrowLeftIcon width="16" height="16" />
+          <ChevronLeftIcon width="16" height="16" />
           Back to Education
         </Button>
       </Box>

@@ -11,7 +11,7 @@ import {
   Container,
   Badge
 } from '@radix-ui/themes'
-import { CalendarIcon, PersonIcon, ArrowRightIcon, PlusIcon } from '@radix-ui/react-icons'
+import { CalendarIcon, PersonIcon, ChevronRightIcon, PlusIcon } from '@radix-ui/react-icons'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
 import { useOIDCAuth } from '../contexts/OIDCAuthContext'
@@ -213,7 +213,7 @@ export default function Home() {
                             {truncateContent(post.content)}
                           </Text>
                         </Box>
-                        <ArrowRightIcon width="20" height="20" color="var(--gray-8)" />
+                        <ChevronRightIcon width="20" height="20" color="var(--gray-8)" />
                       </Flex>
                       
                       <Flex gap="3" align="center">

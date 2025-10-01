@@ -10,7 +10,7 @@ import {
   Container,
   Spinner
 } from '@radix-ui/themes';
-import { PersonIcon, ExclamationTriangleIcon, ArrowLeftIcon } from '@radix-ui/react-icons';
+import { PersonIcon, ExclamationTriangleIcon, ChevronLeftIcon } from '@radix-ui/react-icons';
 import { useCognitoAuth, useLoginWithReturnUrl } from '../contexts/CognitoAuthContext';
 
 const CognitoLogin: React.FC = () => {
@@ -116,7 +116,7 @@ const CognitoLogin: React.FC = () => {
                   onClick={handleBackToHome}
                   style={{ color: 'var(--gray-11)' }}
                 >
-                  <ArrowLeftIcon />
+                  <ChevronLeftIcon />
                   Back to Home
                 </Button>
               </Box>

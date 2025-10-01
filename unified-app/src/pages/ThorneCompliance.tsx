@@ -10,7 +10,7 @@ import {
   Container,
   Separator
 } from '@radix-ui/themes'
-import { ArrowLeftIcon, StarIcon as ShieldIcon, FileTextIcon, ExclamationTriangleIcon as AlertTriangleIcon } from '@radix-ui/react-icons'
+import { ChevronLeftIcon, StarIcon as ShieldIcon, FileTextIcon, ExclamationTriangleIcon as AlertTriangleIcon } from '@radix-ui/react-icons'
 import apiClient from '../config/axios'
 
 interface Settings {
@@ -103,7 +103,7 @@ export default function ThorneCompliance() {
       <Box mb="4">
         <Link to="/thorne/education" style={{ textDecoration: 'none' }}>
           <Button variant="ghost" size="2">
-            <ArrowLeftIcon width="16" height="16" />
+            <ChevronLeftIcon width="16" height="16" />
             Back to Education
           </Button>
         </Link>

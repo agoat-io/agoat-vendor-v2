@@ -12,7 +12,7 @@ import {
   Container,
   Badge
 } from '@radix-ui/themes'
-import { ArrowLeftIcon, PlusIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
+import { ChevronLeftIcon, PlusIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
 import { useAzureAuth } from '../contexts/AzureAuthContext'
 import WysimarkEditor from '../components/WysimarkEditor'
@@ -180,7 +180,7 @@ export default function NewPost() {
             onClick={handleBackClick}
             style={{ color: 'var(--gray-11)' }}
           >
-            <ArrowLeftIcon />
+            <ChevronLeftIcon />
             Back to Dashboard
           </Button>
           {hasUnsavedChanges && (

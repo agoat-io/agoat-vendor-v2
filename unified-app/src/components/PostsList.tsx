@@ -15,7 +15,7 @@ import {
   Grid
 } from '@radix-ui/themes'
 import { 
-  ArrowLeftIcon, 
+  ChevronLeftIcon, 
   Pencil1Icon, 
   PersonIcon, 
   CalendarIcon,
@@ -210,7 +210,7 @@ const PostsList: React.FC<PostsListProps> = ({
             variant="ghost" 
             onClick={onBackClick}
           >
-            <ArrowLeftIcon />
+            <ChevronLeftIcon />
             Back to Posts
           </Button>
         </Flex>

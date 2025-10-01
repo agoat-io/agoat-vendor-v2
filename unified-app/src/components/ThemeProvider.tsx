@@ -12,7 +12,7 @@ import {
   Separator
 } from '@radix-ui/themes'
 import { 
-  PaletteIcon, 
+  ColorWheelIcon, 
   SunIcon, 
   MoonIcon, 
   CheckIcon,
@@ -253,7 +253,7 @@ export const ThemeSelector: React.FC = () => {
       <Dialog.Content style={{ maxWidth: '800px', maxHeight: '80vh' }}>
         <Dialog.Title>
           <Flex align="center" gap="2">
-            <PaletteIcon />
+            <ColorWheelIcon />
             Choose Theme Style
           </Flex>
         </Dialog.Title>
@@ -388,7 +388,7 @@ export const ThemeToggle: React.FC = () => {
       onClick={() => setIsThemeSelectorOpen(true)}
       title="Change theme style"
     >
-      <PaletteIcon />
+      <ColorWheelIcon />
     </IconButton>
   )
 }

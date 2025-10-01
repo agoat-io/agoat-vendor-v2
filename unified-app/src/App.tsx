@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { Theme, Container, Flex, Box, Heading, Button, Separator, Text } from '@radix-ui/themes'
 import '@radix-ui/themes/styles.css'
 import { Link, useLocation } from 'react-router-dom'
-import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon, PaletteIcon } from '@radix-ui/react-icons'
+import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon, ColorWheelIcon } from '@radix-ui/react-icons'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import NewPost from './pages/NewPost'
@@ -96,7 +96,7 @@ function Header() {
               onClick={() => setIsThemeSelectorOpen(true)}
               title={`Current theme: ${themeConfig.name}`}
             >
-              <PaletteIcon />
+              <ColorWheelIcon />
             </Button>
             {isAuthenticated ? (
               <Flex gap="2" align="center">
