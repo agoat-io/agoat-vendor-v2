@@ -13,7 +13,7 @@ import {
   Button,
   Separator,
   Grid
-} from '@radix-ui/themes'
+} from './ui'
 import { 
   ChevronLeftIcon, 
   Pencil1Icon, 

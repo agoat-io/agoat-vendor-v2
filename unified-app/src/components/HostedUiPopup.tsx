@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Dialog, Flex, Text, Card, Code, Badge } from '@radix-ui/themes';
+import { Button, Dialog, Flex, Text, Card, Code, Badge } from './ui';
 import { getHostedUiConfig, getCurrentEnvironment } from '../config/azureAuth';
 
 interface HostedUiPopupProps {

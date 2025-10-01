@@ -10,10 +10,10 @@ import {
   Button, 
   Container,
   Badge
-} from '@radix-ui/themes'
+} from '../components/ui'
 import { ChevronLeftIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'
-import { useAzureAuth } from '../contexts/AzureAuthContext'
+import { useOIDCAuth } from '../contexts/OIDCAuthContext'
 import WysimarkEditor from '../components/WysimarkEditor'
 import { Post } from '../types'
 
@@ -25,7 +25,9 @@ export default function EditPost() {
   const [error, setError] = useState('')
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const { user, isAuthenticated } = useAzureAuth()
+  const [showValidationModal, setShowValidationModal] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const { user, isAuthenticated } = useOIDCAuth()
 
   // Redirect if not authenticated or not authorized
   useEffect(() => {
@@ -53,7 +55,7 @@ export default function EditPost() {
         setLoading(true)
         setError('')
 
-        const response = await apiClient.get(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id))
+        const response = await apiClient.get(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)))
         
         if (response.data && response.data.data) {
           setPost(response.data.data)
@@ -84,14 +86,46 @@ export default function EditPost() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsavedChanges])
 
-  const handleSave = async (content: string, title: string, isDraft: boolean) => {
+  const validatePost = (title: string, content: string): string[] => {
+    const errors: string[] = []
+    
+    if (!title || title.trim().length === 0) {
+      errors.push('Title is required')
+    }
+    
+    if (!content || content.trim().length === 0) {
+      errors.push('Content is required')
+    }
+    
+    if (title && title.length > 200) {
+      errors.push('Title must be less than 200 characters')
+    }
+    
+    return errors
+  }
+
+  const handleSave = async (content: string, title: string, status: string) => {
     if (!id) throw new Error('No post ID')
 
+    // Clear any previous errors
+    setError('')
+    setValidationErrors([])
+    setShowValidationModal(false)
+    
+    // Validate the post data
+    const validationErrors = validatePost(title, content)
+    if (validationErrors.length > 0) {
+      setValidationErrors(validationErrors)
+      setShowValidationModal(true)
+      return
+    }
+
     try {
-      const response = await apiClient.put(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id), {
+      const response = await apiClient.put(buildApiUrl(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id)), {
         title,
         content,
-        published: !isDraft
+        published: status === 'published',
+        status: status
       })
 
       if (response.data && response.data.data) {
@@ -103,33 +137,13 @@ export default function EditPost() {
       }
     } catch (err: any) {
       console.error('Error saving post:', err)
+      setError(err.response?.data?.message || 'Failed to save post')
       throw new Error(err.response?.data?.message || 'Failed to save post')
     }
   }
 
-  const handlePublish = async (content: string, title: string) => {
-    if (!id) throw new Error('No post ID')
-
-    try {
-      const response = await apiClient.put(API_CONFIG.ENDPOINTS.SITE_POST(DEFAULT_SITE_ID, id), {
-        title,
-        content,
-        published: true
-      })
-
-      if (response.data && response.data.data) {
-        setPost(response.data.data)
-        setHasUnsavedChanges(false)
-        // Navigate to the published post
-        navigate(`/post/${id}`)
-        return response.data.data
-      } else {
-        throw new Error('Failed to publish post')
-      }
-    } catch (err: any) {
-      console.error('Error publishing post:', err)
-      throw new Error(err.response?.data?.message || 'Failed to publish post')
-    }
+  const handleStatusChange = (newStatus: 'draft' | 'published' | 'archived') => {
+    setHasUnsavedChanges(true)
   }
 
   const handleBackClick = () => {
@@ -214,11 +228,12 @@ export default function EditPost() {
         initialContent={post.content}
         initialTitle={post.title}
         onSave={handleSave}
-        onPublish={handlePublish}
         autoSaveInterval={30000} // 30 seconds
         placeholder="Tell your story... Start writing here..."
         titlePlaceholder="Enter your post title..."
         className="edit-post-editor"
+        status={post.status}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Simple unsaved changes warning */}
@@ -233,6 +248,31 @@ export default function EditPost() {
               </Button>
               <Button color="red" onClick={handleConfirmBack}>
                 Leave Without Saving
+              </Button>
+            </Flex>
+          </Box>
+        </Card>
+      )}
+
+      {/* Validation errors modal */}
+      {showValidationModal && (
+        <Card style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000, maxWidth: '400px', width: '90%' }}>
+          <Box p="4">
+            <Flex align="center" gap="2" mb="3">
+              <ExclamationTriangleIcon style={{ color: 'var(--orange-9)' }} />
+              <Text size="3" weight="medium">Validation Errors</Text>
+            </Flex>
+            <Text size="2" color="gray" mb="3">Please fix the following issues before saving:</Text>
+            <Box mb="4">
+              {validationErrors.map((error, index) => (
+                <Text key={index} size="2" color="red" style={{ marginBottom: 'var(--space-1)' }}>
+                  • {error}
+                </Text>
+              ))}
+            </Box>
+            <Flex gap="2" justify="end">
+              <Button variant="soft" color="gray" onClick={() => setShowValidationModal(false)}>
+                OK
               </Button>
             </Flex>
           </Box>

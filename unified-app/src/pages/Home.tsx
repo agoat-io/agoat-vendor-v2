@@ -10,7 +10,7 @@ import {
   Button, 
   Container,
   Badge
-} from '@radix-ui/themes'
+} from '../components/ui'
 import { CalendarIcon, PersonIcon, ChevronRightIcon, PlusIcon } from '@radix-ui/react-icons'
 import { Post } from '../types'
 import { buildApiUrl, API_CONFIG, DEFAULT_SITE_ID } from '../config/api'

@@ -9,7 +9,7 @@ import {
   Separator,
   IconButton,
   Switch
-} from '@radix-ui/themes'
+} from './ui'
 import { 
   FontBoldIcon, 
   FontItalicIcon, 

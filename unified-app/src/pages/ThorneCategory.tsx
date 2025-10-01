@@ -10,7 +10,7 @@ import {
   Container,
   Badge,
   Grid
-} from '@radix-ui/themes'
+} from '../components/ui'
 import { HeartIcon, StarIcon, StarIcon as ZapIcon, StarIcon as ShieldIcon, ChevronLeftIcon } from '@radix-ui/react-icons'
 import apiClient from '../config/axios'
 

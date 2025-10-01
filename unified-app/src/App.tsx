@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import { Theme, Container, Flex, Box, Heading, Button, Separator, Text } from '@radix-ui/themes'
+import { Theme, Container, Flex, Box, Heading, Button, Separator, Text } from './components/ui'
 import '@radix-ui/themes/styles.css'
 import { Link, useLocation } from 'react-router-dom'
 import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon, ColorWheelIcon } from '@radix-ui/react-icons'

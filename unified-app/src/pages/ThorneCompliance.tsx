@@ -9,7 +9,7 @@ import {
   Button, 
   Container,
   Separator
-} from '@radix-ui/themes'
+} from '../components/ui'
 import { ChevronLeftIcon, StarIcon as ShieldIcon, FileTextIcon, ExclamationTriangleIcon as AlertTriangleIcon } from '@radix-ui/react-icons'
 import apiClient from '../config/axios'
 

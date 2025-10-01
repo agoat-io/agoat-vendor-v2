@@ -9,7 +9,7 @@ import {
   Flex, 
   Container,
   Button
-} from '@radix-ui/themes';
+} from '../components/ui';
 import { Spinner } from '../components/ui';
 import { HomeIcon } from '@radix-ui/react-icons';
 

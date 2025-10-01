@@ -8,7 +8,7 @@ import {
   Card, 
   Flex, 
   Container
-} from '@radix-ui/themes';
+} from '../components/ui';
 import { Spinner } from '../components/ui';
 
 export default function AuthCallback() {

@@ -8,7 +8,7 @@ import {
   Button, 
   Flex, 
   Container
-} from '@radix-ui/themes'
+} from '../components/ui'
 import { PersonIcon } from '@radix-ui/react-icons'
 import { useOIDCAuth } from '../contexts/OIDCAuthContext'
 

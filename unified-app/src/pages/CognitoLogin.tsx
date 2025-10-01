@@ -9,7 +9,7 @@ import {
   Button, 
   Container,
   Spinner
-} from '@radix-ui/themes';
+} from '../components/ui';
 import { PersonIcon, ExclamationTriangleIcon, ChevronLeftIcon } from '@radix-ui/react-icons';
 import { useCognitoAuth, useLoginWithReturnUrl } from '../contexts/CognitoAuthContext';
 

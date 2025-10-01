@@ -10,7 +10,7 @@ import {
   Dialog,
   IconButton,
   Separator
-} from '@radix-ui/themes'
+} from './ui'
 import { 
   ColorWheelIcon, 
   SunIcon, 

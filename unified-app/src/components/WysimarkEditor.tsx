@@ -6,8 +6,9 @@ import {
   Button, 
   Card,
   Badge,
-  Separator
-} from '@radix-ui/themes'
+  Separator,
+  Select
+} from './ui'
 import { 
   UpdateIcon,
   EyeOpenIcon,
@@ -21,12 +22,13 @@ import logger from '../utils/logger'
 interface WysimarkEditorProps {
   initialContent?: string
   initialTitle?: string
-  onSave?: (content: string, title: string, isDraft: boolean) => Promise<void>
-  onPublish?: (content: string, title: string) => Promise<void>
+  onSave?: (content: string, title: string, status: string) => Promise<void>
   autoSaveInterval?: number
   placeholder?: string
   titlePlaceholder?: string
   className?: string
+  status?: 'draft' | 'published' | 'archived'
+  onStatusChange?: (status: 'draft' | 'published' | 'archived') => void
 }
 
 interface EditorState {
@@ -45,11 +47,12 @@ const WysimarkEditor: React.FC<WysimarkEditorProps> = ({
   initialContent = '',
   initialTitle = '',
   onSave,
-  onPublish,
   autoSaveInterval = 30000, // 30 seconds
   placeholder = 'Tell your story...',
   titlePlaceholder = 'Title',
-  className = ''
+  className = '',
+  status = 'draft',
+  onStatusChange
 }) => {
   const [state, setState] = useState<EditorState>({
     content: initialContent,
@@ -102,12 +105,13 @@ const WysimarkEditor: React.FC<WysimarkEditorProps> = ({
     logger.info('WysimarkEditor', 'auto_save', 'Auto-saving post', {
       title: state.title,
       contentLength: state.content.length,
-      wordCount: state.wordCount
+      wordCount: state.wordCount,
+      status
     })
 
     setState(prev => ({ ...prev, isSaving: true }))
     try {
-      await onSave(state.content, state.title, true)
+      await onSave(state.content, state.title, status)
       setState(prev => ({ 
         ...prev, 
         isSaving: false, 
@@ -117,12 +121,14 @@ const WysimarkEditor: React.FC<WysimarkEditorProps> = ({
       
       logger.info('WysimarkEditor', 'auto_save', 'Auto-save completed successfully', {
         title: state.title,
-        lastSaved: new Date()
+        lastSaved: new Date(),
+        status
       })
     } catch (error) {
       logger.error('WysimarkEditor', 'auto_save', 'Auto-save failed', {
         title: state.title,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
+        status
       })
       setState(prev => ({ ...prev, isSaving: false }))
     }
@@ -134,12 +140,13 @@ const WysimarkEditor: React.FC<WysimarkEditorProps> = ({
     logger.info('WysimarkEditor', 'manual_save', 'Manual save requested', {
       title: state.title,
       contentLength: state.content.length,
-      wordCount: state.wordCount
+      wordCount: state.wordCount,
+      status
     })
 
     setState(prev => ({ ...prev, isSaving: true }))
     try {
-      await onSave(state.content, state.title, true)
+      await onSave(state.content, state.title, status)
       setState(prev => ({ 
         ...prev, 
         isSaving: false, 
@@ -149,50 +156,19 @@ const WysimarkEditor: React.FC<WysimarkEditorProps> = ({
       
       logger.info('WysimarkEditor', 'manual_save', 'Manual save completed successfully', {
         title: state.title,
-        lastSaved: new Date()
+        lastSaved: new Date(),
+        status
       })
     } catch (error) {
       logger.error('WysimarkEditor', 'manual_save', 'Manual save failed', {
         title: state.title,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
+        status
       })
       setState(prev => ({ ...prev, isSaving: false }))
     }
   }
 
-  const handlePublish = async () => {
-    if (!onPublish || state.isSaving) return
-
-    logger.info('WysimarkEditor', 'publish', 'Publish requested', {
-      title: state.title,
-      contentLength: state.content.length,
-      wordCount: state.wordCount
-    })
-
-    setState(prev => ({ ...prev, isSaving: true }))
-    try {
-      await onPublish(state.content, state.title)
-      setState(prev => ({ 
-        ...prev, 
-        isSaving: false, 
-        hasUnsavedChanges: false,
-        lastSaved: new Date(),
-        isDraft: false
-      }))
-      
-      logger.info('WysimarkEditor', 'publish', 'Post published successfully', {
-        title: state.title,
-        lastSaved: new Date(),
-        isDraft: false
-      })
-    } catch (error) {
-      logger.error('WysimarkEditor', 'publish', 'Publish failed', {
-        title: state.title,
-        error: error instanceof Error ? error.message : String(error)
-      })
-      setState(prev => ({ ...prev, isSaving: false }))
-    }
-  }
 
   const handleContentChange = (markdown: string) => {
     logger.debug('WysimarkEditor', 'content_change', 'Content changed', {
@@ -320,6 +296,18 @@ const WysimarkEditor: React.FC<WysimarkEditorProps> = ({
                 Exit
               </Button>
               
+              <Flex align="center" gap="2">
+                <Text size="2" weight="medium">Status:</Text>
+                <Select.Root value={status} onValueChange={onStatusChange}>
+                  <Select.Trigger placeholder="Select status" />
+                  <Select.Content>
+                    <Select.Item value="draft">Draft</Select.Item>
+                    <Select.Item value="published">Published</Select.Item>
+                    <Select.Item value="archived">Archived</Select.Item>
+                  </Select.Content>
+                </Select.Root>
+              </Flex>
+              
               <Button
                 size="2"
                 variant="soft"
@@ -328,15 +316,6 @@ const WysimarkEditor: React.FC<WysimarkEditorProps> = ({
               >
                 <UpdateIcon />
                 Save
-              </Button>
-              
-              <Button
-                size="2"
-                onClick={handlePublish}
-                disabled={state.isSaving}
-              >
-                <EyeOpenIcon />
-                Publish
               </Button>
             </Flex>
           </Flex>
@@ -450,21 +429,25 @@ const WysimarkEditor: React.FC<WysimarkEditorProps> = ({
               Fullscreen
             </Button>
             
+            <Flex align="center" gap="2">
+              <Text size="2" weight="medium">Status:</Text>
+              <Select.Root value={status} onValueChange={onStatusChange}>
+                <Select.Trigger placeholder="Select status" />
+                <Select.Content>
+                  <Select.Item value="draft">Draft</Select.Item>
+                  <Select.Item value="published">Published</Select.Item>
+                  <Select.Item value="archived">Archived</Select.Item>
+                </Select.Content>
+              </Select.Root>
+            </Flex>
+            
             <Button
               variant="soft"
               onClick={handleSave}
               disabled={state.isSaving || !state.hasUnsavedChanges}
             >
               <UpdateIcon />
-              Save Draft
-            </Button>
-            
-            <Button
-              onClick={handlePublish}
-              disabled={state.isSaving}
-            >
-              <EyeOpenIcon />
-              Publish
+              Save
             </Button>
           </Flex>
         </Flex>

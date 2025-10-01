@@ -10,7 +10,7 @@ import {
   Container,
   TextField,
   TextArea
-} from '@radix-ui/themes'
+} from '../components/ui'
 import { CheckIcon, ChevronLeftIcon } from '@radix-ui/react-icons'
 import apiClient from '../config/axios'
 

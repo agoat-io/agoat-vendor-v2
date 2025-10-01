@@ -6,7 +6,7 @@ import {
   Text, 
   Card,
   Badge
-} from '@radix-ui/themes'
+} from './ui'
 import { Cross2Icon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
 
 interface ErrorPopupProps {

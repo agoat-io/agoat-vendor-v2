@@ -1,5 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
-import { Box, Heading, Text, Button, Card } from '@radix-ui/themes'
+import { Box, Heading, Text, Button, Card } from './ui'
 
 interface Props {
   children: ReactNode

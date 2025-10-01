@@ -12,6 +12,12 @@ export { TextField } from '@radix-ui/themes'
 export { TextArea } from '@radix-ui/themes'
 export { Switch } from '@radix-ui/themes'
 export { Grid } from '@radix-ui/themes'
+export { Select } from '@radix-ui/themes'
+export { Dialog } from '@radix-ui/themes'
+export { IconButton } from '@radix-ui/themes'
+export { Code } from '@radix-ui/themes'
+export { Tabs } from '@radix-ui/themes'
+export { Theme } from '@radix-ui/themes'
 
 // Custom components
 export { default as Spinner } from './Spinner'
