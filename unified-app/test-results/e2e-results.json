@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app/playwright.config.ts",
-    "rootDir": "/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app",
+    "configFile": "/projects/agoat-publisher/unified-app/playwright.config.ts",
+    "rootDir": "/projects/agoat-publisher/unified-app",
     "forbidOnly": false,
     "fullyParallel": true,
     "globalSetup": null,
@@ -33,7 +33,7 @@
     "quiet": false,
     "projects": [
       {
-        "outputDir": "/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app/test-results",
+        "outputDir": "/projects/agoat-publisher/unified-app/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -41,7 +41,7 @@
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app",
+        "testDir": "/projects/agoat-publisher/unified-app",
         "testIgnore": [],
         "testMatch": [
           "test-response-debug.spec.ts",
@@ -91,7 +91,7 @@
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "📁 Screenshot directory created: /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/2025-10-01T03-39-42-simple-validation\n"
+                          "text": "📁 Screenshot directory created: /projects/03-project-management-common/agoat-publisher-e2e-images/2025-10-01T03-39-42-simple-validation\n"
                         },
                         {
                           "text": "🔍 Testing new post page loads correctly...\n"

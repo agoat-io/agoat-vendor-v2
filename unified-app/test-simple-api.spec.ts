@@ -5,7 +5,7 @@ import { join } from 'path';
 test.describe('Simple API Test', () => {
   let page: Page;
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const screenshotDir = `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}-simple-api`;
+  const screenshotDir = `/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}-simple-api`;
 
   test.beforeAll(async () => {
     if (!existsSync(screenshotDir)) {

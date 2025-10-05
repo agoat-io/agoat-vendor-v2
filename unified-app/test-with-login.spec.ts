@@ -6,7 +6,7 @@ import { join } from 'path';
 test.describe('Test with Login Process', () => {
   let page: Page;
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const screenshotDir = `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}-login-test`;
+  const screenshotDir = `/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}-login-test`;
 
   test.beforeAll(async () => {
     // Create timestamped directory for screenshots

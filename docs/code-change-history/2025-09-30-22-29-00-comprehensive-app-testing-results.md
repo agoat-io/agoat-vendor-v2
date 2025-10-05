@@ -15,7 +15,7 @@ Successfully conducted comprehensive end-to-end testing of the entire applicatio
 - **Status:** All tests passed (10/10)
 - **Duration:** 25.5 seconds
 - **Screenshots Captured:** 19 images
-- **Screenshot Directory:** `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/2025-10-01T02-29-15/`
+- **Screenshot Directory:** `/projects/03-project-management-common/agoat-publisher-e2e-images/2025-10-01T02-29-15/`
 - **Test Post Created:** ID 1111540906651582465
 
 ### 📸 **Screenshots Captured**

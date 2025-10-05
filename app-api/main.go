@@ -451,6 +451,7 @@ type App struct {
 	azureAuthHandlers   *handlers.AzureAuthHandlers
 	cognitoAuthHandlers *handlers.CognitoAuthHandlers
 	oidcAuthHandlers    *handlers.OIDCAuthHandlersConfig
+	adminHandlers       *handlers.AdminHandler
 }
 
 func NewApp(config *Config) (*App, error) {
@@ -495,6 +496,9 @@ func NewApp(config *Config) (*App, error) {
 		log.Printf("Warning: Failed to initialize OIDC auth handlers: %v", err)
 	}
 
+	// Initialize admin handlers
+	adminHandlers := handlers.NewAdminHandler(db, &Logger{level: logLevel})
+
 	app := &App{
 		config:              config,
 		db:                  db,
@@ -507,6 +511,7 @@ func NewApp(config *Config) (*App, error) {
 		azureAuthHandlers:   azureAuthHandlers,
 		cognitoAuthHandlers: cognitoAuthHandlers,
 		oidcAuthHandlers:    oidcAuthHandlers,
+		adminHandlers:       adminHandlers,
 	}
 
 	return app, nil
@@ -1229,6 +1234,7 @@ func (app *App) handleSignout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, returnURL, http.StatusTemporaryRedirect)
 }
 
+
 func main() {
 	gob.Register(&User{})
 
@@ -1335,8 +1341,14 @@ func main() {
 		api.HandleFunc("/auth/oidc/user-info", app.oidcAuthHandlers.GetUserInfo).Methods("GET")
 	}
 
+	// Admin API endpoints
+	api.HandleFunc("/admin/tables", app.adminHandlers.GetTables).Methods("GET")
+	api.HandleFunc("/admin/tables/{table}", app.adminHandlers.GetTableData).Methods("GET")
+	api.HandleFunc("/admin/query", app.adminHandlers.ExecuteQuery).Methods("POST")
+
 	// Frontend authentication routes (non-API)
 	router.HandleFunc("/auth/signout", app.handleSignout).Methods("GET")
+	
 
 	app.logger.Info("main", "startup", "Server ready to accept connections", map[string]interface{}{
 		"context": map[string]interface{}{

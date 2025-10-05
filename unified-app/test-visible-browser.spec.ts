@@ -5,7 +5,7 @@ import { join } from 'path';
 test.describe('Test with Visible Browser', () => {
   let page: Page;
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const screenshotDir = `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}-visible-browser`;
+  const screenshotDir = `/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}-visible-browser`;
 
   test.beforeAll(async () => {
     if (!existsSync(screenshotDir)) {

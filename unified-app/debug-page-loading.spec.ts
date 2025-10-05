@@ -46,7 +46,7 @@ test.describe('Debug Page Loading Issues', () => {
 
     // Take screenshot after waiting
     await page.screenshot({ 
-      path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/debug-01-new-post-after-wait.png',
+      path: '/projects/03-project-management-common/agoat-publisher-e2e-images/debug-01-new-post-after-wait.png',
       fullPage: true 
     });
     console.log('📸 Screenshot saved: debug-01-new-post-after-wait.png');
@@ -109,7 +109,7 @@ test.describe('Debug Page Loading Issues', () => {
 
     // Take screenshot after waiting
     await page.screenshot({ 
-      path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/debug-02-login-after-wait.png',
+      path: '/projects/03-project-management-common/agoat-publisher-e2e-images/debug-02-login-after-wait.png',
       fullPage: true 
     });
     console.log('📸 Screenshot saved: debug-02-login-after-wait.png');
@@ -150,7 +150,7 @@ test.describe('Debug Page Loading Issues', () => {
 
     // Take screenshot
     await page.screenshot({ 
-      path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/debug-03-home-page.png',
+      path: '/projects/03-project-management-common/agoat-publisher-e2e-images/debug-03-home-page.png',
       fullPage: true 
     });
     console.log('📸 Screenshot saved: debug-03-home-page.png');

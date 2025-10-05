@@ -94,14 +94,14 @@ All tests passed successfully, verifying:
 ### **1. Azure Configuration**
 Run the updated CIAM configuration script:
 ```bash
-cd /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/infra-config/ciam
+cd /projects/agoat-publisher/infra-config/ciam
 ./configure-azure-entra-id.sh
 ```
 
 ### **2. Environment Setup**
 Copy and configure environment variables:
 ```bash
-cd /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app
+cd /projects/agoat-publisher/unified-app
 cp env.example .env
 # Edit .env with your Azure configuration
 ```
@@ -109,7 +109,7 @@ cp env.example .env
 ### **3. Database Migration**
 Apply the database schema (if not already done):
 ```bash
-cd /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher
+cd /projects/agoat-publisher
 # Run your database migration tool
 ```
 

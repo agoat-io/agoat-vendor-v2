@@ -2,7 +2,7 @@
 
 **Date**: 2024-09-28  
 **Time**: 22:00:00 UTC  
-**Change Request**: Following requirements `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/project-management/global-instructions.txt`, ensure that requirement folders actually have only use cases and requirements and that functional and non-functional are correctly categorized. If other types of content need to be in other folders then use different existing or new folders that make sense and update instructions.
+**Change Request**: Following requirements `/projects/agoat-publisher/project-management/global-instructions.txt`, ensure that requirement folders actually have only use cases and requirements and that functional and non-functional are correctly categorized. If other types of content need to be in other folders then use different existing or new folders that make sense and update instructions.
 
 ## Summary of Changes
 

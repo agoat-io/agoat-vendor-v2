@@ -69,7 +69,7 @@ export default defineConfig({
 ```typescript
 // Screenshots saved to specified directory
 await page.screenshot({ 
-  path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/01-new-post-page.png',
+  path: '/projects/03-project-management-common/agoat-publisher-e2e-images/01-new-post-page.png',
   fullPage: true 
 });
 ```
@@ -108,9 +108,9 @@ await page.screenshot({
 6. **Documentation:** ✅ All changes documented in code change history
 
 ### 📁 **File Locations**
-- **Screenshots:** `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/`
-- **Test Results:** `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app/test-results/e2e-results.json`
-- **Test Summary:** `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/test-summary.md`
+- **Screenshots:** `/projects/03-project-management-common/agoat-publisher-e2e-images/`
+- **Test Results:** `/projects/agoat-publisher/unified-app/test-results/e2e-results.json`
+- **Test Summary:** `/projects/03-project-management-common/agoat-publisher-e2e-images/test-summary.md`
 
 ## Technical Implementation
 

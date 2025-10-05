@@ -28,7 +28,7 @@ Successfully implemented and executed Playwright tests in headless mode followin
 
 ### 2. Screenshots Captured
 
-All screenshots were saved to `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/` as required:
+All screenshots were saved to `/projects/03-project-management-common/agoat-publisher-e2e-images/` as required:
 
 1. **01-new-post-page.png** (14,039 bytes)
    - New post page initial load
@@ -112,15 +112,15 @@ page.on('pageerror', error => {
 ### 📁 **File Locations**
 
 **Screenshots:**
-- `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/01-new-post-page.png`
-- `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/02-login-required.png`
-- `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/06-dashboard-page.png`
-- `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/07-home-page.png`
-- `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/08-edit-created-post.png`
+- `/projects/03-project-management-common/agoat-publisher-e2e-images/01-new-post-page.png`
+- `/projects/03-project-management-common/agoat-publisher-e2e-images/02-login-required.png`
+- `/projects/03-project-management-common/agoat-publisher-e2e-images/06-dashboard-page.png`
+- `/projects/03-project-management-common/agoat-publisher-e2e-images/07-home-page.png`
+- `/projects/03-project-management-common/agoat-publisher-e2e-images/08-edit-created-post.png`
 
 **Test Files:**
-- `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app/post-functionality-e2e-test.spec.ts`
-- `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app/playwright.config.ts`
+- `/projects/agoat-publisher/unified-app/post-functionality-e2e-test.spec.ts`
+- `/projects/agoat-publisher/unified-app/playwright.config.ts`
 
 ## Technical Implementation
 
@@ -140,7 +140,7 @@ test.describe('Post Functionality E2E Tests', () => {
 ### Screenshot Capture
 ```typescript
 await page.screenshot({ 
-  path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/01-new-post-page.png',
+  path: '/projects/03-project-management-common/agoat-publisher-e2e-images/01-new-post-page.png',
   fullPage: true 
 });
 ```

@@ -2,7 +2,7 @@
 
 **Date**: 2024-09-28  
 **Time**: 21:30:00 UTC  
-**Change Request**: Aligning with `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/project-management/global-instructions.txt`, remove backward compatibility with Cognito-specific fields including in database. Alignment with OIDC providers should be through table that maps users to OIDC providers only.
+**Change Request**: Aligning with `/projects/agoat-publisher/project-management/global-instructions.txt`, remove backward compatibility with Cognito-specific fields including in database. Alignment with OIDC providers should be through table that maps users to OIDC providers only.
 
 ## Summary of Changes
 

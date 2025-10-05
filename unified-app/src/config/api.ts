@@ -8,6 +8,10 @@ export const API_CONFIG = {
     SITE_POST: (siteId: string, postId: string) => `/sites/${siteId}/posts/${postId}`,
     SITE_POST_BY_SLUG: (siteId: string, slug: string) => `/sites/${siteId}/posts/slug/${slug}`,
     AUTH_CHECK: '/status',
+    // Admin endpoints
+    ADMIN_TABLES: '/admin/tables',
+    ADMIN_TABLE_DATA: (table: string) => `/admin/tables/${table}`,
+    ADMIN_QUERY: '/admin/query',
   }
 } as const
 

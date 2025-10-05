@@ -2,7 +2,7 @@
 
 **Date**: 2024-09-28  
 **Time**: 21:45:00 UTC  
-**Change Request**: Aligning with `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/project-management/global-instructions.txt`, ensure that multiple providers of same type are supported and that there is a unique identifier of its specific instance/environment/pool. In migrations and requirements explain what is the unique identifier and where it is obtained from in the JWT tokens.
+**Change Request**: Aligning with `/projects/agoat-publisher/project-management/global-instructions.txt`, ensure that multiple providers of same type are supported and that there is a unique identifier of its specific instance/environment/pool. In migrations and requirements explain what is the unique identifier and where it is obtained from in the JWT tokens.
 
 ## Summary of Changes
 

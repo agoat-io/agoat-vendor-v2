@@ -164,7 +164,7 @@ All tests passed successfully, verifying:
 
 ### **1. Run CIAM Configuration Script**
 ```bash
-cd /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/infra-config/ciam
+cd /projects/agoat-publisher/infra-config/ciam
 ./configure-azure-entra-id.sh
 ```
 

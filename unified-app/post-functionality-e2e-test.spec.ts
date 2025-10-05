@@ -33,7 +33,7 @@ test.describe('Post Functionality E2E Tests', () => {
     
     // Take screenshot of new post page
     await page.screenshot({ 
-      path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/01-new-post-page.png',
+      path: '/projects/03-project-management-common/agoat-publisher-e2e-images/01-new-post-page.png',
       fullPage: true 
     });
     console.log('📸 Screenshot saved: 01-new-post-page.png');
@@ -50,7 +50,7 @@ test.describe('Post Functionality E2E Tests', () => {
     if (currentUrl.includes('/login') || currentUrl.includes('/cognito-login')) {
       console.log('   Authentication required, taking screenshot...');
       await page.screenshot({ 
-        path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/02-login-required.png',
+        path: '/projects/03-project-management-common/agoat-publisher-e2e-images/02-login-required.png',
         fullPage: true 
       });
       console.log('📸 Screenshot saved: 02-login-required.png');
@@ -64,7 +64,7 @@ test.describe('Post Functionality E2E Tests', () => {
     if (await editor.isVisible()) {
       // Take screenshot of the editor
       await page.screenshot({ 
-        path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/03-wysimark-editor.png',
+        path: '/projects/03-project-management-common/agoat-publisher-e2e-images/03-wysimark-editor.png',
         fullPage: true 
       });
       console.log('📸 Screenshot saved: 03-wysimark-editor.png');
@@ -80,7 +80,7 @@ test.describe('Post Functionality E2E Tests', () => {
         
         // Take screenshot of dropdown open
         await page.screenshot({ 
-          path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/04-status-dropdown-open.png',
+          path: '/projects/03-project-management-common/agoat-publisher-e2e-images/04-status-dropdown-open.png',
           fullPage: true 
         });
         console.log('📸 Screenshot saved: 04-status-dropdown-open.png');
@@ -98,7 +98,7 @@ test.describe('Post Functionality E2E Tests', () => {
       if (await saveButton.isVisible()) {
         // Take screenshot of save button
         await page.screenshot({ 
-          path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/05-save-button.png',
+          path: '/projects/03-project-management-common/agoat-publisher-e2e-images/05-save-button.png',
           fullPage: true 
         });
         console.log('📸 Screenshot saved: 05-save-button.png');
@@ -116,7 +116,7 @@ test.describe('Post Functionality E2E Tests', () => {
     
     // Take screenshot of dashboard
     await page.screenshot({ 
-      path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/06-dashboard-page.png',
+      path: '/projects/03-project-management-common/agoat-publisher-e2e-images/06-dashboard-page.png',
       fullPage: true 
     });
     console.log('📸 Screenshot saved: 06-dashboard-page.png');
@@ -128,7 +128,7 @@ test.describe('Post Functionality E2E Tests', () => {
     
     // Take screenshot of home page
     await page.screenshot({ 
-      path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/07-home-page.png',
+      path: '/projects/03-project-management-common/agoat-publisher-e2e-images/07-home-page.png',
       fullPage: true 
     });
     console.log('📸 Screenshot saved: 07-home-page.png');
@@ -175,7 +175,7 @@ test.describe('Post Functionality E2E Tests', () => {
 
     // Take screenshot of the edit page
     await page.screenshot({ 
-      path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/08-edit-created-post.png',
+      path: '/projects/03-project-management-common/agoat-publisher-e2e-images/08-edit-created-post.png',
       fullPage: true 
     });
     console.log('📸 Screenshot saved: 08-edit-created-post.png');
@@ -188,7 +188,7 @@ test.describe('Post Functionality E2E Tests', () => {
     if (await editor.isVisible()) {
       // Take screenshot of the editor with content
       await page.screenshot({ 
-        path: '/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/09-edit-page-with-content.png',
+        path: '/projects/03-project-management-common/agoat-publisher-e2e-images/09-edit-page-with-content.png',
         fullPage: true 
       });
       console.log('📸 Screenshot saved: 09-edit-page-with-content.png');

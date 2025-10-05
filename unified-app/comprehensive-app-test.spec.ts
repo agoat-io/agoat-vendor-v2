@@ -7,7 +7,7 @@ test.describe('Comprehensive Application Testing', () => {
   let page: Page;
   let testPostId: string | null = null;
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const screenshotDir = `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}`;
+  const screenshotDir = `/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}`;
 
   test.beforeAll(async () => {
     // Create timestamped directory for screenshots

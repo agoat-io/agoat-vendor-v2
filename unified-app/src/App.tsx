@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { Theme, Container, Flex, Box, Heading, Button, Separator, Text } from './components/ui'
 import '@radix-ui/themes/styles.css'
 import { Link, useLocation } from 'react-router-dom'
-import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon, ColorWheelIcon } from '@radix-ui/react-icons'
+import { HomeIcon, DashboardIcon, PlusIcon, PersonIcon, ExitIcon, HeartIcon, ColorWheelIcon, GearIcon } from '@radix-ui/react-icons'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import NewPost from './pages/NewPost'
@@ -19,6 +19,7 @@ import ThornePatientPortal from './pages/ThornePatientPortal'
 import ThorneCompliance from './pages/ThorneCompliance'
 import AuthCallback from './pages/AuthCallback'
 import AuthLogout from './pages/AuthLogout'
+import Admin from './pages/Admin'
 
 function Header() {
   const location = useLocation()
@@ -87,6 +88,12 @@ function Header() {
                     </Button>
                   </Link>
                 )}
+                <Link to="/admin" style={{ textDecoration: 'none' }}>
+                  <Button variant={location.pathname === '/admin' ? 'solid' : 'ghost'} size="2">
+                    <GearIcon />
+                    Admin
+                  </Button>
+                </Link>
               </>
             )}
             <Separator orientation="vertical" />
@@ -166,6 +173,9 @@ function AppContent() {
             <Route path="/thorne/register" element={<ThorneRegistration />} />
             <Route path="/thorne/portal" element={<ThornePatientPortal />} />
             <Route path="/thorne/compliance" element={<ThorneCompliance />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<Admin />} />
             
             {/* Authentication Routes */}
             <Route path="/auth/callback" element={<AuthCallback />} />

@@ -5,7 +5,7 @@ import { join } from 'path';
 test.describe('Response Debug Test', () => {
   let page: Page;
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const screenshotDir = `/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}-response-debug`;
+  const screenshotDir = `/projects/03-project-management-common/agoat-publisher-e2e-images/${timestamp}-response-debug`;
 
   test.beforeAll(async () => {
     if (!existsSync(screenshotDir)) {

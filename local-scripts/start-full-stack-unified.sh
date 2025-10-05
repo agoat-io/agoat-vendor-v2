@@ -45,12 +45,29 @@ cleanup() {
     echo "🛑 Shutting down services..."
     kill $API_PID 2>/dev/null || true
     kill $FRONTEND_PID 2>/dev/null || true
+    # Also kill any existing processes to prevent duplicates
+    pkill -f "npm run dev" 2>/dev/null || true
+    pkill -f "vite" 2>/dev/null || true
+    pkill -f "air" 2>/dev/null || true
     echo "✅ Services stopped"
     exit 0
 }
 
+# Function to cleanup existing processes before starting
+cleanup_existing() {
+    echo "🧹 Cleaning up any existing processes..."
+    pkill -f "npm run dev" 2>/dev/null || true
+    pkill -f "vite" 2>/dev/null || true
+    pkill -f "air" 2>/dev/null || true
+    sleep 2
+    echo "✅ Cleanup completed"
+}
+
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
+
+# Clean up any existing processes first
+cleanup_existing
 
 # Clear Go build cache and temporary files
 echo "🧹 Clearing Go build cache and temporary files..."
@@ -71,13 +88,13 @@ echo "✅ Frontend cache cleared"
 echo ""
 
 # GCP project configuration
-gcp_project="agoat-publisher-dev"
+export gcp_project="agoat-publisher-dev"
 echo "☁️  Using GCP project: $gcp_project"
 
 # Load secrets from GCP
 echo "🔐 Loading secrets from GCP..."
-db1_secret_name_ca="agoat-publisher-db-main-cockroach-ca"
-db1_secret_name_dsn="agoat-publisher-db-main-cockroach-dsn"
+export db1_secret_name_ca="agoat-publisher-db-main-cockroach-ca"
+export db1_secret_name_dsn="agoat-publisher-db-main-cockroach-dsn"
 
 export CA="$(gcloud secrets versions access latest --secret="$db1_secret_name_ca" --project="$gcp_project")"
 export DSN="$(gcloud secrets versions access latest --secret="$db1_secret_name_dsn" --project="$gcp_project")"
@@ -124,22 +141,60 @@ if ! curl -s http://localhost:8080/api/status > /dev/null; then
     echo ""
 fi
 
+# Check authbind configuration for port 443
+echo "🔧 Checking authbind configuration for port 443..."
+if [ ! -f "/etc/authbind/byport/443" ]; then
+    echo "❌ Error: authbind not configured for port 443"
+    echo "   Please run: sudo touch /etc/authbind/byport/443 && sudo chmod 500 /etc/authbind/byport/443 && sudo chown $(whoami) /etc/authbind/byport/443"
+    exit 1
+fi
+
+if [ ! -x "/etc/authbind/byport/443" ]; then
+    echo "❌ Error: authbind port 443 file is not executable"
+    echo "   Please run: sudo chmod 500 /etc/authbind/byport/443"
+    exit 1
+fi
+
+echo "✅ authbind configured for port 443"
+
 # Start frontend in background
 echo "🎨 Starting Unified App frontend on https://dev.np-topvitaminsupply.com (port 443)..."
 cd "$UNIFIED_APP_DIR"
-npm run dev > frontend.log 2>&1 &
+
+# Clear any existing frontend log
+> frontend.log
+
+# Start with authbind to allow port 443 binding
+authbind --deep npm run dev > frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "✅ Frontend started (PID: $FRONTEND_PID)"
 echo ""
 
-# Wait a moment for frontend to start
-sleep 5
+# Wait for frontend to start with better checking
+echo "⏳ Waiting for frontend to start on port 443..."
+for i in {1..30}; do
+    if curl -s -k https://dev.np-topvitaminsupply.com > /dev/null 2>&1; then
+        echo "✅ Frontend is responding on port 443!"
+        break
+    fi
+    
+    # Check if process is still running
+    if ! kill -0 $FRONTEND_PID 2>/dev/null; then
+        echo "❌ Frontend process died unexpectedly"
+        echo "📋 Frontend log:"
+        cat "$UNIFIED_APP_DIR/frontend.log" 2>/dev/null || echo "No log file found"
+        exit 1
+    fi
+    
+    echo "   Attempt $i/30: Still waiting..."
+    sleep 2
+done
 
-# Check if frontend is running
-if ! curl -s -k https://dev.np-topvitaminsupply.com > /dev/null; then
+# Final check
+if ! curl -s -k https://dev.np-topvitaminsupply.com > /dev/null 2>&1; then
     echo "⚠️  Warning: Frontend may not be fully started yet"
     echo "📋 Frontend log:"
-    tail -n 5 "$UNIFIED_APP_DIR/frontend.log" 2>/dev/null || echo "No log file found"
+    tail -n 10 "$UNIFIED_APP_DIR/frontend.log" 2>/dev/null || echo "No log file found"
     echo ""
 fi
 

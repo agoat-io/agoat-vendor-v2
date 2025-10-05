@@ -88,3 +88,7 @@ reactjs-public-viewer/*.log
 puppeteer-check*.png
 federation-test-screenshot.png
 test-screenshots/
+
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md

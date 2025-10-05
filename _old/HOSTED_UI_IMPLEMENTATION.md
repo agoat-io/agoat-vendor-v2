@@ -132,7 +132,7 @@ VITE_LOCAL_PORT=3000
 
 #### **Run CIAM Script**
 ```bash
-cd /Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/infra-config/ciam
+cd /projects/agoat-publisher/infra-config/ciam
 ./configure-azure-entra-id.sh
 ```
 

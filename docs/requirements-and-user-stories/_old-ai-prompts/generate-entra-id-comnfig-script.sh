@@ -11,10 +11,10 @@
 
 Create a comprehensive Microsoft Entra ID configuration script in the appropriate TOGAF folder within the architecture repository at:
 
-/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publish-architecture-repository
+/projects/agoat-publish-architecture-repository
 
 The script should utilize the existing configuration template located at:
-/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-architecture-repository/05-reference-library/05e-templates-and-patterns/configure-entra-id.sh
+/projects/agoat-architecture-repository/05-reference-library/05e-templates-and-patterns/configure-entra-id.sh
 
 REQUIREMENTS:
 
