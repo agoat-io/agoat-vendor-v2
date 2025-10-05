@@ -1,0 +1,2 @@
+INSERT INTO public.schema_migrations (version, name, applied_at, checksum, execution_time_ms, status, error_message) VALUES (1, 'add_multitenancy', '2025-08-31 15:40:38.046767', '15329', 106309, 'success', null);
+INSERT INTO public.schema_migrations (version, name, applied_at, checksum, execution_time_ms, status, error_message) VALUES (2, 'add_azure_entra_auth', '2025-09-24 00:29:54.797529', '12805', 55143, 'failed', 'pq: type of "user_id" (uuid) does not match foreign key "users"."id" (int)');

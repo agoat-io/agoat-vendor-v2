@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "timestamp": "2025-10-05T12:34:25.695Z",
+    "totalTests": 2,
+    "jsErrors": 0,
+    "screenshotDir": "/media/psf/projects/03-project-management-common/agoat-publisher-e2e-images"
+  },
+  "testResults": [
+    {
+      "test": "navigate_to_login",
+      "result": {
+        "success": true,
+        "title": "AGoat Publisher",
+        "url": "https://dev.np-topvitaminsupply.com/login"
+      },
+      "timestamp": "2025-10-05T12:34:13.128Z"
+    },
+    {
+      "test": "login_flow",
+      "result": {
+        "success": false,
+        "url": "https://auth.dev.np-topvitaminsupply.com/verifyCode?client_id=4lt0iqap612c9jug55f3a1s69k&code_challenge=WiHnSv3_GBpxA-4_9iarJFVGb0J1FmBDhFHz6f2ZXhU&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fdev.np-topvitaminsupply.com%2Fauth%2Fcallback&response_type=code&scope=email+openid+phone&state=eyJjb2RlX3ZlcmlmaWVyIjoiS3pTVDA0MThWRGhuc0lPNUpISVg1MWl5YUFMaG1fdGFhSjZJMk5OSGNZNCIsInJldHVybl91cmwiOiJodHRwczovL2Rldi5ucC10b3B2aXRhbWluc3VwcGx5LmNvbS9sb2dpbiIsInN0YXRlIjoiOGQ5N2I2ZmEtYmJjMC00NTUyLWJmNjMtODJmNTYzNjc0NDI0Iiwic3lzdGVtX25hbWUiOiJjb2duaXRvIn0%3D",
+        "title": "Enter code",
+        "isLoggedIn": false
+      },
+      "timestamp": "2025-10-05T12:34:25.659Z"
+    }
+  ],
+  "jsErrors": []
+}

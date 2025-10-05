@@ -1,0 +1,22 @@
+
+=== COMPREHENSIVE ADMIN TEST REPORT ===
+Total Tests: 19
+Passed: 15
+Failed: 4
+Success Rate: 78.9%
+JavaScript Errors: 1
+
+Screenshots saved to: /media/psf/projects/03-project-management-common/agoat-publisher-e2e-images
+Detailed report: /projects/agoat-publisher/comprehensive-admin-test-report.json
+
+JavaScript Errors:
+- [ERROR] api:response - Network error
+
+Database Tables Status:
+users: exists (1 rows, 36 columns)
+posts: exists (10 rows, 12 columns)
+customers: exists (2 rows, 14 columns)
+sites: exists (2 rows, 10 columns)
+ciam_systems: missing (0 rows, 0 columns)
+user_ciam_mappings: missing (0 rows, 0 columns)
+migration_status: missing (0 rows, 0 columns)

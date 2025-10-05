@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "/projects/agoat-publisher/unified-app/playwright.config.ts",
-    "rootDir": "/projects/agoat-publisher/unified-app",
+    "configFile": "/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app/playwright.config.ts",
+    "rootDir": "/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app",
     "forbidOnly": false,
     "fullyParallel": true,
     "globalSetup": null,
@@ -33,7 +33,7 @@
     "quiet": false,
     "projects": [
       {
-        "outputDir": "/projects/agoat-publisher/unified-app/test-results",
+        "outputDir": "/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -41,11 +41,10 @@
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "/projects/agoat-publisher/unified-app",
+        "testDir": "/Users/andrewsmith/Library/CloudStorage/Dropbox/projects/agoat-publisher/unified-app",
         "testIgnore": [],
         "testMatch": [
-          "test-response-debug.spec.ts",
-          "test-simple-validation.spec.ts"
+          "comprehensive-e2e-test.spec.ts"
         ],
         "timeout": 30000
       }
@@ -59,20 +58,20 @@
   },
   "suites": [
     {
-      "title": "test-simple-validation.spec.ts",
-      "file": "test-simple-validation.spec.ts",
+      "title": "comprehensive-e2e-test.spec.ts",
+      "file": "comprehensive-e2e-test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Simple Validation Test",
-          "file": "test-simple-validation.spec.ts",
-          "line": 5,
+          "title": "AGoat Publisher Comprehensive E2E Test",
+          "file": "comprehensive-e2e-test.spec.ts",
+          "line": 22,
           "column": 6,
           "specs": [
             {
-              "title": "Test New Post Page Loads and Shows Editor",
+              "title": "Complete application flow with login and admin testing",
               "ok": true,
               "tags": [],
               "tests": [
@@ -87,59 +86,152 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1421,
+                      "duration": 13356,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "📁 Screenshot directory created: /projects/03-project-management-common/agoat-publisher-e2e-images/2025-10-01T03-39-42-simple-validation\n"
+                          "text": "🚀 Starting comprehensive E2E test...\n"
                         },
                         {
-                          "text": "🔍 Testing new post page loads correctly...\n"
+                          "text": "📄 Testing initial page load...\n"
                         },
                         {
-                          "text": "Console debug: [vite] connecting...\n"
+                          "text": "Found 0 navigation elements\n"
                         },
                         {
-                          "text": "Console debug: [vite] connected.\n"
+                          "text": "✅ Login link found\n"
                         },
                         {
-                          "text": "Console info: %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold\n"
+                          "text": "🔐 Testing login page navigation...\n"
                         },
                         {
-                          "text": "Console log: NewPost: Authentication check {isAuthenticated: false, user: null}\n"
+                          "text": "👤 Testing username entry...\n"
                         },
                         {
-                          "text": "Console log: NewPost: Not authenticated, redirecting to login\n"
+                          "text": "✅ Username input found\n"
                         },
                         {
-                          "text": "Console log: NewPost: Authentication check {isAuthenticated: false, user: null}\n"
+                          "text": "🔑 Testing password entry...\n"
                         },
                         {
-                          "text": "Console log: NewPost: Not authenticated, redirecting to login\n"
+                          "text": "✅ Password input found\n"
                         },
                         {
-                          "text": "Console warning: No routes matched location \"/login\" \n"
+                          "text": "✅ Login button found\n"
                         },
                         {
-                          "text": "Console warning: No routes matched location \"/login\" \n"
+                          "text": "👤 Testing authenticated features...\n"
                         },
                         {
-                          "text": "Current URL: https://dev.np-topvitaminsupply.com/login\n"
+                          "text": "⚠️ User menu not found, checking for other authenticated indicators\n"
                         },
                         {
-                          "text": "✅ Correctly redirected to login page (authentication required)\n"
+                          "text": "⚙️ Testing admin screen...\n"
                         },
                         {
-                          "text": "✅ Simple validation test completed!\n"
+                          "text": "✅ Found 1 admin elements\n"
+                        },
+                        {
+                          "text": "Found 0 admin action buttons\n"
+                        },
+                        {
+                          "text": "📝 Testing post creation...\n"
+                        },
+                        {
+                          "text": "⚠️ Post creation form not found\n"
+                        },
+                        {
+                          "text": "📋 Testing post listing...\n"
+                        },
+                        {
+                          "text": "⚠️ No posts found\n"
+                        },
+                        {
+                          "text": "🔌 Testing API connectivity...\n"
+                        },
+                        {
+                          "text": "API /api/status: 200\n"
+                        },
+                        {
+                          "text": "✅ /api/status is accessible\n"
+                        },
+                        {
+                          "text": "API /api/posts: 404\n"
+                        },
+                        {
+                          "text": "⚠️ /api/posts returned 404\n"
+                        },
+                        {
+                          "text": "API /api/sites: 200\n"
+                        },
+                        {
+                          "text": "✅ /api/sites is accessible\n"
+                        },
+                        {
+                          "text": "API /api/users: 404\n"
+                        },
+                        {
+                          "text": "⚠️ /api/users returned 404\n"
+                        },
+                        {
+                          "text": "🚪 Testing logout...\n"
+                        },
+                        {
+                          "text": "⚠️ Logout button not found\n"
+                        },
+                        {
+                          "text": "✅ Comprehensive E2E test completed!\n"
                         }
                       ],
                       "stderr": [
                         {
-                          "text": "(node:3204) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                          "text": "(node:40840) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
                         }
                       ],
                       "retry": 0,
-                      "startTime": "2025-10-01T03:39:42.439Z",
+                      "steps": [
+                        {
+                          "title": "Initial page load and navigation",
+                          "duration": 94
+                        },
+                        {
+                          "title": "Navigate to test login page",
+                          "duration": 1780
+                        },
+                        {
+                          "title": "Test login form and username entry",
+                          "duration": 41
+                        },
+                        {
+                          "title": "Test password entry and authentication",
+                          "duration": 3069
+                        },
+                        {
+                          "title": "Test authenticated features",
+                          "duration": 3135
+                        },
+                        {
+                          "title": "Test admin screen functionality",
+                          "duration": 956
+                        },
+                        {
+                          "title": "Test post creation and management",
+                          "duration": 862
+                        },
+                        {
+                          "title": "Test post listing and management",
+                          "duration": 791
+                        },
+                        {
+                          "title": "Test API connectivity",
+                          "duration": 1309
+                        },
+                        {
+                          "title": "Test logout functionality",
+                          "duration": 32
+                        }
+                      ],
+                      "startTime": "2025-10-05T04:37:36.011Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -147,9 +239,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "c76b066efbdaccf4a32e-7547b8dc963b9dd4304c",
-              "file": "test-simple-validation.spec.ts",
-              "line": 28,
+              "id": "5e9a5b0ecae8bc5067dc-5016b879f05329115e93",
+              "file": "comprehensive-e2e-test.spec.ts",
+              "line": 32,
               "column": 3
             }
           ]
@@ -159,8 +251,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-10-01T03:39:42.130Z",
-    "duration": 2781.8,
+    "startTime": "2025-10-05T04:37:35.684Z",
+    "duration": 14215.768,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

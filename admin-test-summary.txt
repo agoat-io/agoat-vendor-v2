@@ -1,0 +1,13 @@
+
+=== AGOAT PUBLISHER ADMIN TEST REPORT ===
+Total Tests: 0
+Passed: 0
+Failed: 0
+Success Rate: 0%
+JavaScript Errors: 0
+
+Screenshots saved to: /media/psf/projects/03-project-management-common/agoat-publisher-e2e-images
+Detailed report: /projects/agoat-publisher/admin-test-report.json
+
+JavaScript Errors:
+

@@ -1,0 +1,175 @@
+{
+  "summary": {
+    "timestamp": "2025-10-05T12:36:26.897Z",
+    "totalTests": 4,
+    "jsErrors": 1,
+    "screenshotDir": "/media/psf/projects/03-project-management-common/agoat-publisher-e2e-images"
+  },
+  "testResults": [
+    {
+      "test": "api_endpoints",
+      "results": [
+        {
+          "test": "admin_tables_api",
+          "status": "passed",
+          "tables_found": 16,
+          "tables": [
+            "audit_logs",
+            "azure_entra_config",
+            "azure_entra_sessions",
+            "azure_entra_token_cache",
+            "customers",
+            "domains",
+            "flyway_schema_history",
+            "iam_group_mappings",
+            "iam_providers",
+            "iam_user_mappings",
+            "posts",
+            "schema_migrations",
+            "site_settings",
+            "sites",
+            "tenant_usage",
+            "users"
+          ]
+        },
+        {
+          "test": "table_audit_logs_api",
+          "status": "passed",
+          "row_count": 0,
+          "columns": 11
+        },
+        {
+          "test": "table_azure_entra_config_api",
+          "status": "passed",
+          "row_count": 1,
+          "columns": 19
+        },
+        {
+          "test": "table_azure_entra_sessions_api",
+          "status": "passed",
+          "row_count": 0,
+          "columns": 16
+        }
+      ],
+      "timestamp": "2025-10-05T12:36:22.281Z"
+    },
+    {
+      "test": "admin_page_access",
+      "results": [
+        {
+          "test": "admin_page_access",
+          "status": "failed",
+          "error": "page.goto: net::ERR_ABORTED at https://dev.np-topvitaminsupply.com/admin\nCall log:\n\u001b[2m  - navigating to \"https://dev.np-topvitaminsupply.com/admin\", waiting until \"load\"\u001b[22m\n"
+        }
+      ],
+      "timestamp": "2025-10-05T12:36:22.281Z"
+    },
+    {
+      "test": "database_tables",
+      "results": [
+        {
+          "test": "table_exists_users",
+          "status": "exists",
+          "row_count": 1,
+          "columns": 36
+        },
+        {
+          "test": "table_exists_posts",
+          "status": "exists",
+          "row_count": 10,
+          "columns": 12
+        },
+        {
+          "test": "table_exists_customers",
+          "status": "exists",
+          "row_count": 2,
+          "columns": 14
+        },
+        {
+          "test": "table_exists_sites",
+          "status": "exists",
+          "row_count": 2,
+          "columns": 10
+        },
+        {
+          "test": "table_exists_ciam_systems",
+          "status": "missing",
+          "row_count": 0,
+          "columns": 0
+        },
+        {
+          "test": "table_exists_user_ciam_mappings",
+          "status": "missing",
+          "row_count": 0,
+          "columns": 0
+        },
+        {
+          "test": "table_exists_migration_status",
+          "status": "missing",
+          "row_count": 0,
+          "columns": 0
+        },
+        {
+          "test": "table_data_audit_logs",
+          "status": "accessible",
+          "rows_returned": 0,
+          "total_rows": 0
+        },
+        {
+          "test": "table_data_azure_entra_config",
+          "status": "accessible",
+          "rows_returned": 1,
+          "total_rows": 1
+        },
+        {
+          "test": "table_data_azure_entra_sessions",
+          "status": "accessible",
+          "rows_returned": 0,
+          "total_rows": 0
+        }
+      ],
+      "timestamp": "2025-10-05T12:36:22.281Z"
+    },
+    {
+      "test": "navigation",
+      "results": [
+        {
+          "test": "navigation_home",
+          "status": "accessible",
+          "url": "https://dev.np-topvitaminsupply.com/",
+          "title": "AGoat Publisher"
+        },
+        {
+          "test": "navigation_admin",
+          "status": "accessible",
+          "url": "https://dev.np-topvitaminsupply.com/admin",
+          "title": "AGoat Publisher"
+        },
+        {
+          "test": "navigation_dashboard",
+          "status": "accessible",
+          "url": "https://dev.np-topvitaminsupply.com/",
+          "title": "AGoat Publisher"
+        },
+        {
+          "test": "navigation_new_post",
+          "status": "accessible",
+          "url": "https://dev.np-topvitaminsupply.com/login",
+          "title": "AGoat Publisher"
+        }
+      ],
+      "timestamp": "2025-10-05T12:36:26.861Z"
+    }
+  ],
+  "jsErrors": [
+    {
+      "timestamp": "2025-10-05T12:36:23.950Z",
+      "message": "[ERROR] api:response - Network error",
+      "location": {
+        "url": "https://dev.np-topvitaminsupply.com/src/utils/logger.ts",
+        "lineNumber": 56,
+        "columnNumber": 16
+      }
+    }
+  ]
+}

@@ -34,12 +34,12 @@ if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q
 fi
 
 # GCP project configuration
-gcp_project="agoat-publisher-dev"
+export gcp_project="agoat-publisher-dev"
 echo "☁️  Using GCP project: $gcp_project"
 
 # Load secrets from GCP
-db1_secret_name_ca="agoat-publisher-db-main-cockroach-ca"
-db1_secret_name_dsn="agoat-publisher-db-main-cockroach-dsn"
+export db1_secret_name_ca="agoat-publisher-db-main-cockroach-ca"
+export db1_secret_name_dsn="agoat-publisher-db-main-cockroach-dsn"
 
 export CA="$(gcloud secrets versions access latest --secret="$db1_secret_name_ca" --project="$gcp_project")"
 export DSN="$(gcloud secrets versions access latest --secret="$db1_secret_name_dsn" --project="$gcp_project")"
