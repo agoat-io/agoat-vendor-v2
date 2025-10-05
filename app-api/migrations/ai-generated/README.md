@@ -1,0 +1,179 @@
+# AI-Generated Database Migrations
+
+**Generated on:** 2025-10-05  
+**Source:** Live database analysis  
+**Purpose:** Complete DDL and data scripts for current database state  
+
+## Overview
+
+This directory contains AI-generated database migration scripts that represent the current state of the AGoat Publisher database. These scripts were created by analyzing the live database and extracting both the schema structure and actual data.
+
+## Directory Structure
+
+```
+ai-generated/
+├── ddl/                           # Data Definition Language scripts
+│   └── 001_current_database_schema.sql
+├── data/                          # Data insertion scripts
+│   ├── 001_customers_data.sql
+│   ├── 002_sites_data.sql
+│   ├── 003_users_data.sql
+│   ├── 004_posts_data.sql
+│   ├── 005_azure_entra_config_data.sql
+│   ├── 006_schema_migrations_data.sql
+│   └── 007_flyway_schema_history_data.sql
+└── README.md                      # This file
+```
+
+## Database Schema
+
+### Tables Found (16 total)
+
+#### Core Tables
+- **customers** - Customer accounts for multitenant architecture (2 rows)
+- **sites** - Sites within customers for multitenant content management (2 rows)
+- **users** - User accounts with multiple authentication methods (1 row)
+- **posts** - Content posts with multitenant support (10 rows)
+
+#### Authentication Tables
+- **azure_entra_config** - Azure Entra ID configuration (1 row)
+- **azure_entra_sessions** - Azure Entra ID user sessions (0 rows)
+- **azure_entra_token_cache** - Azure Entra ID token cache (0 rows)
+- **iam_providers** - IAM provider configurations (0 rows)
+- **iam_user_mappings** - User to IAM provider mappings (0 rows)
+- **iam_group_mappings** - User to IAM group mappings (0 rows)
+
+#### System Tables
+- **schema_migrations** - Tracks applied database migrations (2 rows)
+- **flyway_schema_history** - Flyway migration history (3 rows)
+- **audit_logs** - Audit trail for user actions (0 rows)
+- **domains** - Domain mappings for sites (0 rows)
+- **site_settings** - Site-specific configuration (0 rows)
+- **tenant_usage** - Usage tracking for tenants (0 rows)
+
+## Data Summary
+
+### Tables with Data
+1. **customers** - 2 active customers
+   - Top Vitamin Supply (professional plan)
+   - Test Customer (basic trial plan)
+
+2. **sites** - 2 active sites
+   - Top Vitamin Supply main site
+   - Test site
+
+3. **users** - 1 admin user
+   - andrewqr@gmail.com (admin role)
+
+4. **posts** - 10 posts
+   - 9 published posts
+   - 1 draft post
+
+5. **azure_entra_config** - 1 configuration
+   - Azure Entra ID setup
+
+6. **schema_migrations** - 2 migrations
+   - Initial schema
+   - Cognito CIAM support
+
+7. **flyway_schema_history** - 3 migrations
+   - Initial schema
+   - Cognito support
+   - IAM providers
+
+### Empty Tables
+- audit_logs
+- azure_entra_sessions
+- azure_entra_token_cache
+- domains
+- iam_group_mappings
+- iam_providers
+- iam_user_mappings
+- site_settings
+- tenant_usage
+
+## Usage Instructions
+
+### 1. Apply DDL Scripts
+```bash
+# Apply the complete schema
+psql "$DSN" -f ddl/001_current_database_schema.sql
+```
+
+### 2. Apply Data Scripts
+```bash
+# Apply data in order (respects foreign key constraints)
+psql "$DSN" -f data/001_customers_data.sql
+psql "$DSN" -f data/002_sites_data.sql
+psql "$DSN" -f data/003_users_data.sql
+psql "$DSN" -f data/004_posts_data.sql
+psql "$DSN" -f data/005_azure_entra_config_data.sql
+psql "$DSN" -f data/006_schema_migrations_data.sql
+psql "$DSN" -f data/007_flyway_schema_history_data.sql
+```
+
+### 3. Verify Installation
+```bash
+# Check table counts
+psql "$DSN" -c "SELECT schemaname, tablename, n_tup_ins as row_count FROM pg_stat_user_tables ORDER BY tablename;"
+```
+
+## Key Features
+
+### Multi-tenancy Support
+- Customer-based organization
+- Site-level content isolation
+- User role management
+
+### Authentication Integration
+- Azure Entra ID support
+- IAM provider framework
+- Session management
+
+### Content Management
+- Post creation and management
+- Draft/published status
+- Soft delete support
+
+### Audit and Tracking
+- Migration history
+- Usage tracking framework
+- Audit logging capability
+
+## Database Engine
+
+- **Engine:** CockroachDB
+- **Version:** Compatible with PostgreSQL
+- **Features Used:**
+  - UUID generation
+  - JSONB columns
+  - Triggers for updated_at
+  - Foreign key constraints
+  - Indexes for performance
+
+## Security Considerations
+
+- Passwords are hashed (example hashes in data)
+- Client secrets are encrypted
+- Tokens are hashed for storage
+- Soft deletes preserve data integrity
+
+## Maintenance Notes
+
+- All tables include `created_at` and `updated_at` timestamps
+- Triggers automatically update `updated_at` columns
+- Foreign key constraints maintain referential integrity
+- Indexes are optimized for common query patterns
+
+## Future Enhancements
+
+- Add more IAM providers
+- Implement audit logging
+- Add domain management
+- Configure site settings
+- Track tenant usage
+
+---
+
+*Generated by AGoat Publisher AI Database Analysis Tool*  
+*For questions or issues, refer to the main project documentation*
